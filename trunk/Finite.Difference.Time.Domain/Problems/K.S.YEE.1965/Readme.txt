@@ -1,1 +1,0 @@
-This is just a bare bones Yee simulation without the PEC object. Main file is Yee_Scattering.m, rest are dependencies or function files.
