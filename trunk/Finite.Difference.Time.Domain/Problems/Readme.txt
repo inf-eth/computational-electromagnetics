@@ -1,0 +1,2 @@
+- The pdf document/thesis titled 'Modelling EM Scattering Using FDTD' in getting started folder gives a description of some of these problems.
+- It is recommended that you start with the one dimensional propagation problem.

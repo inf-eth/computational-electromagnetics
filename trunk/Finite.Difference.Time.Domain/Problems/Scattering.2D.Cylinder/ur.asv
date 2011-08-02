@@ -1,0 +1,5 @@
+% ur calculation for Yee scattering problem.
+function return_val = ur ( i, j )
+delta = 3e-3;
+
+return_val = 1;
