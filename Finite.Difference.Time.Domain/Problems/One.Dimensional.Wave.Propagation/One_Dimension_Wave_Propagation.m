@@ -22,22 +22,17 @@ for q = 2:MaxTime
     Ez(1,q) = exp ( - 1 * ( (q-31)^2) / 100 );
 end
 
-% Plotting Electric field at differenct times.
-figure
-plot ( Ez(:,10) )
-figure
-plot ( Ez(:,30) )
-figure
-plot ( Ez(:,50) )
-figure
-plot ( Ez(:,70) )
-figure
-plot ( Ez(:,90) )
-figure
-plot ( Ez(:,110) )
-figure
-plot ( Ez(:,120) )
-figure
-plot ( Ez(:,130) )
-figure
-plot ( Ez(:,150) )
+% Simulation animation.
+for i=1:NNMax
+    figure (2)
+    plot ( Ez(:,i) )
+end
+
+% Plotting Electric field at differenct times. Can be used to view the
+% electric field at discrete time steps.
+% figure
+% plot ( Ez(:,10) )
+% figure
+% plot ( Ez(:,30) )
+% figure
+% plot ( Ez(:,50) )
