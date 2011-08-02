@@ -1,0 +1,1 @@
+2D clylinderical cloak. Conventional FDTD method will yield unstabilities at edges for sharp or discontinuous change in constitutive parameters. Haven't been able to completely resolve unstabilities.

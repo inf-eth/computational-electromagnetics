@@ -1,0 +1,15 @@
+% er calculation for Yee scattering problem.
+function return_val = er ( i, j )
+delta = 3e-3;
+rb = 0.06;
+ra = 0.02;
+x = (i-25.5) * delta;
+y = (j-24.5) * delta;
+r = sqrt ( x^2 + y^2 );
+
+if (i-25.5)^2+(j-24.5)^2 < (rb/delta)^2 & (i-25.5)^2+(j-24.5)^2 > (ra/delta)^2
+    exx = (r/(r-a)) + ( (a^2-2*a*r)/((r-a)*r^3) )*x*
+    return_val = 4;
+else
+    return_val = 1;
+end
