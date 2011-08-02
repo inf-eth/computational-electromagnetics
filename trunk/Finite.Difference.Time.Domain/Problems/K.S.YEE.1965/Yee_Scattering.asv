@@ -1,3 +1,4 @@
+% Bare bones template for Y
 clc
 clear all
 
@@ -62,19 +63,25 @@ fprintf ( 1, 'done.\n' );
 % ##### 2. Now running the Simulation ######
 fprintf ( 1, 'Simulation started... \n', 0 );
 for n=0:NNMax-2
-fprintf ( 1, '%g %% \n', (n*100)/NNMax );
+    fprintf ( 1, '%g %% \n', (n*100)/NNMax );
 
-% *** Calculation of Magnetic Field Components ***
-% * Calculation of Hy.
-Hy ( :, :, n+2 ) = Hy ( :, :, n+1 ) + ( CHy .* ( Ez( 2:IHy+1, :, n+1 ) - Ez ( 1:IHy, :, n+1 ) ));
-% ************************************************
+    % *** Calculation of Magnetic Field Components ***
+    % * Calculation of Hy.
+    Hy ( :, :, n+2 ) = Hy ( :, :, n+1 ) + ( CHy .* ( Ez( 2:IHy+1, :, n+1 ) - Ez ( 1:IHy, :, n+1 ) ));
+    % ************************************************
 
-% *** Calculation of Electric Field Components ***
-% * Calculation of Ez.
-Ez ( 2:IEz-1, :, n+2 ) = ( RaEz ( 2:IEz-1, : ) .* Ez( 2:IEz-1, :, n+1 ) ) + ( REz ( 2:IEz-1, : ) .* ( Hy( 2:IEz-1, :, n+2 ) - Hy ( 1:IEz-2, :, n+2 ) ));
+    % *** Calculation of Electric Field Components ***
+    % * Calculation of Ez.
+    Ez ( 2:IEz-1, :, n+2 ) = ( RaEz ( 2:IEz-1, : ) .* Ez( 2:IEz-1, :, n+1 ) ) + ( REz ( 2:IEz-1, : ) .* ( Hy( 2:IEz-1, :, n+2 ) - Hy ( 1:IEz-2, :, n+2 ) ));
 end
-
-mesh ( Ez (:, :, 5) )
 
 fprintf ( 1, '100 %% \n' );
 fprintf ( 1, 'Simulation complete! \n', 0 );
+
+% Simulation animation.
+for i=1:NNMax
+    figure (2)
+    mesh ( Ez (:, :, i) );
+    view (-70, 30)
+    zlim ( [-2 2] )
+end
