@@ -1,0 +1,1 @@
+The Docs folder in trunk contains general material not restricted to any particular subject.
