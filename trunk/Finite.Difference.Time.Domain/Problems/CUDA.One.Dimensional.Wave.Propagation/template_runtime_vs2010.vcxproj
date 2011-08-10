@@ -19,10 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{BB11D297-CFCB-48CE-89D9-931A7D637634}</ProjectGuid>
-    <RootNamespace>convolutionSeparable_vs2010</RootNamespace>
-    <ProjectName>convolutionSeparable</ProjectName>
-    <CudaToolkitCustomDir />
+    <ProjectGuid>{991A563F-A27B-4E82-ACA6-63CB5DD96384}</ProjectGuid>
+    <RootNamespace>template_runtime_vs2010</RootNamespace>
+    <ProjectName>template_runtime</ProjectName>
+    <CudaToolkitCustomDir>
+    </CudaToolkitCustomDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -88,15 +89,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../../common/inc;../../../shared/inc;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cutil32D.lib;shrUtils32D.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\shared\lib\$(PlatformName);C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\C\common\lib\$(PlatformName)</AdditionalLibraryDirectories>
-      <OutputFile>$(OutDir)/convolutionSeparable.exe</OutputFile>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\C\common\lib\$(PlatformName);C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\shared\lib\$(PlatformName)</AdditionalLibraryDirectories>
+      <OutputFile>$(OutDir)/template_runtime.exe</OutputFile>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -113,15 +113,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../../common/inc;../../../shared/inc;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cutil64D.lib;shrUtils64D.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);../../common/lib/$(PlatformName);../../../shared/lib/$(PlatformName)</AdditionalLibraryDirectories>
-      <OutputFile>$(OutDir)/convolutionSeparable.exe</OutputFile>
+      <OutputFile>$(OutDir)/template_runtime.exe</OutputFile>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -143,7 +142,6 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>./;../../common/inc;../../../shared/inc;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -151,9 +149,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cutil32.lib;shrUtils32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);../../common/lib/$(PlatformName);../../../shared/lib/$(PlatformName)</AdditionalLibraryDirectories>
-      <OutputFile>$(OutDir)/convolutionSeparable.exe</OutputFile>
+      <OutputFile>$(OutDir)/template_runtime.exe</OutputFile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -161,9 +159,8 @@
       </Command>
     </PostBuildEvent>
     <CudaCompile>
-      <Include>./;../../common/inc;../../../shared/inc</Include>
-      <Runtime>MT</Runtime>
       <CodeGeneration>compute_10,sm_10;compute_20,sm_20</CodeGeneration>
+      <Runtime>MT</Runtime>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -172,7 +169,6 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>./;../../common/inc;../../../shared/inc;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -180,9 +176,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cutil64.lib;shrUtils64.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);../../common/lib/$(PlatformName);../../../shared/lib/$(PlatformName)</AdditionalLibraryDirectories>
-      <OutputFile>$(OutDir)/convolutionSeparable.exe</OutputFile>
+      <OutputFile>$(OutDir)/template_runtime.exe</OutputFile>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -190,15 +186,14 @@
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>./;../../common/inc;../../../shared/inc</Include>
-      <Runtime>MT</Runtime>
       <CodeGeneration>compute_10,sm_10;compute_20,sm_20</CodeGeneration>
+      <Runtime>MT</Runtime>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="convolutionSeparable.cu">
+    <CudaCompile Include="template_runtime.cu">
       <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">./;../../common/inc;../../../shared/inc</Include>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./;../../common/inc;../../../shared/inc</Include>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./;C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\C\common\inc;C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\shared\inc</Include>
       <Include Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">./;../../common/inc;../../../shared/inc</Include>
       <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">./;../../common/inc;../../../shared/inc</Include>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_10,sm_10;compute_20,sm_20</CodeGeneration>
@@ -208,18 +203,6 @@
       <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">64</TargetMachinePlatform>
       <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Release|x64'">64</TargetMachinePlatform>
     </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../common/cutil_vs2010.vcxproj">
-      <Name>cutil</Name>
-      <Project>{46FB0B73-5A53-444A-8E72-F4F0A373098C}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../../shared/shrUtils_vs2010.vcxproj">
-      <Name>shrUtils</Name>
-      <Project>{F9750D72-D315-4F81-AF1B-10938220FFB3}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
