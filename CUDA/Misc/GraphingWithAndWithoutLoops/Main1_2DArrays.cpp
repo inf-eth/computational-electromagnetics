@@ -16,7 +16,7 @@ int main (int argc, char* argv[])
 {
 	int H;
 	int V;
-	int n;
+	float n;
 	int i, j;
 
 	char Graph[VMAX][HMAX];
@@ -38,11 +38,11 @@ int main (int argc, char* argv[])
 
 	cout << "Enter number of cycles: ";
 	cin >> n;
-	n < 0 ? n = n*-1 : n == 0 ? n = 1 : n = n;
+	n < 0.f ? n = n*-1.f : n == 0.f ? n = 1.f : n = n;
 
 	cout << "H = " << H << ", V = " << V << ", n = " << n << endl;
 
-	memset (Graph, ' ', V*H);
+	memset (Graph, ' ', VMAX*HMAX);
 
 	for (i=0; i<V; i++)
 		Graph[i][0] = '|';
@@ -50,9 +50,9 @@ int main (int argc, char* argv[])
 	for (j=0; j<H; j++)
 	{
 		t[j] = ((float)j/(H-1)*n);
-		f[j] = sin(2.f*Pj*t[j]);
+		f[j] = sin(2.f*PI*t[j]);
 		r = ((float)f[j]*(V/2)); 
-		nf[j] = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));			// Roundjng float to nearest jnt.
+		nf[j] = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));			// Rounding float to nearest int.
 		Graph[(V)/2][j] = '-';
 		Graph[(V/2)-nf[j]][j] = '*';
 	}
@@ -63,9 +63,5 @@ int main (int argc, char* argv[])
 			cout << Graph[i][j];
 		cout << endl;
 	}
-
-	char dummy;
-	cout << "Press any key and hit return to exit...";
-	cin >> dummy;
 	return 0;
 }

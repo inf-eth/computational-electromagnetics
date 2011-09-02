@@ -15,7 +15,7 @@ int main (int argc, char* argv[])
 {
 	int H;
 	int V;
-	int n;
+	float n;
 	int i;
 
 	float t;
@@ -35,7 +35,7 @@ int main (int argc, char* argv[])
 
 	cout << "Enter number of cycles: ";
 	cin >> n;
-	n < 0 ? n = n*-1 : n == 0 ? n = 1 : n = n;
+	n < 0.f ? n = n*-1.f : n == 0.f ? n = 1.f : n = n;
 
 	cout << "H = " << H << ", V = " << V << ", n = " << n << endl;
 

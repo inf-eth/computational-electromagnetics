@@ -16,7 +16,7 @@ int main (int argc, char* argv[])
 {
 	int H;
 	int V;
-	int n;
+	float n;
 	int i, j;
 
 	char Graph[VMAX*HMAX];
@@ -38,7 +38,7 @@ int main (int argc, char* argv[])
 
 	cout << "Enter number of cycles: ";
 	cin >> n;
-	n < 0 ? n = n*-1 : n == 0 ? n = 1 : n = n;
+	n < 0.f ? n = n*-1.f : n == 0.f ? n = 1.f : n = n;
 
 	cout << "H = " << H << ", V = " << V << ", n = " << n << endl;
 
@@ -47,20 +47,20 @@ int main (int argc, char* argv[])
 	for (i=0; i<V; i++)
 		Graph[i+H*0] = '|';
 
-	for (i=0; i<H; i++)
+	for (j=0; j<H; j++)
 	{
-		t[i] = ((float)i/(H-1)*n);
-		f[i] = sin(2.f*PI*t[i]);
-		r = ((float)f[i]*(V/2)); 
-		nf[i] = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));			// Rounding float to nearest int.
-		Graph[(V/2) + V*i] = '-';
-		Graph[(V/2)-nf[i] + V*i] = '*';
+		t[j] = ((float)j/(H-1)*n);
+		f[j] = sin(2.f*PI*t[j]);
+		r = ((float)f[j]*(V/2)); 
+		nf[j] = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));			// Rounding float to nearest int.
+		Graph[(V/2) + H*j] = '-';
+		Graph[(V/2)-nf[j] + H*j] = '*';
 	}
 
 	for (i=0; i<V; i++)
 	{
 		for (j=0; j<H; j++)
-			cout << Graph[i + V*j];
+			cout << Graph[i + H*j];
 		cout << endl;
 	}
 	return 0;
