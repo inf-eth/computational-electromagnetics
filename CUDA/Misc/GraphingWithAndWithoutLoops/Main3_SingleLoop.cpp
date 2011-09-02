@@ -1,9 +1,5 @@
-#include <iostream>
+#include <cstdio>
 #include <cmath>
-
-using std::cin;
-using std::cout;
-using std::endl;
 
 #define HMIN	11
 #define HMAX	75
@@ -13,39 +9,34 @@ using std::endl;
 
 int main (int argc, char* argv[])
 {
-	int H;
-	int V;
+	int H, V;
 	float n;
+	
 	int i;
-
-	float t;
-	float f;
-	int nf;
 	float r;
+	int nf;	
 
-	cout << "Enter horizontal width (10-75 chars): ";
-	cin >> H;
+	printf("Enter horizontal width (10-75 chars): ");
+	scanf("%d", &H);
 	H < 0 ? H = H*-1 : H = H;
 	(H < HMIN || H > HMAX) ? (H < HMIN ? H = HMIN : H = HMAX) : (H%2 == 0 ? H++ : H = H);
 
-	cout << "Enter vertical width (11-39 chars): ";
-	cin >> V;
+	printf("Enter vertical width (11-39 chars): ");
+	scanf("%d", &V);
 	V < 0 ? V = V*-1 : V = V;
 	(V < VMIN || V > VMAX) ? (V < VMIN ? V = VMIN : V = VMAX) : (V%2 == 0 ? V++ : V = V);
 
-	cout << "Enter number of cycles: ";
-	cin >> n;
+	printf("Enter number of cycles: ");
+	scanf("%f", &n);
 	n < 0.f ? n = n*-1.f : n == 0.f ? n = 1.f : n = n;
 
-	cout << "H = " << H << ", V = " << V << ", n = " << n << endl;
+	printf("H = %d, V = %d, n = %.2f\n", H, V, n);
 
 	for (i=0; i<V*H; i++)
 	{
 		(i != 0 && i%H == 0) ? printf("\n") : i=i;
-		t = ((float)(i%H)/(H-1)*n);
-		f = sin(2.f*PI*t);
-		r = ((float)f*(V/2));
-		nf = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));
+		r = ((float)(sin(2.f*PI*((float)(i%H)/(H-1)*n)))*(V/2));
+		nf = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));		// Rounding off float to nearest int.
 		((V/2)-nf == i/H) ? printf("*") : i%H == 0 ? printf("|") : (i/H == V/2 ? printf("-") : printf(" "));		
 	}
 	printf("\n");

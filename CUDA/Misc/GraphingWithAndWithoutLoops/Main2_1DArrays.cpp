@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cmath>
-#include <cstdlib>
 
 using std::cin;
 using std::cout;
@@ -20,7 +19,7 @@ int main (int argc, char* argv[])
 	int i, j;
 
 	char Graph[VMAX*HMAX];
-		
+
 	float t[HMAX];
 	float f[HMAX];
 	int nf[HMAX];
