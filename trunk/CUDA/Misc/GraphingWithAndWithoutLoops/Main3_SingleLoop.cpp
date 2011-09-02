@@ -16,13 +16,11 @@ int main (int argc, char* argv[])
 	int H;
 	int V;
 	int n;
-	int i, j;
+	int i;
 
-	//char Graph[VMAX*HMAX];
-		
-	float t[HMAX];
-	float f[HMAX];
-	int nf[HMAX];
+	float t;
+	float f;
+	int nf;
 	float r;
 
 	cout << "Enter horizontal width (10-75 chars): ";
@@ -41,26 +39,16 @@ int main (int argc, char* argv[])
 
 	cout << "H = " << H << ", V = " << V << ", n = " << n << endl;
 
-	//memset (Graph, ' ', VMAX*HMAX);
-
-	//for (i=0; i<V; i++)
-	//	Graph[i+H*0] = '|';
-
-	for (i=0; i<H; i++)
+	for (i=0; i<V*H; i++)
 	{
-		t[i] = ((float)i/(H-1)*n);
-		f[i] = sin(2.f*PI*t[i]);
-		r = ((float)f[i]*(V/2)); 
-		nf[i] = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));			// Rounding float to nearest int.
-		//Graph[(V/2) + V*i] = '-';
-		//Graph[(V/2)-nf[i] + V*i] = '*';
+		(i != 0 && i%H == 0) ? printf("\n") : i=i;
+		t = ((float)(i%H)/(H-1)*n);
+		f = sin(2.f*PI*t);
+		r = ((float)f*(V/2));
+		nf = (int) ((r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5));
+		((V/2)-nf == i/H) ? printf("*") : i%H == 0 ? printf("|") : (i/H == V/2 ? printf("-") : printf(" "));		
 	}
-/*
-	for (i=0; i<V; i++)
-	{
-		for (j=0; j<H; j++)
-			cout << Graph[i + V*j];
-		cout << endl;
-	}*/
+	printf("\n");
+
 	return 0;
 }
