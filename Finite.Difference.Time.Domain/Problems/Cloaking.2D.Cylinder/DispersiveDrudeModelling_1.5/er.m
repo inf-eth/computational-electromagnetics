@@ -21,7 +21,7 @@ if (i-XCenter)^2+(j-YCenter)^2 < ((rb/delta))^2
         %return_val = ezz;
         return_val = 1;
     else
-        return_val = 1e80;
+        return_val = 1;%e10;
     end
 %     return_val = 1;
 else

@@ -1,4 +1,4 @@
-% FDTD example 3.7 from Numerical techniques in Electromagnetics by Sadiku.
+% Based on FDTD example 3.7 from Numerical techniques in Electromagnetics by Sadiku.
 % Main m file for the FDTD simulation.
 clc
 clear all
@@ -10,20 +10,20 @@ IHy = Size+1;
 JHy = Size;
 IEz = Size;
 JEz = Size;
-NMax = 2; NNMax = 1000; % Maximum time.
-ScalingFactort = 4;
-ScalingFactorf = ((3e-3)/delta);
-NHW = ScalingFactort * 40; % One half wave cycle.
+NMax = 2; 
+NNMax = 1000; % Maximum time.
+ResolutionFactor = 5;  % E field snapshots will be saved every x frames where x is resolution factor.
+%NHW = 40; % One half wave cycle.
 Med = 2; % No of different media.
 Js = 2; % J-position of the plane wave front.
 % Different Constants.
 %delta = 3e-3;
-Cl = ScalingFactort * 3e8;
-f = 2.5e9 * ScalingFactorf;
+Cl = 3e8;
+f = 2.0e9;
 pi = 3.141592654;
 e0 = (1e-9) / (36*pi);
 u0 = (1e-7) * 4 * pi;
-DT = delta / ( 2 * Cl );
+DT = delta / ( sqrt(2) * Cl );
 TwoPIFDeltaT = 2 * pi * f * DT;
 % Data arrays.
 % CHx = zeros ( IHx, JHx ); % Conductance
@@ -42,19 +42,19 @@ erEz = zeros ( IEz, JEz );  % ezz for Ez
 RaEz = zeros ( IEz, JEz ); % Scaling parameter dependent on material conductivity.
 smask = zeros ( IEz, JEz );
 
-Bx = zeros ( IHx, JHx, NNMax );
-By = zeros ( IHy, JHy, NNMax );
+Bx = zeros ( IHx, JHx, 2 );
+By = zeros ( IHy, JHy, 2 );
 
-Hx = zeros ( IHx, JHx, NNMax );
-Hy = zeros ( IHy, JHy, NNMax );
+Hx = zeros ( IHx, JHx, 2 );
+Hy = zeros ( IHy, JHy, 2 );
 
-Dz = zeros ( IEz, JEz, NNMax );
-Ez = zeros ( IEz, JEz, NNMax );
-AbsEz = zeros ( IEz, JEz ); % Absolute value of Ez for steady state solution
+Dz = zeros ( IEz, JEz, 2 );
+Ez = zeros ( IEz, JEz, 2 );
+EzSnapshots = zeros ( IEz, JEz, NNMax/ResolutionFactor ); % E field Snapshot storage.
 
 % ############ Initialization #############
-fprintf ( 1, 'Initializing' );
-fprintf ( 1, '.' );
+fprintf ( 1, 'Initializing...' );
+fprintf ( 1, '\nInitializing er array...' );
 % Initializing er array.
 for i=1:IEz
     for j=1:JEz
@@ -63,16 +63,16 @@ for i=1:IEz
         %er ( i, j-0.5 )
     end
 end
-
+fprintf ( 1, '\nInitializing ur (Hx) array...' );
 % Initializing the ur arrays.
 for i=1:IHx
     for j=1:JHx
         invurHx = inv ( u0 * ur ( i, j-0.5 ));
         uxxHx (i, j) = invurHx(1, 1);
-        uyxHx (i, j) = invurHx(2, 1);
-        
+        uyxHx (i, j) = invurHx(2, 1);        
     end
 end
+fprintf ( 1, '\nInitializing ur (Hy) array...' );
 for i=1:IHy
     for j=1:JHy
         invurHy = inv ( u0 * ur ( i-0.5, j-1 ));
@@ -94,6 +94,7 @@ end
 %     end
 % end
 % fprintf ( 1, '.' );
+fprintf ( 1, '\nInitializing mask array...' );
 for i=1:IEz
     for j=1:JEz
         REz ( i, j ) = DT / ( e0 * er ( i, j-0.5 ) * delta );
@@ -142,75 +143,62 @@ for n=0:NNMax-2
     fprintf ( 1, '%g %% \n', (n*100)/NNMax );
     % *** Calculation of Magnetic Field Components ***
     % * Calculation of Bx.
-    Bx ( :, :, n+2 ) = Bx ( :, :, n+1 ) + ( (DT/delta) * ( Ez ( :, 1:JHx, n+1 ) - Ez ( :, 2:JHx+1, n+1 ) ));
+    Bx ( :, :, mod(n, 2)+2 ) = Bx ( :, :, mod(n, 2) ) + ( (DT/delta) * ( Ez ( :, 1:JHx, mod(n, 2) ) - Ez ( :, 2:JHx+1, mod(n, 2) ) ));
 
     % * Calculation of By.
-    By ( 2:IHy-1, :, n+2 ) = By ( 2:IHy-1, :, n+1 ) + ( (DT/delta) * ( Ez ( 2:IHy-1, :, n+1 ) - Ez ( 1:IHy-2, :,n+1 ) ));
+    By ( 2:IHy-1, :, mod(n, 2)+2 ) = By ( 2:IHy-1, :, mod(n, 2) ) + ( (DT/delta) * ( Ez ( 2:IHy-1, :, mod(n, 2) ) - Ez ( 1:IHy-2, :,mod(n, 2) ) ));
    
     % Boundary conditions on By. Soft grid truncation.
-    By ( 1, 2:JHy-1, n+2 ) = (1/3) * ( By ( 2, 1:JHy-2, n+1 ) + By ( 2, 2:JHy-1, n+1 ) + By ( 2, 3:JHy, n+1 ) );
-    By ( IHy, 2:JHy-1, n+2 ) = (1/3) * ( By ( IHy-1, 1:JHy-2, n+1 ) + By ( IHy-1, 2:JHy-1, n+1 ) + By ( IHy-1, 3:JHy, n+1 ) );
-    By ( 1, 1, n+2 ) = (1/2) * ( By ( 2, 1, n+1 ) + By ( 2, 2, n+1 ) );
-    By ( 1, JHy, n+2 ) = (1/2) * ( By ( 2, JHy, n+1 ) + By ( 2, JHy-1, n+1 ) );
-    By ( IHy, 1, n+2 ) = (1/2) * ( By ( IHy-1, 1, n+1 ) + By( IHy-1, 2, n+1 ) );
-    By ( IHy, JHy, n+2 ) = (1/2) * ( By ( IHy-1, JHy, n+1 ) + By ( IHy-1, JHy-1, n+1 ) );
+    By ( 1, 2:JHy-1, mod(n, 2)+2 ) = (1/3) * ( By ( 2, 1:JHy-2, mod(n, 2) ) + By ( 2, 2:JHy-1, mod(n, 2) ) + By ( 2, 3:JHy, mod(n, 2) ) );
+    By ( IHy, 2:JHy-1, mod(n, 2)+2 ) = (1/3) * ( By ( IHy-1, 1:JHy-2, mod(n, 2) ) + By ( IHy-1, 2:JHy-1, mod(n, 2) ) + By ( IHy-1, 3:JHy, mod(n, 2) ) );
+    By ( 1, 1, mod(n, 2)+2 ) = (1/2) * ( By ( 2, 1, mod(n, 2) ) + By ( 2, 2, mod(n, 2) ) );
+    By ( 1, JHy, mod(n, 2)+2 ) = (1/2) * ( By ( 2, JHy, mod(n, 2) ) + By ( 2, JHy-1, mod(n, 2) ) );
+    By ( IHy, 1, mod(n, 2)+2 ) = (1/2) * ( By ( IHy-1, 1, mod(n, 2) ) + By( IHy-1, 2, mod(n, 2) ) );
+    By ( IHy, JHy, mod(n, 2)+2 ) = (1/2) * ( By ( IHy-1, JHy, mod(n, 2) ) + By ( IHy-1, JHy-1, mod(n, 2) ) );
     
-    Hx ( :, :, n+2 ) = uxxHx .* Bx ( :, :, n+2 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n+2 );
-    Hy ( :, :, n+2 ) = (1/u0) * By ( :, :, n+2 );
-    Hy (1:IHy-1, 1:JHy-1) = uyxHx.*Bx ( :, :, n+2 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n+2 );
+    Hx ( :, :, mod(n, 2)+2 ) = uxxHx .* Bx ( :, :, mod(n, 2)+2 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, mod(n, 2)+2 );
+    Hy ( :, :, mod(n, 2)+2 ) = (1/u0) * By ( :, :, mod(n, 2)+2 );
+    Hy (1:IHy-1, 1:JHy-1) = uyxHx.*Bx ( :, :, mod(n, 2)+2 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, mod(n, 2)+2 );
     
-    Dz ( :, 2:JEz-1, n+2 ) = (  Dz ( :, 2:JEz-1, n+1 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n+2 ) - Hy ( 1:JEz, 2:JEz-1, n+2 ) + Hx ( :, 1:JEz-2,n+2 ) - Hx ( :, 2:JEz-1, n+2 ) ));
-    %Dz (:, :, n+2) = Dz (:, :, n+2) .* smask;
+    Dz ( :, 2:JEz-1, mod(n, 2)+2 ) = (  Dz ( :, 2:JEz-1, mod(n, 2) ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, mod(n, 2)+2 ) - Hy ( 1:JEz, 2:JEz-1, mod(n, 2)+2 ) + Hx ( :, 1:JEz-2,mod(n, 2)+2 ) - Hx ( :, 2:JEz-1, mod(n, 2)+2 ) ));
+    %Dz (:, :, mod(n, 2)+2) = Dz (:, :, mod(n, 2)+2) .* smask;
     
     % Boundary conditions on Dz. Soft grid truncation.
-    Dz ( 2:IEz-1, 1, n+2 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n+1 ) + Dz ( 2:IEz-1, 2, n+1 ) + Dz ( 3:IEz, 2, n+1 ) );
-    Dz ( 2:IEz-1, JEz, n+2 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n+1 ) + Dz ( 2:IEz-1, JEz-1, n+1 ) + Dz ( 3:IEz, JEz-1, n+1 ) );
-    Dz ( 1, 1, n+2 ) = (1/2) * ( Dz ( 1, 2, n+1 ) + Dz ( 2, 2, n+1 ) );
-    Dz ( IEz, 1, n+2 ) = (1/2) * ( Dz ( IEz, 2, n+1 ) + Dz ( IEz-1, 2, n+1 ) );
-    Dz ( 1, JEz, n+2 ) = (1/2) * ( Dz ( 1, JEz-1, n+1 ) + Dz ( 2, JEz-1, n+1 ) );
-    Dz ( IEz, JEz, n+2 ) = (1/2) * ( Dz ( IEz, JEz-1, n+1 ) + Dz ( IEz-1, JEz-1, n+1 ) );
+    Dz ( 2:IEz-1, 1, mod(n, 2)+2 ) = (1/3) * ( Dz ( 1:IEz-2, 2, mod(n, 2) ) + Dz ( 2:IEz-1, 2, mod(n, 2) ) + Dz ( 3:IEz, 2, mod(n, 2) ) );
+    Dz ( 2:IEz-1, JEz, mod(n, 2)+2 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, mod(n, 2) ) + Dz ( 2:IEz-1, JEz-1, mod(n, 2) ) + Dz ( 3:IEz, JEz-1, mod(n, 2) ) );
+    Dz ( 1, 1, mod(n, 2)+2 ) = (1/2) * ( Dz ( 1, 2, mod(n, 2) ) + Dz ( 2, 2, mod(n, 2) ) );
+    Dz ( IEz, 1, mod(n, 2)+2 ) = (1/2) * ( Dz ( IEz, 2, mod(n, 2) ) + Dz ( IEz-1, 2, mod(n, 2) ) );
+    Dz ( 1, JEz, mod(n, 2)+2 ) = (1/2) * ( Dz ( 1, JEz-1, mod(n, 2) ) + Dz ( 2, JEz-1, mod(n, 2) ) );
+    Dz ( IEz, JEz, mod(n, 2)+2 ) = (1/2) * ( Dz ( IEz, JEz-1, mod(n, 2) ) + Dz ( IEz-1, JEz-1, mod(n, 2) ) );
     % ************************************************
 
-    Ez ( :, :, n+2 ) = (ezzEz) .* Dz ( :, :, n+2 );
+    Ez ( :, :, mod(n, 2)+2 ) = (ezzEz) .* Dz ( :, :, mod(n, 2)+2 );
     % Applying a plane wave source at Js.
     % 1. Continuous source.
-%     Ez ( :, Js, n+2 ) = 1 * sin ( TwoPIFDeltaT * (n+2) );
-    % 2. Single plane wave.
-    if ( n < NHW )
-        Ez ( :, Js, n+2 ) = 1 * sin ( TwoPIFDeltaT * (n+2) );
-        Dz ( :, Js, n+2 ) = e0 * 1 * sin ( TwoPIFDeltaT * (n+2) );
-    end
-    % 4. Retaining absolute values during the last half cycle.
-    if ( n > 460 )
-        A = abs ( Ez(:,:,n+2) ) >= AbsEz;
-        B = abs ( Ez(:,:,n+2) ) < AbsEz;
-        C = A .* abs ( Ez(:,:,n+2) );
-        D = B .* AbsEz;
-        AbsEz = C + D;
-    end
+%     Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
+    % 2. Sinusoidal Source.
+    Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
+    Dz ( :, Js, mod(n, 2)+2 ) = e0 * 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
+
+    if ( mod(n, ResolutionFactor) == 0)
+        EzSnapshots ( :, :, n/ResolutionFactor + 1 ) = Ez ( :, :, mod(n, 2)+2);
+    end    
+    
 end
 fprintf ( 1, '100 %% \n' );
 fprintf ( 1, 'Simulation complete! \n', 0 );
-% Plotting Ez.
-figure (1)
-subplot ( 211 )
-plot ( 5:43, AbsEz(25,5:43) )
-title ( 'Ez ( 25, j )' )
-subplot ( 212 )
-plot ( 5:43, AbsEz(15,5:43) )
-title ( 'Ez ( 15, j )' )
 
-
-for i=1:NNMax
+% Electric field snapshots.
+for i=1:NNMax/ResolutionFactor-2
+    
     figure (2)
-    mesh ( Ez (:, :, i) );
+    mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
     zlim ( [-2 2] )
     
     figure (4)
-    surf ( Ez (:, :, i) );
+    surf ( EzSnapshots (:, :, i) );
     view (0, 90)
     zlim ( [-10 10] )
     
-    %F(i)=getframe;
 end
