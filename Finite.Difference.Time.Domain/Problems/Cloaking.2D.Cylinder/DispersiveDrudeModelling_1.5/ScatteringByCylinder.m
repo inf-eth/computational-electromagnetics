@@ -13,7 +13,7 @@ JEz = Size;
 NMax = 2; 
 n0 = 1;
 n1 = 2;
-NNMax = 500; % Maximum time.
+NNMax = 200; % Maximum time.
 TimeResolutionFactor = 5;  % E field snapshots will be saved every x frames where x is resolution factor.
 ResolutionFactor = 5;       % Resolution of plotted field is divided by this factor.
 %NHW = 40; % One half wave cycle.
@@ -61,7 +61,7 @@ fprintf ( 1, '\nInitializing er array...' );
 % Initializing er array.
 for i=1:IEz
     for j=1:JEz
-        ezzEz ( i, j ) = 1/(e0 * er ( i, j-0.5 ));
+        ezzEz ( i, j ) = 1/( er ( i, j-0.5 ));
         erEz ( i, j ) = er( i, j-0.5 );
         %er ( i, j-0.5 )
     end
@@ -70,7 +70,7 @@ fprintf ( 1, '\nInitializing ur (Hx) array...' );
 % Initializing the ur arrays.
 for i=1:IHx
     for j=1:JHx
-        invurHx = inv ( u0 * ur ( i, j-0.5 ));
+        invurHx = inv ( ur ( i, j-0.5 ));
         uxxHx (i, j) = invurHx(1, 1);
         uyxHx (i, j) = invurHx(2, 1);        
     end
@@ -78,7 +78,7 @@ end
 fprintf ( 1, '\nInitializing ur (Hy) array...' );
 for i=1:IHy
     for j=1:JHy
-        invurHy = inv ( u0 * ur ( i-0.5, j-1 ));
+        invurHy = inv ( ur ( i-0.5, j-1 ));
         uxyHy (i, j) = invurHy(1, 2);
         uyyHy (i, j) = invurHy(2, 2);
     end
@@ -97,34 +97,34 @@ end
 %     end
 % end
 % fprintf ( 1, '.' );
-fprintf ( 1, '\nInitializing mask array...' );
-for i=1:IEz
-    for j=1:JEz
-        REz ( i, j ) = DT / ( e0 * er ( i, j-0.5 ) * delta );
-        %RaEz ( i, j ) = ( 1 - ( s(i, j-0.5) * DT )/( e0 * er( i, j-0.5 ) ) );
-        RaEz ( i, j ) = 1;
-        smask ( i, j ) = s ( i, j-0.5 );
-%         if RaEz ( i, j ) < 0
-%             RaEz ( i, j ) = -1 * RaEz ( i, j );
-%         end
-    end
-end
+% fprintf ( 1, '\nInitializing mask array...' );
+% for i=1:IEz
+%     for j=1:JEz
+%         REz ( i, j ) = DT / ( e0 * er ( i, j-0.5 ) * delta );
+%         %RaEz ( i, j ) = ( 1 - ( s(i, j-0.5) * DT )/( e0 * er( i, j-0.5 ) ) );
+%         RaEz ( i, j ) = 1;
+%         smask ( i, j ) = s ( i, j-0.5 );
+% %         if RaEz ( i, j ) < 0
+% %             RaEz ( i, j ) = -1 * RaEz ( i, j );
+% %         end
+%     end
+% end
 
 figure (3)
 mesh ( erEz )
 title ( 'erEz' )
 view (4, 4)
 figure (5)
-mesh ( u0 * uxxHx )
-title ( 'u0 * uxxHx' )
+mesh ( uxxHx )
+title ( 'uxxHx' )
 view (4, 4)
 figure (6)
-mesh ( u0 * uxyHy )
-title ( 'u0 * uxyHy' )
+mesh ( uxyHy )
+title ( 'uxyHy' )
 view (4, 4)
 figure (7)
-mesh ( u0 * uyyHy )
-title ( 'u0 * uyyHy' )
+mesh ( uyyHy )
+title ( 'uyyHy' )
 view (4, 4)
 
 %uxyHy == 0
@@ -159,9 +159,9 @@ for n=0:NNMax-2
     By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
     By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
     
-    Hx ( :, :, n1 ) = uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 );
-    Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
-    Hy (1:IHy-1, 1:JHy-1) = uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 );
+    Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
+    %Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
+    Hy (1:IHy-1, 1:JHy-1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
     
     Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) ));
     %Dz (:, :, n1) = Dz (:, :, n1) .* smask;
@@ -175,7 +175,7 @@ for n=0:NNMax-2
     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
     % ************************************************
 
-    Ez ( :, :, n1 ) = (ezzEz) .* Dz ( :, :, n1 );
+    Ez ( :, :, n1 ) = (1/e0) * (ezzEz) .* Dz ( :, :, n1 );
     % Applying a plane wave source at Js.
     % 1. Continuous source.
 %     Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
