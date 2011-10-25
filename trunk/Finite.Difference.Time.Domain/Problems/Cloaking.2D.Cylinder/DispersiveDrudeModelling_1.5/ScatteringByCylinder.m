@@ -13,8 +13,9 @@ JEz = Size;
 NMax = 2; 
 n0 = 1;
 n1 = 2;
-NNMax = 1000; % Maximum time.
-ResolutionFactor = 5;  % E field snapshots will be saved every x frames where x is resolution factor.
+NNMax = 500; % Maximum time.
+TimeResolutionFactor = 5;  % E field snapshots will be saved every x frames where x is resolution factor.
+ResolutionFactor = 5;       % Resolution of plotted field is divided by this factor.
 %NHW = 40; % One half wave cycle.
 Med = 2; % No of different media.
 Js = 2; % J-position of the plane wave front.
@@ -52,7 +53,7 @@ Hy = zeros ( IHy, JHy, 2 );
 
 Dz = zeros ( IEz, JEz, 2 );
 Ez = zeros ( IEz, JEz, 2 );
-EzSnapshots = zeros ( IEz, JEz, NNMax/ResolutionFactor ); % E field Snapshot storage.
+EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeResolutionFactor ); % E field Snapshot storage.
 
 % ############ Initialization #############
 fprintf ( 1, 'Initializing...' );
@@ -179,21 +180,21 @@ for n=0:NNMax-2
     % 1. Continuous source.
 %     Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
     % 2. Sinusoidal Source.
-    Ez ( :, Js, n1 ) = 1 * sin ( TwoPIFDeltaT * n+2 );
-    Dz ( :, Js, n1 ) = e0 * 1 * sin ( TwoPIFDeltaT * n+2 );
+    Ez ( :, Js, n1 ) = 1 * sin ( TwoPIFDeltaT * n );
+    Dz ( :, Js, n1 ) = e0 * 1 * sin ( TwoPIFDeltaT * n );
 
     if ( mod(n, ResolutionFactor) == 0)
-        EzSnapshots ( :, :, n/ResolutionFactor + 1 ) = Ez ( :, :, n1);
+        EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+ (0:ResolutionFactor:(IEz-1)), 1+ (0:ResolutionFactor:(JEz-1)), n1);
     end
     temp = n0;
     n0 = n1;
     n1 = temp;    
 end
 fprintf ( 1, '100 %% \n' );
-fprintf ( 1, 'Simulation complete! \n', 0 );
+fprintf ( 1, 'Simulation complete! \n' );
 
 % Electric field snapshots.
-for i=1:NNMax/ResolutionFactor-2
+for i=1:NNMax/TimeResolutionFactor-2
     
     figure (2)
     mesh ( EzSnapshots (:, :, i) );
