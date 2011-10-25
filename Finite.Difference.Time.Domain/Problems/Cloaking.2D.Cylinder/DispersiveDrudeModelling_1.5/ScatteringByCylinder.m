@@ -13,9 +13,9 @@ JEz = Size;
 NMax = 2; 
 n0 = 1;
 n1 = 2;
-NNMax = 200; % Maximum time.
-TimeResolutionFactor = 5;  % E field snapshots will be saved every x frames where x is resolution factor.
-ResolutionFactor = 5;       % Resolution of plotted field is divided by this factor.
+NNMax = 1000; % Maximum time.
+TimeResolutionFactor = 10;  % E field snapshots will be saved every x frames where x is resolution factor.
+ResolutionFactor = 10;       % Resolution of plotted field is divided by this factor.
 %NHW = 40; % One half wave cycle.
 Med = 2; % No of different media.
 Js = 2; % J-position of the plane wave front.
@@ -43,7 +43,9 @@ erEz = zeros ( IEz, JEz );  % ezz for Ez
 % *************
 
 RaEz = zeros ( IEz, JEz ); % Scaling parameter dependent on material conductivity.
-smask = zeros ( IEz, JEz );
+smaskEz = zeros ( IEz, JEz );
+smaskHx = zeros ( IHx, JHx );
+smaskHy = zeros ( IHy, JHy );
 
 Bx = zeros ( IHx, JHx, 2 );
 By = zeros ( IHy, JHy, 2 );
@@ -72,7 +74,8 @@ for i=1:IHx
     for j=1:JHx
         invurHx = inv ( ur ( i, j-0.5 ));
         uxxHx (i, j) = invurHx(1, 1);
-        uyxHx (i, j) = invurHx(2, 1);        
+        uyxHx (i, j) = invurHx(2, 1);
+%         smaskHx( i, j ) = s ( i, j-0.5 );
     end
 end
 fprintf ( 1, '\nInitializing ur (Hy) array...' );
@@ -81,6 +84,7 @@ for i=1:IHy
         invurHy = inv ( ur ( i-0.5, j-1 ));
         uxyHy (i, j) = invurHy(1, 2);
         uyyHy (i, j) = invurHy(2, 2);
+%         smaskHy( i, j ) = s ( i-0.5, j-1 );
     end
 end
 % Initializing the eta and 1/eta arrays.
@@ -100,10 +104,10 @@ end
 % fprintf ( 1, '\nInitializing mask array...' );
 % for i=1:IEz
 %     for j=1:JEz
-%         REz ( i, j ) = DT / ( e0 * er ( i, j-0.5 ) * delta );
+%         %REz ( i, j ) = DT / ( e0 * er ( i, j-0.5 ) * delta );
 %         %RaEz ( i, j ) = ( 1 - ( s(i, j-0.5) * DT )/( e0 * er( i, j-0.5 ) ) );
-%         RaEz ( i, j ) = 1;
-%         smask ( i, j ) = s ( i, j-0.5 );
+%         %RaEz ( i, j ) = 1;
+%         smaskEz( i, j ) = s ( i, j-0.5 );
 % %         if RaEz ( i, j ) < 0
 % %             RaEz ( i, j ) = -1 * RaEz ( i, j );
 % %         end
@@ -147,9 +151,11 @@ for n=0:NNMax-2
     % *** Calculation of Magnetic Field Components ***
     % * Calculation of Bx.
     Bx ( :, :, n1 ) = Bx ( :, :, n0 ) + ( (DT/delta) * ( Ez ( :, 1:JHx, n0 ) - Ez ( :, 2:JHx+1, n0 ) ));
-
+    %Bx ( :, :, n1 ) = smaskHx ( :, : ) .* Bx ( :, :, n1 );
+    
     % * Calculation of By.
     By ( 2:IHy-1, :, n1 ) = By ( 2:IHy-1, :, n0 ) + ( (DT/delta) * ( Ez ( 2:IHy-1, :, n0 ) - Ez ( 1:IHy-2, :,n0 ) ));
+    %By ( :, :, n1 ) = smaskHy ( :, : ) .* By ( :, :, n1 );
    
     % Boundary conditions on By. Soft grid truncation.
     By ( 1, 2:JHy-1, n1 ) = (1/3) * ( By ( 2, 1:JHy-2, n0 ) + By ( 2, 2:JHy-1, n0 ) + By ( 2, 3:JHy, n0 ) );
@@ -160,8 +166,12 @@ for n=0:NNMax-2
     By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
     
     Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
+    %Hx ( :, :, n1 ) = smaskHx ( :, : ) .* Hx ( :, :, n1 );
+    
+    
     %Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
     Hy (1:IHy-1, 1:JHy-1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
+    %Hy ( :, :, n1 ) = smaskHy ( :, : ) .* Hy ( :, :, n1 );
     
     Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) ));
     %Dz (:, :, n1) = Dz (:, :, n1) .* smask;
@@ -182,6 +192,9 @@ for n=0:NNMax-2
     % 2. Sinusoidal Source.
     Ez ( :, Js, n1 ) = 1 * sin ( TwoPIFDeltaT * n );
     Dz ( :, Js, n1 ) = e0 * 1 * sin ( TwoPIFDeltaT * n );
+    
+    %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+    %Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, ResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+ (0:ResolutionFactor:(IEz-1)), 1+ (0:ResolutionFactor:(JEz-1)), n1);
