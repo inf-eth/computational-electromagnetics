@@ -11,6 +11,8 @@ JHy = Size;
 IEz = Size;
 JEz = Size;
 NMax = 2; 
+n0 = 1;
+n1 = 2;
 NNMax = 1000; % Maximum time.
 ResolutionFactor = 5;  % E field snapshots will be saved every x frames where x is resolution factor.
 %NHW = 40; % One half wave cycle.
@@ -138,52 +140,54 @@ view (4, 4)
 fprintf ( 1, 'done.\n' );
 % ############ Initialization Complete ##############
 % ########### 2. Now running the Simulation #############
-fprintf ( 1, 'Simulation started... \n', 0 );
+fprintf ( 1, 'Simulation started... \n' );
 for n=0:NNMax-2
     fprintf ( 1, '%g %% \n', (n*100)/NNMax );
     % *** Calculation of Magnetic Field Components ***
     % * Calculation of Bx.
-    Bx ( :, :, mod(n, 2)+2 ) = Bx ( :, :, mod(n, 2) ) + ( (DT/delta) * ( Ez ( :, 1:JHx, mod(n, 2) ) - Ez ( :, 2:JHx+1, mod(n, 2) ) ));
+    Bx ( :, :, n1 ) = Bx ( :, :, n0 ) + ( (DT/delta) * ( Ez ( :, 1:JHx, n0 ) - Ez ( :, 2:JHx+1, n0 ) ));
 
     % * Calculation of By.
-    By ( 2:IHy-1, :, mod(n, 2)+2 ) = By ( 2:IHy-1, :, mod(n, 2) ) + ( (DT/delta) * ( Ez ( 2:IHy-1, :, mod(n, 2) ) - Ez ( 1:IHy-2, :,mod(n, 2) ) ));
+    By ( 2:IHy-1, :, n1 ) = By ( 2:IHy-1, :, n0 ) + ( (DT/delta) * ( Ez ( 2:IHy-1, :, n0 ) - Ez ( 1:IHy-2, :,n0 ) ));
    
     % Boundary conditions on By. Soft grid truncation.
-    By ( 1, 2:JHy-1, mod(n, 2)+2 ) = (1/3) * ( By ( 2, 1:JHy-2, mod(n, 2) ) + By ( 2, 2:JHy-1, mod(n, 2) ) + By ( 2, 3:JHy, mod(n, 2) ) );
-    By ( IHy, 2:JHy-1, mod(n, 2)+2 ) = (1/3) * ( By ( IHy-1, 1:JHy-2, mod(n, 2) ) + By ( IHy-1, 2:JHy-1, mod(n, 2) ) + By ( IHy-1, 3:JHy, mod(n, 2) ) );
-    By ( 1, 1, mod(n, 2)+2 ) = (1/2) * ( By ( 2, 1, mod(n, 2) ) + By ( 2, 2, mod(n, 2) ) );
-    By ( 1, JHy, mod(n, 2)+2 ) = (1/2) * ( By ( 2, JHy, mod(n, 2) ) + By ( 2, JHy-1, mod(n, 2) ) );
-    By ( IHy, 1, mod(n, 2)+2 ) = (1/2) * ( By ( IHy-1, 1, mod(n, 2) ) + By( IHy-1, 2, mod(n, 2) ) );
-    By ( IHy, JHy, mod(n, 2)+2 ) = (1/2) * ( By ( IHy-1, JHy, mod(n, 2) ) + By ( IHy-1, JHy-1, mod(n, 2) ) );
+    By ( 1, 2:JHy-1, n1 ) = (1/3) * ( By ( 2, 1:JHy-2, n0 ) + By ( 2, 2:JHy-1, n0 ) + By ( 2, 3:JHy, n0 ) );
+    By ( IHy, 2:JHy-1, n1 ) = (1/3) * ( By ( IHy-1, 1:JHy-2, n0 ) + By ( IHy-1, 2:JHy-1, n0 ) + By ( IHy-1, 3:JHy, n0 ) );
+    By ( 1, 1, n1 ) = (1/2) * ( By ( 2, 1, n0 ) + By ( 2, 2, n0 ) );
+    By ( 1, JHy, n1 ) = (1/2) * ( By ( 2, JHy, n0 ) + By ( 2, JHy-1, n0 ) );
+    By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
+    By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
     
-    Hx ( :, :, mod(n, 2)+2 ) = uxxHx .* Bx ( :, :, mod(n, 2)+2 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, mod(n, 2)+2 );
-    Hy ( :, :, mod(n, 2)+2 ) = (1/u0) * By ( :, :, mod(n, 2)+2 );
-    Hy (1:IHy-1, 1:JHy-1) = uyxHx.*Bx ( :, :, mod(n, 2)+2 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, mod(n, 2)+2 );
+    Hx ( :, :, n1 ) = uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 );
+    Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
+    Hy (1:IHy-1, 1:JHy-1) = uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 );
     
-    Dz ( :, 2:JEz-1, mod(n, 2)+2 ) = (  Dz ( :, 2:JEz-1, mod(n, 2) ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, mod(n, 2)+2 ) - Hy ( 1:JEz, 2:JEz-1, mod(n, 2)+2 ) + Hx ( :, 1:JEz-2,mod(n, 2)+2 ) - Hx ( :, 2:JEz-1, mod(n, 2)+2 ) ));
-    %Dz (:, :, mod(n, 2)+2) = Dz (:, :, mod(n, 2)+2) .* smask;
+    Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) ));
+    %Dz (:, :, n1) = Dz (:, :, n1) .* smask;
     
     % Boundary conditions on Dz. Soft grid truncation.
-    Dz ( 2:IEz-1, 1, mod(n, 2)+2 ) = (1/3) * ( Dz ( 1:IEz-2, 2, mod(n, 2) ) + Dz ( 2:IEz-1, 2, mod(n, 2) ) + Dz ( 3:IEz, 2, mod(n, 2) ) );
-    Dz ( 2:IEz-1, JEz, mod(n, 2)+2 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, mod(n, 2) ) + Dz ( 2:IEz-1, JEz-1, mod(n, 2) ) + Dz ( 3:IEz, JEz-1, mod(n, 2) ) );
-    Dz ( 1, 1, mod(n, 2)+2 ) = (1/2) * ( Dz ( 1, 2, mod(n, 2) ) + Dz ( 2, 2, mod(n, 2) ) );
-    Dz ( IEz, 1, mod(n, 2)+2 ) = (1/2) * ( Dz ( IEz, 2, mod(n, 2) ) + Dz ( IEz-1, 2, mod(n, 2) ) );
-    Dz ( 1, JEz, mod(n, 2)+2 ) = (1/2) * ( Dz ( 1, JEz-1, mod(n, 2) ) + Dz ( 2, JEz-1, mod(n, 2) ) );
-    Dz ( IEz, JEz, mod(n, 2)+2 ) = (1/2) * ( Dz ( IEz, JEz-1, mod(n, 2) ) + Dz ( IEz-1, JEz-1, mod(n, 2) ) );
+    Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
+    Dz ( 2:IEz-1, JEz, n1 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n0 ) + Dz ( 2:IEz-1, JEz-1, n0 ) + Dz ( 3:IEz, JEz-1, n0 ) );
+    Dz ( 1, 1, n1 ) = (1/2) * ( Dz ( 1, 2, n0 ) + Dz ( 2, 2, n0 ) );
+    Dz ( IEz, 1, n1 ) = (1/2) * ( Dz ( IEz, 2, n0 ) + Dz ( IEz-1, 2, n0 ) );
+    Dz ( 1, JEz, n1 ) = (1/2) * ( Dz ( 1, JEz-1, n0 ) + Dz ( 2, JEz-1, n0 ) );
+    Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
     % ************************************************
 
-    Ez ( :, :, mod(n, 2)+2 ) = (ezzEz) .* Dz ( :, :, mod(n, 2)+2 );
+    Ez ( :, :, n1 ) = (ezzEz) .* Dz ( :, :, n1 );
     % Applying a plane wave source at Js.
     % 1. Continuous source.
 %     Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
     % 2. Sinusoidal Source.
-    Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
-    Dz ( :, Js, mod(n, 2)+2 ) = e0 * 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
+    Ez ( :, Js, n1 ) = 1 * sin ( TwoPIFDeltaT * n+2 );
+    Dz ( :, Js, n1 ) = e0 * 1 * sin ( TwoPIFDeltaT * n+2 );
 
     if ( mod(n, ResolutionFactor) == 0)
-        EzSnapshots ( :, :, n/ResolutionFactor + 1 ) = Ez ( :, :, mod(n, 2)+2);
-    end    
-    
+        EzSnapshots ( :, :, n/ResolutionFactor + 1 ) = Ez ( :, :, n1);
+    end
+    temp = n0;
+    n0 = n1;
+    n1 = temp;    
 end
 fprintf ( 1, '100 %% \n' );
 fprintf ( 1, 'Simulation complete! \n', 0 );
