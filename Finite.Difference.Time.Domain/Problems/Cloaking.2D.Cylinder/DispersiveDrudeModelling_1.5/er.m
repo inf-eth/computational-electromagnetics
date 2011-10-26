@@ -19,9 +19,9 @@ if (i-XCenter)^2+(j-YCenter)^2 < ((rb/delta))^2
     if (i-XCenter)^2+(j-YCenter)^2 > ((ra/delta)+offset)^2
         ezz = (b/(b-a))^2;
         return_val = ezz;
-        %return_val = 1;
+%         return_val = 1;
     else
-        return_val = 5e10;
+        return_val = 1;%e80;
     end
 %     return_val = 1;
 else

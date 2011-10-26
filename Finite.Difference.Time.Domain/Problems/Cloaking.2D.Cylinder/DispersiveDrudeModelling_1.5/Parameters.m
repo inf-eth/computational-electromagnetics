@@ -4,5 +4,5 @@ Size = 1000;
 XCenter = (Size+1)/2;
 YCenter = (Size-1)/2;
 delta = 1e-3;
-ra = 0.10;
-rb = 0.20;
+ra = 0.1;
+rb = 0.2;

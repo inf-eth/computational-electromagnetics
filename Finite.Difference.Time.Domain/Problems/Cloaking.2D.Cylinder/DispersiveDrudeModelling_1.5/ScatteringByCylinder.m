@@ -16,7 +16,6 @@ n1 = 2;
 NNMax = 1000; % Maximum time.
 TimeResolutionFactor = 10;  % E field snapshots will be saved every x frames where x is resolution factor.
 ResolutionFactor = 10;       % Resolution of plotted field is divided by this factor.
-%NHW = 40; % One half wave cycle.
 Med = 2; % No of different media.
 Js = 2; % J-position of the plane wave front.
 % Different Constants.
@@ -28,6 +27,7 @@ e0 = (1e-9) / (36*pi);
 u0 = (1e-7) * 4 * pi;
 DT = delta / ( sqrt(2) * Cl );
 TwoPIFDeltaT = 2 * pi * f * DT;
+NHW = 1/(2 * f * DT); % One half wave cycle.
 % Data arrays.
 % CHx = zeros ( IHx, JHx ); % Conductance
 % CHy = zeros ( IHy, JHy ); % Conductance
@@ -164,6 +164,9 @@ for n=0:NNMax-2
     By ( 1, JHy, n1 ) = (1/2) * ( By ( 2, JHy, n0 ) + By ( 2, JHy-1, n0 ) );
     By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
     By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
+%     
+%     By ( 1, :, n1 ) = By ( 2, :, n0 );
+%     By ( IHy, :, n1 ) = By ( IHy-1, :, n0 );
     
     Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
     %Hx ( :, :, n1 ) = smaskHx ( :, : ) .* Hx ( :, :, n1 );
@@ -177,12 +180,15 @@ for n=0:NNMax-2
     %Dz (:, :, n1) = Dz (:, :, n1) .* smask;
     
     % Boundary conditions on Dz. Soft grid truncation.
-    Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
-    Dz ( 2:IEz-1, JEz, n1 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n0 ) + Dz ( 2:IEz-1, JEz-1, n0 ) + Dz ( 3:IEz, JEz-1, n0 ) );
-    Dz ( 1, 1, n1 ) = (1/2) * ( Dz ( 1, 2, n0 ) + Dz ( 2, 2, n0 ) );
-    Dz ( IEz, 1, n1 ) = (1/2) * ( Dz ( IEz, 2, n0 ) + Dz ( IEz-1, 2, n0 ) );
-    Dz ( 1, JEz, n1 ) = (1/2) * ( Dz ( 1, JEz-1, n0 ) + Dz ( 2, JEz-1, n0 ) );
-    Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
+%     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
+%     Dz ( 2:IEz-1, JEz, n1 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n0 ) + Dz ( 2:IEz-1, JEz-1, n0 ) + Dz ( 3:IEz, JEz-1, n0 ) );
+%     Dz ( 1, 1, n1 ) = (1/2) * ( Dz ( 1, 2, n0 ) + Dz ( 2, 2, n0 ) );
+%     Dz ( IEz, 1, n1 ) = (1/2) * ( Dz ( IEz, 2, n0 ) + Dz ( IEz-1, 2, n0 ) );
+%     Dz ( 1, JEz, n1 ) = (1/2) * ( Dz ( 1, JEz-1, n0 ) + Dz ( 2, JEz-1, n0 ) );
+%     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
+    
+    Dz ( :, 1, n1 ) = Dz ( :, 2, n0 );
+    Dz ( :, IEz, n1 ) = Dz ( :, IEz-1, n0 );
     % ************************************************
 
     Ez ( :, :, n1 ) = (1/e0) * (ezzEz) .* Dz ( :, :, n1 );
@@ -190,14 +196,15 @@ for n=0:NNMax-2
     % 1. Continuous source.
 %     Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
     % 2. Sinusoidal Source.
-    Ez ( :, Js, n1 ) = 1 * sin ( TwoPIFDeltaT * n );
-    Dz ( :, Js, n1 ) = e0 * 1 * sin ( TwoPIFDeltaT * n );
-    
+    %if ( n < NHW )
+    Ez ( :, Js, n1 ) = Ez ( :, Js, n1 ) + 1 * sin ( TwoPIFDeltaT * n );
+    Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
+    %end
     %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
     %Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
-    if ( mod(n, ResolutionFactor) == 0)
-        EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+ (0:ResolutionFactor:(IEz-1)), 1+ (0:ResolutionFactor:(JEz-1)), n1);
+    if ( mod(n, TimeResolutionFactor) == 0)
+        EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
     end
     temp = n0;
     n0 = n1;
