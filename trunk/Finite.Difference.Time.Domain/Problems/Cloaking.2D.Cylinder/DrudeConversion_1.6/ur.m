@@ -31,8 +31,8 @@ if (i-XCenter)^2+(j-YCenter)^2 < (rb/delta)^2
 %     if ( u < 0.1 )
 %         u = 0.1;
 %     end
-        return_val = [u 0; 0 u];
-%         return_val = [1 0; 0 1];
+%         return_val = [u 0; 0 u];
+        return_val = [1 0; 0 1];
     else
         return_val = [1 0; 0 1];
     end

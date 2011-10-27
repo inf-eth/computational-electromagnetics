@@ -1,8 +1,12 @@
 % Based on FDTD example 3.7 from Numerical techniques in Electromagnetics by Sadiku.
 % Main m file for the FDTD simulation.
+% Now this doesn't look at all like the original problem. Only thing
+% similar are some of the constants and field orientation.
+
 clc
 clear all
-% Simulation related parameters.
+
+% ============== Simulation related parameters ================
 [Size XCenter YCenter delta ra rb] = Parameters;
 IHx = Size;
 JHx = Size-1;
@@ -10,16 +14,14 @@ IHy = Size+1;
 JHy = Size;
 IEz = Size;
 JEz = Size;
-NMax = 2; 
+% Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 1000; % Maximum time.
-TimeResolutionFactor = 10;  % E field snapshots will be saved every x frames where x is resolution factor.
-ResolutionFactor = 10;       % Resolution of plotted field is divided by this factor.
-Med = 2; % No of different media.
-Js = 2; % J-position of the plane wave front.
+NNMax = 500;                   % Maximum time.
+TimeResolutionFactor = 5;      % E field snapshots will be saved every x frames where x is resolution factor.
+ResolutionFactor = 5;          % Resolution of plotted field is divided by this factor.
+Js = 2;                         % J-position of the plane wave front.
 % Different Constants.
-%delta = 3e-3;
 Cl = 3e8;
 f = 2.0e9;
 pi = 3.141592654;
@@ -28,34 +30,54 @@ u0 = (1e-7) * 4 * pi;
 DT = delta / ( sqrt(2) * Cl );
 TwoPIFDeltaT = 2 * pi * f * DT;
 NHW = 1/(2 * f * DT); % One half wave cycle.
-% Data arrays.
-% CHx = zeros ( IHx, JHx ); % Conductance
-% CHy = zeros ( IHy, JHy ); % Conductance
-%REz = zeros ( IEz, JEz ); % Impedance
+
+% ====================== Data arrays =========================
 uxxHx = zeros ( IHx, JHx );  % uxx for Hx
 uxyHy = zeros ( IHy, JHy );  % uxy for Hy
 uyxHx = zeros ( IHx, JHx );  % uyx for Hx
 uyyHy = zeros ( IHy, JHy );  % uyy for Hy
 ezzEz = zeros ( IEz, JEz );  % ezz for Ez
 
+% ------------ Field-specific parameters ------------
+ax = zeros ( IHx, JHx );
+bx = zeros ( IHx, JHx );
+cx = zeros ( IHx, JHx );
+dx = zeros ( IHx, JHx );
+ex = zeros ( IHx, JHx );
+fx = zeros ( IHx, JHx );
+gx = zeros ( IHx, JHx );
+hx = zeros ( IHx, JHx );
+lx = zeros ( IHx, JHx );
+
+ay = zeros ( IHy, JHy );
+by = zeros ( IHy, JHy );
+cy = zeros ( IHy, JHy );
+dy = zeros ( IHy, JHy );
+ey = zeros ( IHy, JHy );
+fy = zeros ( IHy, JHy );
+gy = zeros ( IHy, JHy );
+hy = zeros ( IHy, JHy );
+ly = zeros ( IHy, JHy );
+
 % **** Temp ****
 erEz = zeros ( IEz, JEz );  % ezz for Ez
 % *************
 
-RaEz = zeros ( IEz, JEz ); % Scaling parameter dependent on material conductivity.
+%RaEz = zeros ( IEz, JEz ); % Scaling parameter dependent on material conductivity.
 smaskEz = zeros ( IEz, JEz );
 smaskHx = zeros ( IHx, JHx );
 smaskHy = zeros ( IHy, JHy );
 
-Bx = zeros ( IHx, JHx, 2 );
-By = zeros ( IHy, JHy, 2 );
+Bx = zeros ( IHx, JHx, 3 );
+By = zeros ( IHy, JHy, 3 );
 
-Hx = zeros ( IHx, JHx, 2 );
-Hy = zeros ( IHy, JHy, 2 );
+Hx = zeros ( IHx, JHx, 3 );
+Hy = zeros ( IHy, JHy, 3 );
 
-Dz = zeros ( IEz, JEz, 2 );
-Ez = zeros ( IEz, JEz, 2 );
+Dz = zeros ( IEz, JEz, 3 );
+Ez = zeros ( IEz, JEz, 3 );
 EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeResolutionFactor ); % E field Snapshot storage.
+% =============================================================
 
 % ############ Initialization #############
 fprintf ( 1, 'Initializing...' );
@@ -65,6 +87,7 @@ for i=1:IEz
     for j=1:JEz
         ezzEz ( i, j ) = 1/( er ( i, j-0.5 ));
         erEz ( i, j ) = er( i, j-0.5 );
+        smaskEz( i, j ) = s ( i, j-0.5 );
         %er ( i, j-0.5 )
     end
 end
@@ -87,32 +110,6 @@ for i=1:IHy
 %         smaskHy( i, j ) = s ( i-0.5, j-1 );
     end
 end
-% Initializing the eta and 1/eta arrays.
-% for i=1:IHx
-%     for j=1:JHx
-%         CHx ( i, j ) = DT / ( u0 * ur ( i, j-0.5 ) * delta );
-%     end
-% end
-% 
-% fprintf ( 1, '.' );
-% for i=1:IHy
-%     for j=1:JHy
-%         CHy ( i, j ) = DT / ( u0 * ur ( i-0.5, j-1 ) * delta );
-%     end
-% end
-% fprintf ( 1, '.' );
-% fprintf ( 1, '\nInitializing mask array...' );
-% for i=1:IEz
-%     for j=1:JEz
-%         %REz ( i, j ) = DT / ( e0 * er ( i, j-0.5 ) * delta );
-%         %RaEz ( i, j ) = ( 1 - ( s(i, j-0.5) * DT )/( e0 * er( i, j-0.5 ) ) );
-%         %RaEz ( i, j ) = 1;
-%         smaskEz( i, j ) = s ( i, j-0.5 );
-% %         if RaEz ( i, j ) < 0
-% %             RaEz ( i, j ) = -1 * RaEz ( i, j );
-% %         end
-%     end
-% end
 
 figure (3)
 mesh ( erEz )
@@ -131,23 +128,21 @@ mesh ( uyyHy )
 title ( 'uyyHy' )
 view (4, 4)
 
-%uxyHy == 0
-% % max ( ezzEz )
-% min ( ezzEz )
-% average (ezzEz )
-% REz
-% RaEz
-% uxxHx
-% uxyHy
-% uyxHx
-% uyyHy
-
 fprintf ( 1, 'done.\n' );
 % ############ Initialization Complete ##############
 % ########### 2. Now running the Simulation #############
 fprintf ( 1, 'Simulation started... \n' );
 for n=0:NNMax-2
     fprintf ( 1, '%g %% \n', (n*100)/NNMax );
+    
+    % Copying n1 fields as past fields. Will be used in second order time derivatives.
+    Bx ( :, :, 3 ) = Bx ( :, :, n1 );
+    By ( :, :, 3 ) = By ( :, :, n1 );
+    Hx ( :, :, 3 ) = Hx ( :, :, n1 );
+    Hy ( :, :, 3 ) = Hy ( :, :, n1 );
+    Dz ( :, :, 3 ) = Dz ( :, :, n1 );
+    Ez ( :, :, 3 ) = Ez ( :, :, n1 );
+    
     % *** Calculation of Magnetic Field Components ***
     % * Calculation of Bx.
     Bx ( :, :, n1 ) = Bx ( :, :, n0 ) + ( (DT/delta) * ( Ez ( :, 1:JHx, n0 ) - Ez ( :, 2:JHx+1, n0 ) ));
@@ -173,7 +168,10 @@ for n=0:NNMax-2
     
     
     %Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
-    Hy (1:IHy-1, 1:JHy-1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
+    Hy (1:IHy-1, 1:JHy-1, n1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
+    
+    % ABC for Hy;
+    Hy (1:IHy-1, JHy, n1) = Hy (1:IHy-1, JHy, n0);
     %Hy ( :, :, n1 ) = smaskHy ( :, : ) .* Hy ( :, :, n1 );
     
     Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) ));
@@ -196,12 +194,12 @@ for n=0:NNMax-2
     % 1. Continuous source.
 %     Ez ( :, Js, mod(n, 2)+2 ) = 1 * sin ( TwoPIFDeltaT * (mod(n, 2)+2) );
     % 2. Sinusoidal Source.
-    %if ( n < NHW )
+    if ( n < NHW )
     Ez ( :, Js, n1 ) = Ez ( :, Js, n1 ) + 1 * sin ( TwoPIFDeltaT * n );
     Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
-    %end
-    %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
-    %Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
+    end
+    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+    Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
