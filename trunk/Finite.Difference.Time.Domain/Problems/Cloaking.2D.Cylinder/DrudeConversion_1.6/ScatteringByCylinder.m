@@ -61,6 +61,7 @@ hy = zeros ( IHy, JHy );
 ly = zeros ( IHy, JHy );
 
 wpsquaredEz = zeros( IEz, JEz );
+wpmsquaredHx = zeros (IHx, JHx );
 
 % **** Temp ****
 erEz = zeros ( IEz, JEz );  % ezz for Ez
@@ -84,60 +85,65 @@ Hy = zeros ( IHy, JHy, 3 );
 Dz = zeros ( IEz, JEz, 3 );
 Ez = zeros ( IEz, JEz, 3 );
 EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeResolutionFactor ); % E field Snapshot storage.
+
+% Space averaged B.
+BxAve = zeros ( IHx, JHx, 3);
+ByAve = zeros ( IHy, JHy, 3);
 % =============================================================
 
 % ############ Initialization #############
 fprintf ( 1, 'Initializing...' );
-fprintf ( 1, '\nInitializing er array...' );
+fprintf ( 1, '\nInitializing parametric arrays...' );
 % Initializing er array.
-for i=1:IEz
-    for j=1:JEz
-        ezzEz ( i, j ) = ezz ( i, j-0.5 );
-%         erEz ( i, j ) = er( i, j-0.5 );
-        erEz ( i, j ) = ezz( i, j-0.5 );
-        smaskEz( i, j ) = s ( i, j-0.5 );
-        wpsquaredEz(i, j) = wpsquared(i, j-0.5, 2*pi*f);
-        cmaskEz( i, j ) = iscylinder (i, j-0.5);
-        %er ( i, j-0.5 )
-    end
-end
-fprintf ( 1, '\nInitializing ur (Hx) array...' );
-% Initializing the ur arrays.
-for i=1:IHx
-    for j=1:JHx
-        invurHx = inv ( ur ( i, j-0.5 ));
-        uxxHx (i, j) = invurHx(1, 1);
-        uyxHx (i, j) = invurHx(2, 1);
-        cmaskHx (i, j) = iscylinder (i, j-0.5);        
-%         smaskHx( i, j ) = s ( i, j-0.5 );
-        ax (i, j) = 1;
-        bx (i, j) = 1;
-        cx (i, j) = 1;
-        dx (i, j) = 1;
-        ex (i, j) = 1;
-        fx (i, j) = 1;
-        gx (i, j) = 1;
-        hx (i, j) = 1;
-        lx (i, j) = 1;
-    end
-end
-fprintf ( 1, '\nInitializing ur (Hy) array...' );
-for i=1:IHy
+for i=1:IHy     % IHy is size+1 or maximum I size.
     for j=1:JHy
+        
+        % Ez related parameters.
+        if i <= IEz
+            ezzEz ( i, j ) = ezz ( i, j-0.5 );
+    %         erEz ( i, j ) = er( i, j-0.5 );
+            erEz ( i, j ) = ezz( i, j-0.5 );
+            smaskEz( i, j ) = s ( i, j-0.5 );
+            wpsquaredEz(i, j) = wpsquared(i, j-0.5, 2*pi*f);
+            cmaskEz( i, j ) = iscylinder (i, j-0.5);
+            %er ( i, j-0.5 )
+        end
+        
+        % Hx related parameters.
+        if i <= IHx && j <= JHx
+            invurHx = inv ( ur ( i, j-0.5 ));
+            uxxHx (i, j) = invurHx(1, 1);
+            uyxHx (i, j) = invurHx(2, 1);
+            cmaskHx (i, j) = iscylinder (i, j-0.5);
+            wpmsquaredHx (i, j) = wpmsquared (i, j-0.5, 2*pi*f);
+    %         smaskHx( i, j ) = s ( i, j-0.5 );
+            ax (i, j) = (sinphi(i, j-0.5))^2 * ( 1/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)/4) + uphi(i, j-0.5) * cosphi(i, j-0.5)^2 * (1/(DT^2));
+            bx (i, j) = (sinphi(i, j-0.5))^2 * ( -2/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)/2) - uphi(i, j-0.5) * cosphi(i, j-0.5)^2 * (2/(DT^2));
+            cx (i, j) = ax (i, j);
+            dx (i, j) = ( uphi(i, j-0.5)/(DT^2) - ( 1/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/4 ) ) * sinphi(i, j-0.5) * cosphi(i, j-0.5);
+            ex (i, j) = ( -2 * uphi(i, j-0.5)/(DT^2) - ( -2/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/2 ) ) * sinphi(i, j-0.5) * cosphi(i, j-0.5);
+            fx (i, j) = dx (i, j);
+            gx (i, j) = u0*uphi (i, j-0.5) * ( -2/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/2 );
+            hx (i, j) = u0*uphi (i, j-0.5) * ( 1/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/4 );
+            lx (i, j) = hx (i, j);
+        end
+        
+        % Hy related parameters.
         invurHy = inv ( ur ( i-0.5, j-1 ));
         uxyHy (i, j) = invurHy(1, 2);
         uyyHy (i, j) = invurHy(2, 2);
         cmaskHy(i, j) = iscylinder (i-0.5, j-1);
         %         smaskHy( i, j ) = s ( i-0.5, j-1 );
-        ay (i, j) = 1;
-        by (i, j) = 1;
-        cy (i, j) = 1;
-        dy (i, j) = 1;
-        ey (i, j) = 1;
-        fy (i, j) = 1;
-        gy (i, j) = 1;
-        hy (i, j) = 1;
-        ly (i, j) = 1;
+        ay (i, j) = (cosphi(i-0.5, j-1))^2 * ( 1/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)/4) + uphi(i-0.5, j-1) * sinphi(i-0.5, j-1)^2 * (1/(DT^2));
+        by (i, j) = (cosphi(i-0.5, j-1))^2 * ( -2/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)/2) - uphi(i-0.5, j-1) * sinphi(i-0.5, j-1)^2 * (2/(DT^2));
+        cy (i, j) = ay (i, j);
+        dy (i, j) = ( uphi(i-0.5, j-1)/(DT^2) - ( 1/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/4 ) ) * sinphi(i-0.5, j-1) * cosphi(i-0.5, j-1);
+        ey (i, j) = ( -2 * uphi(i-0.5, j-1)/(DT^2) - ( -2/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/2 ) ) * sinphi(i-0.5, j-1) * cosphi(i-0.5, j-1);
+        fy (i, j) = dy (i, j);
+        gy (i, j) = u0*uphi (i-0.5, j-1) * ( -2/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/2 );
+        hy (i, j) = u0*uphi (i-0.5, j-1) * ( 1/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/4 );
+        ly (i, j) = hy (i, j);
+        
     end
 end
 
@@ -149,6 +155,14 @@ figure (2)
 mesh ( erEz )
 title ( 'ezz' )
 view (4, 4)
+figure (3)
+mesh ( wpmsquaredHx )
+title ( 'wpmsquaredHx' )
+view (4, 4)
+% figure (4)
+% mesh ( erEz )
+% title ( 'ezz' )
+% view (4, 4)
 % figure (5)
 % mesh ( uxxHx )
 % title ( 'uxxHx' )
@@ -196,13 +210,24 @@ for n=0:NNMax-2
 %     
 %     By ( 1, :, n1 ) = By ( 2, :, n0 );
 %     By ( IHy, :, n1 ) = By ( IHy-1, :, n0 );
+
+    % Space averaged B fields.
+    BxAve (2:IHx-1, 2:JHx-1, n1) = ( Bx(2:IHx-1, 2:JHx-1, n1) + Bx(2:IHx-1, 3:JHx, n1) + Bx(1:IHx-2, 2:JHx-1, n1) + Bx(1:IHx-2, 3:JHx, n1) )/4;
+    BxAve (2:IHx-1, 2:JHx-1, n0) = ( Bx(2:IHx-1, 2:JHx-1, n0) + Bx(2:IHx-1, 3:JHx, n0) + Bx(1:IHx-2, 2:JHx-1, n0) + Bx(1:IHx-2, 3:JHx, n0) )/4;
+    BxAve (2:IHx-1, 2:JHx-1, 3) = ( Bx(2:IHx-1, 2:JHx-1, 3) + Bx(2:IHx-1, 3:JHx, 3) + Bx(1:IHx-2, 2:JHx-1, 3) + Bx(1:IHx-2, 3:JHx, 3) )/4;
     
-    Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
+    ByAve (2:IHx-1, 2:JHx-1, n1) = ( By(2:IHx-1, 2:JHx-1, n1) + By(3:IHx, 3:JHx, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(3:IHx, 1:JHx-2, n1) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, n0) = ( By(2:IHx-1, 2:JHx-1, n0) + By(3:IHx, 3:JHx, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(3:IHx, 1:JHx-2, n0) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, 3) = ( By(2:IHx-1, 2:JHx-1, 3) + By(3:IHx, 3:JHx, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(3:IHx, 1:JHx-2, 3) )/4;
+    
+    % Drude Model from paper.        
+    Hx ( :, :, n1 ) = (1/u0) * ~cmaskHx .* (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 )) + cmaskHx .* ( ax.*Bx ( :, :, n1 ) + bx.*Bx ( :, :, n0) + cx.*Bx ( :, :, 3) + dx.*ByAve (1:IHy-1, 1:JHy-1, n1) + ex.*ByAve (1:IHy-1, 1:JHy-1, n0) + fx.*ByAve (1:IHy-1, 1:JHy-1, 3) - (gx.*Hx(:,:,n0) + hx.*Hx(:,:,3)) ) ./ lx;
+%     Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
 %     ****** Major ****** Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
     %Hx ( :, :, n1 ) = smaskHx ( :, : ) .* Hx ( :, :, n1 );
+    Hy ( 1:IHy-1, 1:JHy-1, n1 ) = (1/u0) * ~cmaskHy (1:IHy-1, 1:JHy-1) .* (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 )) + cmaskHy (1:IHy-1, 1:JHy-1) .* ( ay(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n1 ) + by(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n0) + cy(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, 3) + dy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n1) + ey(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n0) + fy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, 3) - (gy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,n0) + hy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,3)) ) ./ ly (1:IHy-1, 1:JHy-1);
     
-    
-    Hy (1:IHy-1, 1:JHy-1, n1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
+%     Hy (1:IHy-1, 1:JHy-1, n1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
     %Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
 %     ****** Major ******    Hy (1:IHy-1, 1:JHy-1, n1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
     
@@ -226,9 +251,11 @@ for n=0:NNMax-2
     % ************************************************
 
     
+%     Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
 %     %     ****** Major ******   Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
-    
-    Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
+%     Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
+   Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
+%     ***** Drude ***** Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
     % Ez calculation outside cylinder.
 %     Ez ( :, :, n1 ) = ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 );
     % Ez calculation inside cylinder using Drude dispersion model.
