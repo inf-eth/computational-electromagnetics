@@ -102,7 +102,7 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
             uxxHx (i, j) = invurHx(1, 1);
             uyxHx (i, j) = invurHx(2, 1);
             cmaskHx (i, j) = iscylinder (i, j-0.5);
-            wpmsquaredHx (i, j) = wpmsquareduxx (i, j-0.5, 2*pi*f);
+            wpmsquaredHx (i, j) = wpmsquared (i, j-0.5, 2*pi*f);
     %         smaskHx( i, j ) = s ( i, j-0.5 );
         end
         
@@ -111,7 +111,7 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
         uxyHy (i, j) = invurHy(1, 2);
         uyyHy (i, j) = invurHy(2, 2);
         cmaskHy(i, j) = iscylinder (i-0.5, j-1);
-        wpmsquaredHy (i, j) = wpmsquareduyy (i-0.5, j-1, 2*pi*f);
+        wpmsquaredHy (i, j) = wpmsquared (i-0.5, j-1, 2*pi*f);
         %         smaskHy( i, j ) = s ( i-0.5, j-1 );
        
     end
@@ -230,7 +230,7 @@ for n=0:NNMax-2
 %     Ez ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
 %     end
 
-    %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
     %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
