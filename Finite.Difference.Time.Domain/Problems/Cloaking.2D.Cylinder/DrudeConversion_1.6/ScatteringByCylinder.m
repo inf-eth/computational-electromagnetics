@@ -7,7 +7,7 @@ clc
 clear all
 
 % ============== Simulation related parameters ================
-[Size XCenter YCenter delta ra rb] = Parameters;
+[Size XCenter YCenter delta ra rb DTp] = Parameters;
 IHx = Size;
 JHx = Size-1;
 IHy = Size+1;
@@ -27,7 +27,7 @@ f = 2.0e9;
 pi = 3.141592654;
 e0 = (1e-9) / (36*pi);
 u0 = (1e-7) * 4 * pi;
-DT = delta / ( sqrt(2) * Cl );
+DT = DTp;
 TwoPIFDeltaT = 2 * pi * f * DT;
 NHW = 1/(2 * f * DT); % One half wave cycle.
 A = rb/(rb-ra);
@@ -216,16 +216,21 @@ for n=0:NNMax-2
     BxAve (2:IHx-1, 2:JHx-1, n0) = ( Bx(2:IHx-1, 2:JHx-1, n0) + Bx(2:IHx-1, 3:JHx, n0) + Bx(1:IHx-2, 2:JHx-1, n0) + Bx(1:IHx-2, 3:JHx, n0) )/4;
     BxAve (2:IHx-1, 2:JHx-1, 3) = ( Bx(2:IHx-1, 2:JHx-1, 3) + Bx(2:IHx-1, 3:JHx, 3) + Bx(1:IHx-2, 2:JHx-1, 3) + Bx(1:IHx-2, 3:JHx, 3) )/4;
     
-    ByAve (2:IHx-1, 2:JHx-1, n1) = ( By(2:IHx-1, 2:JHx-1, n1) + By(3:IHx, 3:JHx, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(3:IHx, 1:JHx-2, n1) )/4;
-    ByAve (2:IHx-1, 2:JHx-1, n0) = ( By(2:IHx-1, 2:JHx-1, n0) + By(3:IHx, 3:JHx, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(3:IHx, 1:JHx-2, n0) )/4;
-    ByAve (2:IHx-1, 2:JHx-1, 3) = ( By(2:IHx-1, 2:JHx-1, 3) + By(3:IHx, 3:JHx, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(3:IHx, 1:JHx-2, 3) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, n1) = 0;%( By(2:IHx-1, 2:JHx-1, n1) + By(3:IHx, 3:JHx, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(3:IHx, 1:JHx-2, n1) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, n0) = 0;%( By(2:IHx-1, 2:JHx-1, n0) + By(3:IHx, 3:JHx, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(3:IHx, 1:JHx-2, n0) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, 3) = 0;%( By(2:IHx-1, 2:JHx-1, 3) + By(3:IHx, 3:JHx, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(3:IHx, 1:JHx-2, 3) )/4;
     
     % Drude Model from paper.        
-    Hx ( :, :, n1 ) = (1/u0) * ~cmaskHx .* (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 )) + cmaskHx .* ( ax.*Bx ( :, :, n1 ) + bx.*Bx ( :, :, n0) + cx.*Bx ( :, :, 3) + dx.*ByAve (1:IHy-1, 1:JHy-1, n1) + ex.*ByAve (1:IHy-1, 1:JHy-1, n0) + fx.*ByAve (1:IHy-1, 1:JHy-1, 3) - (gx.*Hx(:,:,n0) + hx.*Hx(:,:,3)) ) ./ lx;
+%     Hx ( :, :, n1 ) = (1/u0) * Bx ( :, :, n1 );
+    Hx ( :, :, n1 ) = ( ax.*Bx ( :, :, n1 ) + bx.*Bx ( :, :, n0) + cx.*Bx ( :, :, 3) + dx.*ByAve (1:IHy-1, 1:JHy-1, n1) + ex.*ByAve (1:IHy-1, 1:JHy-1, n0) + fx.*ByAve (1:IHy-1, 1:JHy-1, 3) - (gx.*Hx(:,:,n0) + hx.*Hx(:,:,3)) ) ./ lx;
+%     Hy ( 1:IHy-1, 1:JHy-1, n1 ) = (1/u0) * By (1:IHy-1, 1:JHy-1, n1 );
+    Hy ( 1:IHy-1, 1:JHy-1, n1 ) = ( ay(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n1 ) + by(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n0) + cy(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, 3) + dy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n1) + ey(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n0) + fy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, 3) - (gy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,n0) + hy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,3)) ) ./ ly (1:IHy-1, 1:JHy-1);
+%     Hx ( :, :, n1 ) = (1/u0) * ~cmaskHx .* (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 )) + cmaskHx .* ( ax.*Bx ( :, :, n1 ) + bx.*Bx ( :, :, n0) + cx.*Bx ( :, :, 3) + dx.*ByAve (1:IHy-1, 1:JHy-1, n1) + ex.*ByAve (1:IHy-1, 1:JHy-1, n0) + fx.*ByAve (1:IHy-1, 1:JHy-1, 3) - (gx.*Hx(:,:,n0) + hx.*Hx(:,:,3)) ) ./ lx;
+%     Hy ( 1:IHy-1, 1:JHy-1, n1 ) = (1/u0) * ~cmaskHy (1:IHy-1, 1:JHy-1) .* (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 )) + cmaskHy (1:IHy-1, 1:JHy-1) .* ( ay(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n1 ) + by(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n0) + cy(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, 3) + dy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n1) + ey(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n0) + fy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, 3) - (gy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,n0) + hy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,3)) ) ./ ly (1:IHy-1, 1:JHy-1);
 %     Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
 %     ****** Major ****** Hx ( :, :, n1 ) = (1/u0) * (uxxHx .* Bx ( :, :, n1 ) + uxyHy (1:IHy-1, 1:JHy-1 ) .* By (1:IHy-1, 1:JHy-1, n1 ));
     %Hx ( :, :, n1 ) = smaskHx ( :, : ) .* Hx ( :, :, n1 );
-    Hy ( 1:IHy-1, 1:JHy-1, n1 ) = (1/u0) * ~cmaskHy (1:IHy-1, 1:JHy-1) .* (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 )) + cmaskHy (1:IHy-1, 1:JHy-1) .* ( ay(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n1 ) + by(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n0) + cy(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, 3) + dy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n1) + ey(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n0) + fy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, 3) - (gy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,n0) + hy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,3)) ) ./ ly (1:IHy-1, 1:JHy-1);
+    
     
 %     Hy (1:IHy-1, 1:JHy-1, n1) = (1/u0) * (uyxHx.*Bx ( :, :, n1 ) + uyyHy (1:IHy-1, 1:JHy-1) .* By (1:IHy-1, 1:JHy-1, n1 ));
     %Hy ( :, :, n1 ) = (1/u0) * By ( :, :, n1 );
@@ -251,10 +256,13 @@ for n=0:NNMax-2
     % ************************************************
 
     
-%     Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
+% 	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 );
+    Ez ( :, :, n1 ) =  ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4);
+% 	Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
+    
 %     %     ****** Major ******   Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
 %     Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
-   Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
+    
 %     ***** Drude ***** Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
     % Ez calculation outside cylinder.
 %     Ez ( :, :, n1 ) = ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 );
