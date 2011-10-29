@@ -17,9 +17,9 @@ JEz = Size;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 100;                   % Maximum time.
-TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is resolution factor.
-ResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+NNMax = 1000;                   % Maximum time.
+TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is time resolution factor.
+ResolutionFactor = 5;          % Resolution of plotted field is divided by this factor.
 Js = 2;                         % J-position of the plane wave front.
 % Different Constants.
 Cl = 3e8;
@@ -32,7 +32,7 @@ uinf = 1;
 DT = DTp;
 TwoPIFDeltaT = 2 * pi * f * DT;
 NHW = 1/(2 * f * DT); % One half wave cycle.
-A = rb/(rb-ra);
+A = (rb/(rb-ra))^2;
 
 % ====================== Data arrays =========================
 uxxHx = zeros ( IHx, JHx );  % uxx for Hx
@@ -89,9 +89,9 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
         if i <= IEz
             ezzEz ( i, j ) = ezz ( i, j-0.5 );
     %         erEz ( i, j ) = er( i, j-0.5 );
-            erEz ( i, j ) = ezz( i, j-0.5 );
+            erEz ( i, j ) = er( i, j-0.5 );
             smaskEz( i, j ) = s ( i, j-0.5 );
-            wpsquaredEz(i, j) = 0;%wpsquared(i, j-0.5, 2*pi*f);
+            wpsquaredEz(i, j) = wpsquared(i, j-0.5, 2*pi*f);
             cmaskEz( i, j ) = iscylinder (i, j-0.5);
             %er ( i, j-0.5 )
         end
@@ -102,7 +102,7 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
             uxxHx (i, j) = invurHx(1, 1);
             uyxHx (i, j) = invurHx(2, 1);
             cmaskHx (i, j) = iscylinder (i, j-0.5);
-            wpmsquaredHx (i, j) = 0;%wpmsquared (i, j-0.5, 2*pi*f);
+            wpmsquaredHx (i, j) = wpmsquareduxx (i, j-0.5, 2*pi*f);
     %         smaskHx( i, j ) = s ( i, j-0.5 );
         end
         
@@ -111,7 +111,7 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
         uxyHy (i, j) = invurHy(1, 2);
         uyyHy (i, j) = invurHy(2, 2);
         cmaskHy(i, j) = iscylinder (i-0.5, j-1);
-        wpmsquaredHy (i, j) = 0;%wpmsquared (i-0.5, j-1);
+        wpmsquaredHy (i, j) = wpmsquareduyy (i-0.5, j-1, 2*pi*f);
         %         smaskHy( i, j ) = s ( i-0.5, j-1 );
        
     end
@@ -198,7 +198,7 @@ for n=0:NNMax-2
 %     Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) ));
     %Dz (:, :, n1) = Dz (:, :, n1) .* smask;
     
-    Ez ( :, 2:JEz-1, n1 ) = Ez ( :, 2:JEz-1, n0 ) + ( (DT/(delta*e0*einf)) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) - (delta/2)*(Jpz(:, 2:JEz-1, n1)+Jpz(:, 2:JEz-1, n0)) ));
+    Ez ( :, 2:JEz-1, n1 ) = Ez ( :, 2:JEz-1, n0 ) + ( (DT/(delta*e0*einf)) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) - (delta/2)*(Jpz(:, 2:JEz-1, n1)+Jpz(:, 2:JEz-1, n0)) ./ (erEz(:,2:JEz-1))));
     
     % Boundary conditions on Dz. Soft grid truncation.
     Ez ( 2:IEz-1, 1, n1 ) = (1/3) * ( Ez ( 1:IEz-2, 2, n0 ) + Ez ( 2:IEz-1, 2, n0 ) + Ez ( 3:IEz, 2, n0 ) );
@@ -225,10 +225,10 @@ for n=0:NNMax-2
     % Ez ( :, :, n1 ) = cmaskEz .* ( (1/(e0*DT^2))*Ez ( :, :, n1 ) - (2/(e0*(DT^2)))*Ez ( :, :, n0) + (1/(e0*(DT^2)))*Ez( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4);
 
 
-    if ( n < NHW )
+%     if ( n < NHW )
     Ez ( :, Js, n1 ) = Ez ( :, Js, n1 ) + 1 * sin ( TwoPIFDeltaT * n );
 %     Ez ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
-    end
+%     end
 
     %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
     %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
