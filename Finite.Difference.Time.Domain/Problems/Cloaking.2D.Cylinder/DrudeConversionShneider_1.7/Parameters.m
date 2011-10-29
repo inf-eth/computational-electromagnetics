@@ -8,4 +8,4 @@ delta = 5e-3;
 ra = 0.1;
 rb = 0.2;
 Cl = 3e8;
-DT = delta / (4 * Cl);
+DT = delta / (sqrt(2) * Cl);
