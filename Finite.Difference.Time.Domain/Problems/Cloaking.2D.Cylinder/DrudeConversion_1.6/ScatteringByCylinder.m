@@ -99,6 +99,7 @@ fprintf ( 1, 'Initializing...' );
 fprintf ( 1, '\nInitializing parametric arrays...' );
 % Initializing er array.
 for i=1:IHy     % IHy is size+1 or maximum I size.
+    fprintf ( 1, '%g %% \n', ((i-1)*100)/IHy );
     for j=1:JHy
         
         % Ez related parameters.
@@ -169,10 +170,10 @@ figure (4)
 mesh ( wpmsquaredHx )
 title ( 'wpmsquaredHx' )
 view (4, 4)
-% figure (5)
-% mesh ( uxxHx )
-% title ( 'uxxHx' )
-% view (4, 4)
+figure (5)
+mesh ( wpsquaredEz )
+title ( 'wpsquaredEz' )
+view (4, 4)
 % figure (6)
 % mesh ( uxyHy )
 % title ( 'uxyHy' )
@@ -182,7 +183,7 @@ view (4, 4)
 % title ( 'uyyHy' )
 % view (4, 4)
 
-fprintf ( 1, 'done.\n' );
+fprintf ( 1, 'Initialization done.\n' );
 % ############ Initialization Complete ##############
 % ########### 2. Now running the Simulation #############
 fprintf ( 1, 'Simulation started... \n' );
@@ -233,7 +234,7 @@ for n=0:NNMax-2
     ByAve (2:IHx-1, 2:JHx-1, n1) = ( By(1:IHx-2, 2:JHx-1, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(1:IHx-2, 1:JHx-2, n1) + By(2:IHx-1, 2:JHx-1, n1) )/4;
     ByAve (2:IHx-1, 2:JHx-1, n0) = ( By(1:IHx-2, 2:JHx-1, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(1:IHx-2, 1:JHx-2, n0) + By(2:IHx-1, 2:JHx-1, n0) )/4;
     ByAve (2:IHx-1, 2:JHx-1, 3) = ( By(1:IHx-2, 2:JHx-1, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(1:IHx-2, 1:JHx-2, 3) + By(2:IHx-1, 2:JHx-1, 3) )/4;
-    % Drude Model from paper.        
+                % Drude Model from paper.        
 %     Hx ( :, :, n1 ) = (1/u0) * Bx ( :, :, n1 );
     Hx ( :, :, n1 ) = ( ax.*Bx ( :, :, n1 ) + bx.*Bx ( :, :, n0) + cx.*Bx ( :, :, 3) + dx.*ByAve (1:IHy-1, 1:JHy-1, n1) + ex.*ByAve (1:IHy-1, 1:JHy-1, n0) + fx.*ByAve (1:IHy-1, 1:JHy-1, 3) - (gx.*Hx(:,:,n0) + hx.*Hx(:,:,3)) ) ./ lx;
 %     Hy ( 1:IHy-1, 1:JHy-1, n1 ) = (1/u0) * By (1:IHy-1, 1:JHy-1, n1 );
@@ -268,6 +269,7 @@ for n=0:NNMax-2
 %     Dz ( :, IEz, n1 ) = Dz ( :, IEz-1, n0 );
     % ************************************************
 
+%     Ez ( :, :, n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + AEz.*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - AEz.*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ (AEz.*( 1/(DT^2) + wpsquaredEz/4));
 % 	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
     Ez ( :, :, n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + AEz.*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - AEz.*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ (AEz.*( 1/(DT^2) + wpsquaredEz/4));
 % 	Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
@@ -287,8 +289,8 @@ for n=0:NNMax-2
     Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
 %     end
 
-%     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
-%     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
+    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+    Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
