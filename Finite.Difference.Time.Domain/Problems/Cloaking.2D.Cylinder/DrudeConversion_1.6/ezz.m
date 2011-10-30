@@ -13,7 +13,9 @@ offset = delta * 0;
 if (i-XCenter)^2+(j-YCenter)^2 < ((rb/delta))^2 
     
     if (i-XCenter)^2+(j-YCenter)^2 > ((ra/delta)+offset)^2
-        ezz = ((b/(b-a))^2) * ((r-a)/r);
+%         ezz = ((b/(b-a))^2) * ((r-a)/r);    % Ideal.
+%         ezz = (b/(b-a))^2;  % Pendry reduced.
+        ezz = b/(b-a); % Zhao reduced.
         return_val = ezz;
 %         return_val = 1;
     else
