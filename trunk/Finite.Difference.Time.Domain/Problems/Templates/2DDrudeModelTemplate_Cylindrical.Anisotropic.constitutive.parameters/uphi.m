@@ -13,13 +13,14 @@ r = sqrt ( x^2 + y^2 );
 uphi = r/(r-a); % ideal
 % uphi = (r/(r-a))^2; % Zhao reduced
 % uphi = 1; % Pendry reduced
+% uphi = 1; % Free space?
 
 if (i-XCenter)^2+(j-YCenter)^2 < ((b/delta)-offset)^2 
     
     if (i-XCenter)^2+(j-YCenter)^2 > ((a/delta)+offset)^2
         return_val = uphi;
     else
-        return_val = 1;%e80;
+        return_val = 1;
     end
 else
     return_val = 1;
