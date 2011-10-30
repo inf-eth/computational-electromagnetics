@@ -1,18 +1,19 @@
-% ur calculation for Yee scattering problem.
+% ur tensor calculations for 2D ADE FDTD template.
 function return_val = ur ( i, j )
 
 [Size XCenter YCenter delta ra rb] = Parameters;
 
-softtruncation = 2*delta;
-b = rb + softtruncation;
-a = ra - softtruncation;
+b = rb;
+a = ra;
 x = (i-XCenter) * delta;
 y = (j-YCenter) * delta;
 r = sqrt ( x^2 + y^2 );
+
 sinphi = y/r;
 cosphi = x/r;
 ur = (r-a)/r;
 uphi = r/(r-a);
+
 if (i-XCenter)^2+(j-YCenter)^2 < (rb/delta)^2
     
     if  (i-XCenter)^2+(j-YCenter)^2 > (ra/delta)^2
@@ -31,12 +32,11 @@ if (i-XCenter)^2+(j-YCenter)^2 < (rb/delta)^2
 %     if ( u < 0.1 )
 %         u = 0.1;
 %     end
-%         return_val = [u 0; 0 u];
-        return_val = [1 0; 0 1];
+        u = 1;
+        return_val = [u 0; 0 u];
     else
         return_val = [1 0; 0 1];
     end
-    %return_val = [4 0; 0 4];
 else
     return_val = [1 0; 0 1];
 end
