@@ -17,7 +17,7 @@ if (i-XCenter)^2+(j-YCenter)^2 < ((b/delta))^2
         urr = ((b/(b-1))*((r-a)/r))^2;  % Zhao reduced.
 %         urr = (r/(r-a))^2;  % Pendry reduced.
         return_val = urr;
-%         return_val = 1;
+        return_val = 1;
     else
         return_val = 1;%e80;
     end

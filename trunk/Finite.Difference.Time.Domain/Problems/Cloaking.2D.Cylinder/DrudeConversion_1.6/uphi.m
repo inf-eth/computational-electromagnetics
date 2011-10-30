@@ -17,7 +17,7 @@ if (i-XCenter)^2+(j-YCenter)^2 < ((b/delta)-offset)^2
         uphi = (r/(r-a))^2; % Zhao reduced
 %         uphi = 1; % Pendry reduced
         return_val = uphi;
-%         return_val = 1;
+        return_val = 1;
     else
         return_val = 1;%e80;
     end

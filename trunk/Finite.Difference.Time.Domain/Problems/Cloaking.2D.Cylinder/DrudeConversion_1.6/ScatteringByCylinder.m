@@ -30,7 +30,6 @@ u0 = (1e-7) * 4 * pi;
 DT = DTp;
 TwoPIFDeltaT = 2 * pi * f * DT;
 NHW = 1/(2 * f * DT); % One half wave cycle.
-A = rb/(rb-ra);
 
 % ====================== Data arrays =========================
 uxxHx = zeros ( IHx, JHx );  % uxx for Hx
@@ -41,6 +40,7 @@ uyyHy = zeros ( IHy, JHy );  % uyy for Hy
 urrHx  = zeros ( IHx, JHx );
 uphiHx = zeros ( IHx, JHx );
 ezzEz = zeros ( IEz, JEz );  % ezz for Ez
+AEz = zeros ( IEz, JEz );
 
 % ------------ Field-specific parameters ------------
 ax = zeros ( IHx, JHx );
@@ -109,6 +109,7 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
             smaskEz( i, j ) = s ( i, j-0.5 );
             wpsquaredEz(i, j) = wpsquared(i, j-0.5, 2*pi*f);
             cmaskEz( i, j ) = iscylinder (i, j-0.5);
+            AEz (i, j) = A (i, j-0.5);
             %er ( i, j-0.5 )
         end
         
@@ -267,9 +268,8 @@ for n=0:NNMax-2
 %     Dz ( :, IEz, n1 ) = Dz ( :, IEz-1, n0 );
     % ************************************************
 
-    
-	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
-%     Ez ( :, :, n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ (A*( 1/(DT^2) + wpsquaredEz/4));
+% 	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
+    Ez ( :, :, n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + AEz.*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - AEz.*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ (AEz.*( 1/(DT^2) + wpsquaredEz/4));
 % 	Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
     
 %     %     ****** Major ******   Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
@@ -287,8 +287,8 @@ for n=0:NNMax-2
     Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
 %     end
 
-    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
-    Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
+%     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+%     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
