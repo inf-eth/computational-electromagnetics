@@ -10,18 +10,17 @@ y = (j-YCenter) * delta;
 r = sqrt ( x^2 + y^2 );
 offset = delta * 0;
 
-% A = b/(b-a);
 ezz = ((b/(b-a))^2) * ((r-a)/r);    % Ideal.
 % ezz = (b/(b-a))^2;  % Pendry reduced
 % ezz = b/(b-a); % Zhao reduced.
+% ezz = 1; % Free space?
 
-   
 if (i-XCenter)^2+(j-YCenter)^2 < ((rb/delta))^2 
     
     if (i-XCenter)^2+(j-YCenter)^2 > ((ra/delta)+offset)^2
         return_val = ezz;        
     else
-        return_val = 1;%e80;
+        return_val = 1;%e80; % PEC simulation?
     end
 else
     return_val = 1;
