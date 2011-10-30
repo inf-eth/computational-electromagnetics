@@ -1,5 +1,6 @@
+% Simulation parameters for 2D ADE FDTD template.
 function [Size XCenter YCenter delta ra rb DT] = Parameters
-% Simulation related parameters.
+
 Size = 200;
 XCenter = (Size+1)/2;
 YCenter = (Size-1)/2;
