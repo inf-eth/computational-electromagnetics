@@ -19,10 +19,10 @@ n0 = 1;
 n1 = 2;
 NNMax = 500;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is resolution factor.
-ResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
 Js = 2;                         % J-position of the plane wave front.
 % Different Constants.
-Cl = 3e8;
+Cl = 299792458;
 f = 2.0e9;
 pi = 3.141592654;
 e0 = (1e-9) / (36*pi);
@@ -37,6 +37,9 @@ uxxHx = zeros ( IHx, JHx );  % uxx for Hx
 uxyHy = zeros ( IHy, JHy );  % uxy for Hy
 uyxHx = zeros ( IHx, JHx );  % uyx for Hx
 uyyHy = zeros ( IHy, JHy );  % uyy for Hy
+
+urrHx  = zeros ( IHx, JHx );
+uphiHx = zeros ( IHx, JHx );
 ezzEz = zeros ( IEz, JEz );  % ezz for Ez
 
 % ------------ Field-specific parameters ------------
@@ -114,6 +117,8 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
             invurHx = inv ( ur ( i, j-0.5 ));
             uxxHx (i, j) = invurHx(1, 1);
             uyxHx (i, j) = invurHx(2, 1);
+            urrHx (i, j) = urr (i, j-0.5);
+            uphiHx (i, j) = uphi (i, j-0.5);
             cmaskHx (i, j) = iscylinder (i, j-0.5);
             wpmsquaredHx (i, j) = wpmsquared (i, j-0.5, 2*pi*f);
     %         smaskHx( i, j ) = s ( i, j-0.5 );
@@ -148,21 +153,21 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
 end
 
 figure (1)
-mesh ( wpsquaredEz )
-title ( 'wpsquaredEz' )
+mesh ( urrHx )
+title ( 'urrHx' )
 view (4, 4)
 figure (2)
 mesh ( erEz )
 title ( 'ezz' )
 view (4, 4)
 figure (3)
+mesh ( uphiHx )
+title ( 'uphiHx' )
+view (4, 4)
+figure (4)
 mesh ( wpmsquaredHx )
 title ( 'wpmsquaredHx' )
 view (4, 4)
-% figure (4)
-% mesh ( erEz )
-% title ( 'ezz' )
-% view (4, 4)
 % figure (5)
 % mesh ( uxxHx )
 % title ( 'uxxHx' )
@@ -248,7 +253,7 @@ for n=0:NNMax-2
     %Hy ( :, :, n1 ) = smaskHy ( :, : ) .* Hy ( :, :, n1 );
     
     Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:JEz+1, 2:JEz-1, n1 ) - Hy ( 1:JEz, 2:JEz-1, n1 ) + Hx ( :, 1:JEz-2,n1 ) - Hx ( :, 2:JEz-1, n1 ) ));
-    %Dz (:, :, n1) = Dz (:, :, n1) .* smask;
+%     Dz (:, :, n1) = Dz (:, :, n1) .* smask;
     
     % Boundary conditions on Dz. Soft grid truncation.
     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
@@ -263,7 +268,7 @@ for n=0:NNMax-2
     % ************************************************
 
     
-	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 );
+	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
 %     Ez ( :, :, n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ (A*( 1/(DT^2) + wpsquaredEz/4));
 % 	Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
     
@@ -282,8 +287,8 @@ for n=0:NNMax-2
     Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
 %     end
 
-    %Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
-    %Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
+    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+    Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
