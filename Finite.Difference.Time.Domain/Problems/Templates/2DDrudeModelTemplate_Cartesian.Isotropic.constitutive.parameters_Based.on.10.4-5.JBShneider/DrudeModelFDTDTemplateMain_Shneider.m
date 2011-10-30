@@ -61,7 +61,7 @@ fprintf ( 1, 'Initializing...' );
 fprintf ( 1, '\nInitializing parametric arrays...' );
 % Initializing er array.
 for i=1:IHy     % IHy is size+1 or maximum I size.
-    fprintf ( 1, '%g %% \n', ((1-i)*100)/IHy );
+    fprintf ( 1, '%g %% \n', ((i-1)*100)/IHy );
     for j=1:JHy
         
         % Ez related parameters.
