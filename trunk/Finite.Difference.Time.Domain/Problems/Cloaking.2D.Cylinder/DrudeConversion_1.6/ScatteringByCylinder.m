@@ -120,11 +120,11 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
             ax (i, j) = (sinphi(i, j-0.5))^2 * ( 1/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)/4) + uphi(i, j-0.5) * cosphi(i, j-0.5)^2 * (1/(DT^2));
             bx (i, j) = (sinphi(i, j-0.5))^2 * ( -2/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)/2) - uphi(i, j-0.5) * cosphi(i, j-0.5)^2 * (2/(DT^2));
             cx (i, j) = ax (i, j);
-            dx (i, j) = ( uphi(i, j-0.5)/(DT^2) - ( 1/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/4 ) ) * sinphi(i, j-0.5) * cosphi(i, j-0.5);
-            ex (i, j) = ( -2 * uphi(i, j-0.5)/(DT^2) - ( -2/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/2 ) ) * sinphi(i, j-0.5) * cosphi(i, j-0.5);
+            dx (i, j) = ( uphi(i, j-0.5)/(DT^2) - ( 1/(DT^2) + (wpmsquared(i, j-0.5, 2*pi*f))/4 ) ) * sinphi(i, j-0.5) * cosphi(i, j-0.5);
+            ex (i, j) = ( -2 * uphi(i, j-0.5)/(DT^2) - ( -2/(DT^2) + (wpmsquared(i, j-0.5, 2*pi*f))/2 ) ) * sinphi(i, j-0.5) * cosphi(i, j-0.5);
             fx (i, j) = dx (i, j);
-            gx (i, j) = u0*uphi (i, j-0.5) * ( -2/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/2 );
-            hx (i, j) = u0*uphi (i, j-0.5) * ( 1/(DT^2) + wpmsquared(i, j-0.5, 2*pi*f)^2/4 );
+            gx (i, j) = u0*uphi (i, j-0.5) * ( -2/(DT^2) + (wpmsquared(i, j-0.5, 2*pi*f))/2 );
+            hx (i, j) = u0*uphi (i, j-0.5) * ( 1/(DT^2) + (wpmsquared(i, j-0.5, 2*pi*f))/4 );
             lx (i, j) = hx (i, j);
         end
         
@@ -137,11 +137,11 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
         ay (i, j) = (cosphi(i-0.5, j-1))^2 * ( 1/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)/4) + uphi(i-0.5, j-1) * sinphi(i-0.5, j-1)^2 * (1/(DT^2));
         by (i, j) = (cosphi(i-0.5, j-1))^2 * ( -2/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)/2) - uphi(i-0.5, j-1) * sinphi(i-0.5, j-1)^2 * (2/(DT^2));
         cy (i, j) = ay (i, j);
-        dy (i, j) = ( uphi(i-0.5, j-1)/(DT^2) - ( 1/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/4 ) ) * sinphi(i-0.5, j-1) * cosphi(i-0.5, j-1);
-        ey (i, j) = ( -2 * uphi(i-0.5, j-1)/(DT^2) - ( -2/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/2 ) ) * sinphi(i-0.5, j-1) * cosphi(i-0.5, j-1);
+        dy (i, j) = ( uphi(i-0.5, j-1)/(DT^2) - ( 1/(DT^2) + (wpmsquared(i-0.5, j-1, 2*pi*f))/4 ) ) * sinphi(i-0.5, j-1) * cosphi(i-0.5, j-1);
+        ey (i, j) = ( -2 * uphi(i-0.5, j-1)/(DT^2) - ( -2/(DT^2) + (wpmsquared(i-0.5, j-1, 2*pi*f))/2 ) ) * sinphi(i-0.5, j-1) * cosphi(i-0.5, j-1);
         fy (i, j) = dy (i, j);
-        gy (i, j) = u0*uphi (i-0.5, j-1) * ( -2/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/2 );
-        hy (i, j) = u0*uphi (i-0.5, j-1) * ( 1/(DT^2) + wpmsquared(i-0.5, j-1, 2*pi*f)^2/4 );
+        gy (i, j) = u0*uphi (i-0.5, j-1) * ( -2/(DT^2) + (wpmsquared(i-0.5, j-1, 2*pi*f))/2 );
+        hy (i, j) = u0*uphi (i-0.5, j-1) * ( 1/(DT^2) + (wpmsquared(i-0.5, j-1, 2*pi*f))/4 );
         ly (i, j) = hy (i, j);
         
     end
@@ -212,14 +212,21 @@ for n=0:NNMax-2
 %     By ( IHy, :, n1 ) = By ( IHy-1, :, n0 );
 
     % Space averaged B fields.
-    BxAve (2:IHx-1, 2:JHx-1, n1) = ( Bx(2:IHx-1, 2:JHx-1, n1) + Bx(2:IHx-1, 3:JHx, n1) + Bx(1:IHx-2, 2:JHx-1, n1) + Bx(1:IHx-2, 3:JHx, n1) )/4;
-    BxAve (2:IHx-1, 2:JHx-1, n0) = ( Bx(2:IHx-1, 2:JHx-1, n0) + Bx(2:IHx-1, 3:JHx, n0) + Bx(1:IHx-2, 2:JHx-1, n0) + Bx(1:IHx-2, 3:JHx, n0) )/4;
-    BxAve (2:IHx-1, 2:JHx-1, 3) = ( Bx(2:IHx-1, 2:JHx-1, 3) + Bx(2:IHx-1, 3:JHx, 3) + Bx(1:IHx-2, 2:JHx-1, 3) + Bx(1:IHx-2, 3:JHx, 3) )/4;
+%     BxAve (2:IHx-1, 2:JHx-1, n1) = ( Bx(2:IHx-1, 2:JHx-1, n1) + Bx(2:IHx-1, 3:JHx, n1) + Bx(1:IHx-2, 2:JHx-1, n1) + Bx(1:IHx-2, 3:JHx, n1) )/4;
+%     BxAve (2:IHx-1, 2:JHx-1, n0) = ( Bx(2:IHx-1, 2:JHx-1, n0) + Bx(2:IHx-1, 3:JHx, n0) + Bx(1:IHx-2, 2:JHx-1, n0) + Bx(1:IHx-2, 3:JHx, n0) )/4;
+%     BxAve (2:IHx-1, 2:JHx-1, 3) = ( Bx(2:IHx-1, 2:JHx-1, 3) + Bx(2:IHx-1, 3:JHx, 3) + Bx(1:IHx-2, 2:JHx-1, 3) + Bx(1:IHx-2, 3:JHx, 3) )/4;
+%     
+%     ByAve (2:IHx-1, 2:JHx-1, n1) = ( By(2:IHx-1, 2:JHx-1, n1) + By(3:IHx, 3:JHx, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(3:IHx, 1:JHx-2, n1) )/4;
+%     ByAve (2:IHx-1, 2:JHx-1, n0) = ( By(2:IHx-1, 2:JHx-1, n0) + By(3:IHx, 3:JHx, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(3:IHx, 1:JHx-2, n0) )/4;
+%     ByAve (2:IHx-1, 2:JHx-1, 3) = ( By(2:IHx-1, 2:JHx-1, 3) + By(3:IHx, 3:JHx, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(3:IHx, 1:JHx-2, 3) )/4;
     
-    ByAve (2:IHx-1, 2:JHx-1, n1) = 0;%( By(2:IHx-1, 2:JHx-1, n1) + By(3:IHx, 3:JHx, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(3:IHx, 1:JHx-2, n1) )/4;
-    ByAve (2:IHx-1, 2:JHx-1, n0) = 0;%( By(2:IHx-1, 2:JHx-1, n0) + By(3:IHx, 3:JHx, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(3:IHx, 1:JHx-2, n0) )/4;
-    ByAve (2:IHx-1, 2:JHx-1, 3) = 0;%( By(2:IHx-1, 2:JHx-1, 3) + By(3:IHx, 3:JHx, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(3:IHx, 1:JHx-2, 3) )/4;
+    BxAve (2:IHx-1, 2:JHx-1, n1) = ( Bx(3:IHx, 2:JHx-1, n1) + Bx(2:IHx-1, 3:JHx, n1) + Bx(3:IHx, 3:JHx, n1) + Bx(2:IHx-1, 2:JHx-1, n1) )/4;
+    BxAve (2:IHx-1, 2:JHx-1, n0) = ( Bx(3:IHx, 2:JHx-1, n0) + Bx(2:IHx-1, 3:JHx, n0) + Bx(3:IHx, 3:JHx, n0) + Bx(2:IHx-1, 2:JHx-1, n0) )/4;
+    BxAve (2:IHx-1, 2:JHx-1, 3) = ( Bx(3:IHx, 2:JHx-1, 3) + Bx(2:IHx-1, 3:JHx, 3) + Bx(3:IHx, 3:JHx, 3) + Bx(2:IHx-1, 2:JHx-1, 3) )/4;
     
+    ByAve (2:IHx-1, 2:JHx-1, n1) = ( By(1:IHx-2, 2:JHx-1, n1) + By(2:IHx-1, 1:JHx-2, n1) + By(1:IHx-2, 1:JHx-2, n1) + By(2:IHx-1, 2:JHx-1, n1) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, n0) = ( By(1:IHx-2, 2:JHx-1, n0) + By(2:IHx-1, 1:JHx-2, n0) + By(1:IHx-2, 1:JHx-2, n0) + By(2:IHx-1, 2:JHx-1, n0) )/4;
+    ByAve (2:IHx-1, 2:JHx-1, 3) = ( By(1:IHx-2, 2:JHx-1, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(1:IHx-2, 1:JHx-2, 3) + By(2:IHx-1, 2:JHx-1, 3) )/4;
     % Drude Model from paper.        
 %     Hx ( :, :, n1 ) = (1/u0) * Bx ( :, :, n1 );
     Hx ( :, :, n1 ) = ( ax.*Bx ( :, :, n1 ) + bx.*Bx ( :, :, n0) + cx.*Bx ( :, :, 3) + dx.*ByAve (1:IHy-1, 1:JHy-1, n1) + ex.*ByAve (1:IHy-1, 1:JHy-1, n0) + fx.*ByAve (1:IHy-1, 1:JHy-1, 3) - (gx.*Hx(:,:,n0) + hx.*Hx(:,:,3)) ) ./ lx;
@@ -256,8 +263,8 @@ for n=0:NNMax-2
     % ************************************************
 
     
-% 	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 );
-    Ez ( :, :, n1 ) =  ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4);
+	Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 );
+%     Ez ( :, :, n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ (A*( 1/(DT^2) + wpsquaredEz/4));
 % 	Ez ( :, :, n1 ) =  ( ~cmaskEz .* (1/e0) * (ezzEz) .* Dz ( :, :, n1 ) ) + ( cmaskEz .* ( (1/(e0*DT^2))*Dz ( :, :, n1 ) - (2/(e0*(DT^2)))*Dz ( :, :, n0) + (1/(e0*(DT^2)))*Dz( :, :, 3) + A*(2/(DT^2)-wpsquaredEz/2).*Ez(:, :, n0) - A*(1/(DT^2)+wpsquaredEz/4).*Ez (:, :, 3) ) ./ A*( 1/(DT^2) + wpsquaredEz/4) );
     
 %     %     ****** Major ******   Ez ( :, :, n1 ) = (1/e0) * Dz ( :, :, n1 ) ./ (ezzEz);
