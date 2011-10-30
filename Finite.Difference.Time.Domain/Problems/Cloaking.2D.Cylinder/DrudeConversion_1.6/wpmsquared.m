@@ -7,4 +7,6 @@ sinwDT = sin ( w * DT / 2 );
 coswDT = cos ( w * DT / 2 );
 
 return_val = ( 2*sinwDT * ( -2*(urr(i, j)-1)*sinwDT - urrdp(i, j)*gamma(i, j)*DT*coswDT ) ) / ( (DT^2)*(coswDT^2) );
-return_val = 0;
+
+% return_val = w^2*(1-(urr(i, j)));
+% return_val = 0;
