@@ -1,13 +1,7 @@
-% conductance calculation for Yee scattering problem.
+% PEC points location for 2D FDTD Drude model template from 10.4-5 JB Shneider.
 function return_val = s ( i, j )
 
 [Size XCenter YCenter delta ra rb] = Parameters;
-
-b = rb;
-a = ra;
-x = (i-XCenter) * delta;
-y = (j-YCenter) * delta;
-r = sqrt ( x^2 + y^2 );
 
 if (i-XCenter)^2+(j-YCenter)^2 <= (ra/delta)^2
     return_val = 0;
