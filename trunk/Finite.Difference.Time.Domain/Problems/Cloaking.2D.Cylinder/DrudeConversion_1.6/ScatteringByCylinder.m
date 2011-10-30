@@ -289,8 +289,8 @@ for n=0:NNMax-2
     Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
 %     end
 
-    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
-    Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
+%     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
+%     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
