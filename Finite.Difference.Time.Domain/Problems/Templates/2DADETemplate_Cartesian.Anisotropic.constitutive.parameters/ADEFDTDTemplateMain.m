@@ -1,8 +1,7 @@
 % Standard 2D ADE template for FDTD problems involving anisotropic constitutive parameters given in cartesian coordinates.
+
 % Based on FDTD example 3.7 from Numerical techniques in Electromagnetics by Sadiku.
 % Main m file for the FDTD simulation.
-% Now this doesn't look at all like the original problem. Only thing
-% similar are some of the constants and field orientation.
 
 clc
 clear all
