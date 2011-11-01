@@ -309,11 +309,17 @@ for i=1:NNMax/TimeResolutionFactor-2
     mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
     zlim ( [-2 2] )
+    xlabel ('x-axis')
+    ylabel ('y-axis')
+    zlabel ('amplitude')
     
     figure (7)
     surf ( EzSnapshots (:, :, i) );
     view (0, 90)
     zlim ( [-10 10] )
+    xlabel ('x-axis')
+    ylabel ('y-axis')
+    zlabel ('amplitude')
     
 end
 fprintf ( 1, 'Simulation completed! \n' );

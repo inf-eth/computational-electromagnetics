@@ -1,9 +1,9 @@
 function [Size XCenter YCenter delta ra rb DT] = Parameters
 % Simulation related parameters.
-Size = 200;
+Size = 250;
 XCenter = (Size+1)/2;
 YCenter = (Size-1)/2;
-delta = 5.0e-3;
+delta = 2.0e-3;
 
 ra = 0.1;
 rb = 0.2;
