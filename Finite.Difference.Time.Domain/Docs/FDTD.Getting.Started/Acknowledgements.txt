@@ -1,0 +1,4 @@
+'Undersanding FDTD' is a great help in getting started with simulations. 'Modelling EM Scattering Using the FDTD Technique' closely follows the treatment in the book. The report might be helpful for beginners since it contains simplified condensed material from other texts as well. 
+
+The book is strongly recommended for beginners. Here's the full link:
+Understanding the Finite-Difference Time-Domain Method, John B. Schneider, www.eecs.wsu.edu/~schneidj/ufdtd, 2010.
