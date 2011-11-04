@@ -45,6 +45,12 @@ smHx  = zeros (IHx, JHx);
 smHy =  zeros (IHy, JHy);
 % Conductance.
 sEz = zeros (IEz, JEz);
+
+% s*DT/2*er;
+Sc = zeros (IEz, JEz);
+% sm*DT/2*ur;
+ScmHx = zeros (IHx, JHx);
+ScmHy = zeros (IHy, JHy);
 % PML conductance arrays.
 %
 %   Not yet declared.
@@ -98,6 +104,10 @@ view (4, 4)
 % title ( 'wp squared' )
 % view (4, 4)
 
+Sc = (DT*sEz)./(2*erEz);
+ScmHx = (DT*smHx)./(2*urHx);
+ScmHy = (DT*smHy)./(2*urHy);
+
 fprintf ( 1, 'Initialization done.\n' );
 % ############ Initialization Complete ##############
 
@@ -115,11 +125,11 @@ for n=0:NNMax-2
     Ez(:, :, 3) = Ez(:, :, n1);
     
     % Bx
-    Bx(:, :, n1) = Bx(:, :, n0) + ( (DT/(delta)) * ( Ez(:, 1:JEz-1, n0) - Ez(:, 2:JEz, n0) )) + (DT*smHx(:, :).*Hx(:, :, n0));
+    Bx(:, :, n1) = ((1-ScmHx)./(1+ScmHx)) .* Bx(:, :, n0) + ( (DT/(delta))./(1+ScmHx) .* ( Ez(:, 1:JEz-1, n0) - Ez(:, 2:JEz, n0) ));
     %Bx ( :, :, n1 ) = smaskHx ( :, : ) .* Bx ( :, :, n1 );
     
     % By
-    By(2:IHy-1, :, n1) = By(2:IHy-1, :, n0) + ( (DT/(delta)) * ( Ez (2:IEz, :, n0) - Ez (1:IEz-1, :, n0) )) + (DT*smHy (2:IHy-1, :).*Hy (2:IHy-1, :, n0));
+    By(2:IHy-1, :, n1) = ((1-ScmHy(2:IHy-1, :))./(1+ScmHy(2:IHy-1, :))) .* By(2:IHy-1, :, n0) + ( (DT/(delta))./(1+ScmHy(2:IHy-1, :)) .* ( Ez (2:IEz, :, n0) - Ez (1:IEz-1, :, n0) ));
     
     % Magnetic fields.
     Hx (:, :, n1) = (1/u0) * Bx (:, :, n1) ./ (urHx);
@@ -135,7 +145,7 @@ for n=0:NNMax-2
 %     By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
 %     By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
 
-    Dz(:, 2:JEz-1, n1) = Dz(:, 2:JEz-1, n0) + ((DT/(delta))*( Hy(2:IHy, 2:JHy-1, n1) - Hy(1:IHy-1, 2:JHy-1, n1) - Hx(:, 2:JHx, n1) + Hx(:, 1:JHx-1, n1) )) + (DT*sEz(:, 2:JEz-1).*Ez(:, 2:JEz-1, n0));
+    Dz(:, 2:JEz-1, n1) = ((1-Sc(:, 2:JEz-1))./(1+Sc(:, 2:JEz-1))) .* Dz(:, 2:JEz-1, n0) + ( ((DT/delta)./(1+Sc(:, 2:JEz-1))) .* ( Hy(2:IHy, 2:JHy-1, n1) - Hy(1:IHy-1, 2:JHy-1, n1) - Hx(:, 2:JHx, n1) + Hx(:, 1:JHx-1, n1) ));
     % Boundary conditions on Dz. Soft grid truncation.
 %     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
 %     Dz ( 2:IEz-1, JEz, n1 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n0 ) + Dz ( 2:IEz-1, JEz-1, n0 ) + Dz ( 3:IEz, JEz-1, n0 ) );
@@ -143,13 +153,13 @@ for n=0:NNMax-2
 %     Dz ( IEz, 1, n1 ) = (1/2) * ( Dz ( IEz, 2, n0 ) + Dz ( IEz-1, 2, n0 ) );
 %     Dz ( 1, JEz, n1 ) = (1/2) * ( Dz ( 1, JEz-1, n0 ) + Dz ( 2, JEz-1, n0 ) );
 %     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
-
+    
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
-%     if ( n < NHW )
+    if ( n < NHW )
     Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * sin ( TwoPIFDeltaT * n );
     Dz (:, Js, n1) = e0 * Ez (:, Js, n1);
-    
+    end
    % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
 %     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
 %     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
