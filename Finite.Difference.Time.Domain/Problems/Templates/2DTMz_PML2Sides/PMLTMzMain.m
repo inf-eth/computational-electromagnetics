@@ -18,7 +18,7 @@ n0 = 1;
 n1 = 2;
 NNMax = 200;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is time resolution factor.
-ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
+ResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
 Js = 50;                       % J-position of the plane wave front.
 Is = 50;                       % I-position of the plane wave front.
 
@@ -92,14 +92,23 @@ for i=1:IHx
                
     end
 end
-
+% Initializing PML conductance arrays.
+dpml = delta*PMLw;
+mpml = 2;
+semax = 1e9;
+for i=1:PMLw+1
+   smy(:, i) = (u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
+   smy(:, JHx-PMLw+i-1) = (u0/e0)*semax*( (i-0.5)/dpml )^mpml;
+   sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
+   sey(:, JEz-PMLw+i-1) = semax*( (i)/dpml )^mpml;
+end
 figure (1)
-mesh ( urHx )
-title ( 'ur' )
+mesh ( smy )
+title ( 'smy' )
 view (4, 4)
 figure (2)
-mesh ( erEz )
-title ( 'er' )
+mesh ( sey )
+title ( 'sey' )
 view (4, 4)
 % figure (3)
 % mesh ( uphiHx )
@@ -171,9 +180,9 @@ for n=0:NNMax-2
     
     % PML space split Dz component calculations. Dzx and Dzy in lower PML region followed by Dzx and Dzy in upper PML regions.
     Dzx(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) ));
-    Dzy(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw+0, n1) ));
+    Dzy(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw+0, n1) ));
     Dzx(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) ));
-    Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
+    Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
 
     % Boundary conditions on Dz. Soft grid truncation.
 %     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
