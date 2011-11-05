@@ -12,4 +12,4 @@ ra = 0.1;
 rb = 0.2;
 Cl = 299792458;
 DT = delta / (sqrt(2) * Cl);
-PMLw = 11;   % PML width. It is automatically assumed that outermost PML layer is PEC. Effectively PML is (PMLw - 1) cells wide.
+PMLw = 13;   % PML width. It is automatically assumed that outermost PML layer is PEC. Effectively PML is (PMLw - 1) cells wide.
