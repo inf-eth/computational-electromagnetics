@@ -18,7 +18,7 @@ n0 = 1;
 n1 = 2;
 NNMax = 200;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is time resolution factor.
-ResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
 Js = 50;                       % J-position of the plane wave front.
 Is = 50;                       % I-position of the plane wave front.
 
@@ -51,10 +51,17 @@ Sc = zeros (IEz, JEz);
 % sm*DT/2*ur;
 ScmHx = zeros (IHx, JHx);
 ScmHy = zeros (IHy, JHy);
+
 % PML conductance arrays.
-%
-%   Not yet declared.
-%
+sex = zeros (IEz, JEz);     % sigma ex
+sey = zeros (IEz, JEz);     % sigma ey
+smx = zeros (IHy, JHy);     % sigma mx
+smy = zeros (IHx, JHx);     % sigma my
+
+Scsx = zeros (IEz, JEz);       % s*DT/2*er;
+Scsy = zeros (IEz, JEz);       %
+ScmsmxHy = zeros (IHy, JHy);    % sm*DT/2*ur;
+ScmsmyHx = zeros (IHx, JHx);    %
 
 % PEC mask array.
 PECmaskEz = zeros ( IEz, JEz );
@@ -68,6 +75,9 @@ Hy = zeros ( IHy, JHy, 3 );
 
 Dz = zeros ( IEz, JEz, 3 );
 Ez = zeros ( IEz, JEz, 3 );
+
+Dzx = zeros ( IEz, JEz, 3 );
+Dzy = zeros ( IEz, JEz, 3 );
 EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeResolutionFactor ); % E field Snapshot storage.
 
 % =============================================================
@@ -75,7 +85,7 @@ EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeReso
 % ############ Initialization #############
 fprintf ( 1, 'Initializing...' );
 fprintf ( 1, '\nInitializing parametric arrays...' );
-% Initializing er array.
+% Initializing parametric arrays.
 for i=1:IHx
     fprintf ( 1, '%g %% \n', ((i-1)*100)/IHx );
     for j=1:JHx      
@@ -104,9 +114,15 @@ view (4, 4)
 % title ( 'wp squared' )
 % view (4, 4)
 
+% Normal space.
 Sc = (DT*sEz)./(2*erEz);
 ScmHx = (DT*smHx)./(2*urHx);
 ScmHy = (DT*smHy)./(2*urHy);
+% PML space.
+Scsx = (DT*sex)./(2*erEz);
+Scsy = (DT*sey)./(2*erEz);
+ScmsmxHy = (DT*smx)./(2*urHy);
+ScmsmyHx = (DT*smy)./(2*urHx);
 
 fprintf ( 1, 'Initialization done.\n' );
 % ############ Initialization Complete ##############
@@ -124,18 +140,23 @@ for n=0:NNMax-2
     Dz(:, :, 3) = Dz(:, :, n1);
     Ez(:, :, 3) = Ez(:, :, n1);
     
-    % Bx
-    Bx(:, :, n1) = ((1-ScmHx)./(1+ScmHx)) .* Bx(:, :, n0) + ( (DT/(delta))./(1+ScmHx) .* ( Ez(:, 1:JEz-1, n0) - Ez(:, 2:JEz, n0) ));
-    %Bx ( :, :, n1 ) = smaskHx ( :, : ) .* Bx ( :, :, n1 );
+    % Bx in normal space.
+    Bx(:, (1+PMLw):(JHx-PMLw), n1) = ((1-ScmHx(:, (1+PMLw):(JHx-PMLw)))./(1+ScmHx(:, (1+PMLw):(JHx-PMLw)))) .* Bx(:, (1+PMLw):(JHx-PMLw), n0) + ( (DT/(delta))./(1+ScmHx(:, (1+PMLw):(JHx-PMLw))) .* ( Ez(:, (1+PMLw):(JEz-1-PMLw), n0) - Ez(:, (2+PMLw):(JEz-PMLw), n0) ));
+    % Bx in lower PML region.
+    Bx(:, 1:PMLw, n1) = ((1-ScmsmyHx(:, 1:PMLw))./(1+ScmsmyHx(:, 1:PMLw))) .* Bx(:, 1:PMLw, n0) + ( (DT/(delta))./(1+ScmsmyHx(:, 1:PMLw)) .* ( Ez(:, 1:PMLw, n0) - Ez(:, 2:PMLw+1, n0) ));
+    % Bx in upper PML region.
+    Bx(:, JHx-PMLw+1:JHx, n1) = ((1-ScmsmyHx(:, JHx-PMLw+1:JHx))./(1+ScmsmyHx(:, JHx-PMLw+1:JHx))) .* Bx(:, JHx-PMLw+1:JHx, n0) + ( (DT/(delta))./(1+ScmsmyHx(:, JHx-PMLw+1:JHx)) .* ( Ez(:, JEz-PMLw:JEz-1, n0) - Ez(:, JEz-PMLw+1:JEz, n0) ));
     
-    % By
-    By(2:IHy-1, :, n1) = ((1-ScmHy(2:IHy-1, :))./(1+ScmHy(2:IHy-1, :))) .* By(2:IHy-1, :, n0) + ( (DT/(delta))./(1+ScmHy(2:IHy-1, :)) .* ( Ez (2:IEz, :, n0) - Ez (1:IEz-1, :, n0) ));
-    
+    % By in normal space.
+    By(2:IHy-1, (2+PMLw):(JHy-PMLw-1), n1) = ((1-ScmHy(2:IHy-1, (2+PMLw):(JHy-PMLw-1)))./(1+ScmHy(2:IHy-1, (2+PMLw):(JHy-PMLw-1)))) .* By(2:IHy-1, (2+PMLw):(JHy-PMLw-1), n0) + ( (DT/(delta))./(1+ScmHy(2:IHy-1, (2+PMLw):(JHy-PMLw-1))) .* ( Ez (2:IEz, (2+PMLw):(JEz-PMLw-1), n0) - Ez (1:IEz-1, (2+PMLw):(JEz-PMLw-1), n0) ));
+    % By in lower PML region.
+    By(2:IHy-1, 2:PMLw+1, n1) = ((1-ScmsmxHy(2:IHy-1, 2:PMLw+1))./(1+ScmsmxHy(2:IHy-1, 2:PMLw+1))) .* By(2:IHy-1, 2:PMLw+1, n0) + ( (DT/(delta))./(1+ScmsmxHy(2:IHy-1, 2:PMLw+1)) .* ( Ez (2:IEz, 2:PMLw+1, n0) - Ez (1:IEz-1, 2:PMLw+1, n0) ));
+    % By in upper PML region.
+    By(2:IHy-1, JHy-PMLw:JHy-1, n1) = ((1-ScmsmxHy(2:IHy-1, JHy-PMLw:JHy-1))./(1+ScmsmxHy(2:IHy-1, JHy-PMLw:JHy-1))) .* By(2:IHy-1, JHy-PMLw:JHy-1, n0) + ( (DT/(delta))./(1+ScmsmxHy(2:IHy-1, JHy-PMLw:JHy-1)) .* ( Ez(2:IEz, JEz-PMLw:JEz-1, n0) - Ez(1:IEz-1, JEz-PMLw:JEz-1, n0) ));
+
     % Magnetic fields.
     Hx (:, :, n1) = (1/u0) * Bx (:, :, n1) ./ (urHx);
     Hy (:, :, n1) = (1/u0) * By (:, :, n1) ./ (urHy);
-%     By ( 2:IHy-1, :, n1 ) = By ( 2:IHy-1, :, n0 ) + ( (DT/delta) * ( Ez ( 2:IHy-1, :, n0 ) - Ez ( 1:IHy-2, :,n0 ) ));
-    %By ( :, :, n1 ) = smaskHy ( :, : ) .* By ( :, :, n1 );
    
     % Boundary conditions on By. Soft grid truncation.
 %     By ( 1, 2:JHy-1, n1 ) = (1/3) * ( By ( 2, 1:JHy-2, n0 ) + By ( 2, 2:JHy-1, n0 ) + By ( 2, 3:JHy, n0 ) );
@@ -145,7 +166,15 @@ for n=0:NNMax-2
 %     By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
 %     By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
 
-    Dz(:, 2:JEz-1, n1) = ((1-Sc(:, 2:JEz-1))./(1+Sc(:, 2:JEz-1))) .* Dz(:, 2:JEz-1, n0) + ( ((DT/delta)./(1+Sc(:, 2:JEz-1))) .* ( Hy(2:IHy, 2:JHy-1, n1) - Hy(1:IHy-1, 2:JHy-1, n1) - Hx(:, 2:JHx, n1) + Hx(:, 1:JHx-1, n1) ));
+    % Dz in normal space.
+    Dz(:, (2+PMLw):(JEz-1-PMLw), n1) = ((1-Sc(:, (2+PMLw):(JEz-1-PMLw)))./(1+Sc(:, (2+PMLw):(JEz-1-PMLw)))) .* Dz(:, (2+PMLw):(JEz-1-PMLw), n0) + ( ((DT/delta)./(1+Sc(:, (2+PMLw):(JEz-1-PMLw)))) .* ( Hy(2:IHy, (2+PMLw):(JHy-1-PMLw), n1) - Hy(1:IHy-1, (2+PMLw):(JHy-1-PMLw), n1) - Hx(:, (2+PMLw):(JHx-PMLw), n1) + Hx(:, (1+PMLw):(JHx-1-PMLw), n1) ));
+    
+    % PML space split Dz component calculations. Dzx and Dzy in lower PML region followed by Dzx and Dzy in upper PML regions.
+    Dzx(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) ));
+    Dzy(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw+0, n1) ));
+    Dzx(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) ));
+    Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
+
     % Boundary conditions on Dz. Soft grid truncation.
 %     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
 %     Dz ( 2:IEz-1, JEz, n1 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n0 ) + Dz ( 2:IEz-1, JEz-1, n0 ) + Dz ( 3:IEz, JEz-1, n0 ) );

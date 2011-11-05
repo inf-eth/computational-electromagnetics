@@ -2,7 +2,7 @@
 
 function [ISize JSize XCenter YCenter delta ra rb DT PMLw] = Parameters
 
-ISize = 100;
+ISize = 200;
 JSize = 100;
 XCenter = (ISize+1)/2;
 YCenter = (JSize-1)/2;
