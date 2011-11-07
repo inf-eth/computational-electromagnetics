@@ -16,10 +16,10 @@ JEz = JSize+2*PMLw;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 200;                   % Maximum time.
+NNMax = 300;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is time resolution factor.
-ResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
-Js = 50;                       % J-position of the plane wave front.
+ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
+Js = 100;                       % J-position of the plane wave front.
 Is = 50;                       % I-position of the plane wave front.
 
 % Different Constants.
@@ -93,14 +93,17 @@ for i=1:IHx
     end
 end
 % Initializing PML conductance arrays.
-dpml = delta*PMLw;
-mpml = 12;
-semax = 1e1;
+dpml = PMLw;
+mpml = 250;          % Typical = 80;
+semax = 2.6e7;      % Typical = 3.7e6;
 for i=1:PMLw+1
-%    smy(:, i) = (u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
-%    smy(:, JHx-PMLw+i-1) = (u0/e0)*semax*( (i-0.5)/dpml )^mpml;
-%    sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
-%    sey(:, JEz-PMLw+i-1) = semax*( (i)/dpml )^mpml;
+   smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
+   smy(:, JHx-PMLw+i-1) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;
+   sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
+   sey(:, JEz-PMLw+i-1) = semax*( (i)/dpml )^mpml;
+   
+%    erEz(:, i+1) = 10;
+%    erEz(:, JEz-PMLw+i-1) = 10;
 end
 figure (1)
 mesh ( smy )
@@ -168,21 +171,23 @@ for n=0:NNMax-2
     Hy (:, :, n1) = (1/u0) * By (:, :, n1) ./ (urHy);
    
     % Boundary conditions on By. Soft grid truncation.
-    By ( 1, 2:JHy-1, n1 ) = (1/3) * ( By ( 2, 1:JHy-2, n0 ) + By ( 2, 2:JHy-1, n0 ) + By ( 2, 3:JHy, n0 ) );
-    By ( IHy, 2:JHy-1, n1 ) = (1/3) * ( By ( IHy-1, 1:JHy-2, n0 ) + By ( IHy-1, 2:JHy-1, n0 ) + By ( IHy-1, 3:JHy, n0 ) );
-    By ( 1, 1, n1 ) = (1/2) * ( By ( 2, 1, n0 ) + By ( 2, 2, n0 ) );
-    By ( 1, JHy, n1 ) = (1/2) * ( By ( 2, JHy, n0 ) + By ( 2, JHy-1, n0 ) );
-    By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
-    By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
+%     By ( 1, 2:JHy-1, n1 ) = (1/3) * ( By ( 2, 1:JHy-2, n0 ) + By ( 2, 2:JHy-1, n0 ) + By ( 2, 3:JHy, n0 ) );
+%     By ( IHy, 2:JHy-1, n1 ) = (1/3) * ( By ( IHy-1, 1:JHy-2, n0 ) + By ( IHy-1, 2:JHy-1, n0 ) + By ( IHy-1, 3:JHy, n0 ) );
+%     By ( 1, 1, n1 ) = (1/2) * ( By ( 2, 1, n0 ) + By ( 2, 2, n0 ) );
+%     By ( 1, JHy, n1 ) = (1/2) * ( By ( 2, JHy, n0 ) + By ( 2, JHy-1, n0 ) );
+%     By ( IHy, 1, n1 ) = (1/2) * ( By ( IHy-1, 1, n0 ) + By( IHy-1, 2, n0 ) );
+%     By ( IHy, JHy, n1 ) = (1/2) * ( By ( IHy-1, JHy, n0 ) + By ( IHy-1, JHy-1, n0 ) );
 
     % Dz in normal space.
     Dz(:, (2+PMLw):(JEz-1-PMLw), n1) = ((1-Sc(:, (2+PMLw):(JEz-1-PMLw)))./(1+Sc(:, (2+PMLw):(JEz-1-PMLw)))) .* Dz(:, (2+PMLw):(JEz-1-PMLw), n0) + ( ((DT/delta)./(1+Sc(:, (2+PMLw):(JEz-1-PMLw)))) .* ( Hy(2:IHy, (2+PMLw):(JHy-1-PMLw), n1) - Hy(1:IHy-1, (2+PMLw):(JHy-1-PMLw), n1) - Hx(:, (2+PMLw):(JHx-PMLw), n1) + Hx(:, (1+PMLw):(JHx-1-PMLw), n1) ));
     
+    % PML space.
+    Dz(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dz(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
     % PML space split Dz component calculations. Dzx and Dzy in lower PML region followed by Dzx and Dzy in upper PML regions.
-    Dzx(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) ));
-    Dzy(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dzy(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw+0, n1) ));
-    Dzx(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) ));
-    Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dzy(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
+%     Dzx(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) ));
+%     Dzy(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dzy(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw+0, n1) ));
+%     Dzx(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) ));
+%     Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dzy(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
 
     % Boundary conditions on Dz. Soft grid truncation.
 %     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
@@ -191,6 +196,7 @@ for n=0:NNMax-2
 %     Dz ( IEz, 1, n1 ) = (1/2) * ( Dz ( IEz, 2, n0 ) + Dz ( IEz-1, 2, n0 ) );
 %     Dz ( 1, JEz, n1 ) = (1/2) * ( Dz ( 1, JEz-1, n0 ) + Dz ( 2, JEz-1, n0 ) );
 %     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
+
     Dz(:, :, n1) = Dz(:, :, n1)+Dzx(:, :, n1)+Dzy(:, :, n1);
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
@@ -218,11 +224,11 @@ for i=1:NNMax/TimeResolutionFactor-2
     figure (6)
     mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
-    zlim ( [-2 2] )
+    zlim ( [-1 1] )
     caxis([0 1])
     xlabel ('y-axis')
     ylabel ('x-axis')
-    colorbar
+%     colorbar
     
     figure (7)
     surf ( EzSnapshots (:, :, i) );
@@ -231,7 +237,7 @@ for i=1:NNMax/TimeResolutionFactor-2
     caxis([0 1])
     xlabel ('y-axis')
     ylabel ('x-axis')
-    colorbar
+%     colorbar
     
 end
 fprintf ( 1, 'Simulation completed! \n' );
