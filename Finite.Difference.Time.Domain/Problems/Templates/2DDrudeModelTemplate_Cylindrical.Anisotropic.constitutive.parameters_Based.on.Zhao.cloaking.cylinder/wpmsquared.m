@@ -1,7 +1,7 @@
 % wpmsquared calculation for cloaking problem.
 function return_val = wpmsquared( i, j, w )
 
-[Size XCenter YCenter delta ra rb DT] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DT PMLw] = Parameters;
 
 sinwDT = sin ( w * DT / 2 );
 coswDT = cos ( w * DT / 2 );

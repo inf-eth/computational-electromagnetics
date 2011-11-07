@@ -10,19 +10,22 @@ clc
 clear all
 
 % ============== Simulation related parameters ================
-[Size XCenter YCenter delta ra rb DTp] = Parameters;
-IHx = Size;
-JHx = Size-1;
-IHy = Size+1;
-JHy = Size;
-IEz = Size;
-JEz = Size;
+[ISize JSize XCenter YCenter delta ra rb DTp PMLw] = Parameters;
+
+IHx = ISize;
+JHx = JSize+2*PMLw-1;
+IHy = ISize+1;
+JHy = JSize+2*PMLw;
+IEz = ISize;
+JEz = JSize+2*PMLw;
+
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 500;                   % Maximum time.
+NNMax = 800;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is resolution factor.
-ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
+xResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
+yResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
 Js = 2;                         % J-position of the plane wave front.
 
 % Different Constants.
@@ -78,7 +81,7 @@ Hy = zeros ( IHy, JHy, 3 );
 
 Dz = zeros ( IEz, JEz, 3 );
 Ez = zeros ( IEz, JEz, 3 );
-EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeResolutionFactor ); % E field Snapshot storage.
+EzSnapshots = zeros ( IEz/xResolutionFactor, JEz/yResolutionFactor, NNMax/TimeResolutionFactor ); % E field Snapshot storage.
 
 % Space averaged B.
 BxAve = zeros ( IHx, JHx, 3);
@@ -219,7 +222,7 @@ for n=0:NNMax-2
     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
-        EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:ResolutionFactor:(IEz-1)), 1+(0:ResolutionFactor:(JEz-1)), n1);
+        EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:xResolutionFactor:(IEz-1)), 1+(0:yResolutionFactor:(JEz-1)), n1);
     end
     temp = n0;
     n0 = n1;

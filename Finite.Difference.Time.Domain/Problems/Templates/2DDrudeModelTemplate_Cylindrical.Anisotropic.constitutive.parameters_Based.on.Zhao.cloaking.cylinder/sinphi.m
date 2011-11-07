@@ -1,7 +1,7 @@
 % sinphi calculation for 2D cloaking problem.
 function return_val = sinphi ( i, j )
 
-[Size XCenter YCenter delta ra rb] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DT PMLw] = Parameters;
 
 b = rb;
 a = ra;
