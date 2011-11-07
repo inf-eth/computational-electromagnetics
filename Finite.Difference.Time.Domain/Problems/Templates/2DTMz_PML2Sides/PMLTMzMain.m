@@ -16,7 +16,7 @@ JEz = JSize+2*PMLw;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 300;                   % Maximum time.
+NNMax = 500;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is time resolution factor.
 ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
 Js = 100;                       % J-position of the plane wave front.
@@ -97,13 +97,17 @@ dpml = PMLw;
 mpml = 250;          % Typical = 80;
 semax = 2.6e7;      % Typical = 3.7e6;
 for i=1:PMLw+1
-   smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
-   smy(:, JHx-PMLw+i-1) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;
-   sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
-   sey(:, JEz-PMLw+i-1) = semax*( (i)/dpml )^mpml;
-   
-%    erEz(:, i+1) = 10;
-%    erEz(:, JEz-PMLw+i-1) = 10;
+    
+    sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
+    smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
+    
+    if i<PMLw+1
+        sey(:, JEz-PMLw+i) = semax*( (i)/dpml )^mpml;
+        smy(:, JHx-PMLw+i) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;  
+    end
+    
+%     erEz(:, i+1) = 10;
+%     erEz(:, JEz-PMLw+i-1) = 10;
 end
 figure (1)
 mesh ( smy )
@@ -183,6 +187,11 @@ for n=0:NNMax-2
     
     % PML space.
     Dz(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dz(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
+    Dz(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dz(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
+    
+%     Dz(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dz(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
+%     Dz(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dz(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
+
     % PML space split Dz component calculations. Dzx and Dzy in lower PML region followed by Dzx and Dzy in upper PML regions.
 %     Dzx(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) ));
 %     Dzy(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dzy(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw+0, n1) ));
@@ -198,12 +207,13 @@ for n=0:NNMax-2
 %     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
 
     Dz(:, :, n1) = Dz(:, :, n1)+Dzx(:, :, n1)+Dzy(:, :, n1);
+    
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
-    if ( n < NHW )
+%     if ( n < NHW )
     Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * sin ( TwoPIFDeltaT * n );
     Dz (:, Js, n1) = e0 * Ez (:, Js, n1);
-    end
+%     end
    % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
 %     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
 %     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
