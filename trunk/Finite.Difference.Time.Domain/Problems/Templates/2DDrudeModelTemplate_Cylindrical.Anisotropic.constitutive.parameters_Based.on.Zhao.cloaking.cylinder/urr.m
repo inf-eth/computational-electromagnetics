@@ -1,7 +1,7 @@
 % urr calculation for cloaking problem.
 function return_val = urr ( i, j )
 
-[Size XCenter YCenter delta ra rb] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DT PMLw] = Parameters;
 
 offset = delta * 0;
 b = rb;

@@ -1,7 +1,7 @@
 % A calculation for cloaking problem.
 function return_val = A ( i, j )
 
-[Size XCenter YCenter delta ra rb] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DT PMLw] = Parameters;
 
 b = rb;
 a = ra;
