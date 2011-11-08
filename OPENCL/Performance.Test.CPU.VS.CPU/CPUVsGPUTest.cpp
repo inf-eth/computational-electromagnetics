@@ -90,7 +90,7 @@ jurisdiction and venue of these courts.
 ============================================================ */
 
 
-#include "Template.hpp"
+#include "CPUVsGPUTest.hpp"
 
 /*
  * \brief Host Initialization 
@@ -341,7 +341,7 @@ initializeCL(void)
     /////////////////////////////////////////////////////////////////
     // Load CL file, build CL program object, create CL kernel object
     /////////////////////////////////////////////////////////////////
-    const char * filename  = "Template_Kernels.cl";
+    const char * filename  = "CPUVsGPUTest_Kernels.cl";
     std::string  sourceStr = convertToString(filename);
     const char * source    = sourceStr.c_str();
     size_t sourceSize[]    = { strlen(source) };
@@ -369,7 +369,7 @@ initializeCL(void)
     }
 
     /* get a kernel object handle for a kernel with the given name */
-    kernel = clCreateKernel(program, "templateKernel", &status);
+    kernel = clCreateKernel(program, "CPUvsGPUTestKernel", &status);
     if(status != CL_SUCCESS) 
     {  
         std::cout<<"Error: Creating Kernel from program. (clCreateKernel)\n";

@@ -90,8 +90,8 @@ jurisdiction and venue of these courts.
 ============================================================ */
 
 
-#ifndef TEMPLATE_H_
-#define TEMPLATE_H_
+#ifndef CPUVSGPUTEST_H_
+#define CPUVSGPUTEST_H_
 
 
 
@@ -181,4 +181,4 @@ void print1DArray(
          const unsigned int length);
 
 
-#endif  /* #ifndef TEMPLATE_H_ */
+#endif  /* #ifndef CPUVSGPUTEST_H_ */
