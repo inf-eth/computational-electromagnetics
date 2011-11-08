@@ -95,7 +95,7 @@ jurisdiction and venue of these courts.
  */
 
 
-__kernel void templateKernel(__global  unsigned int * output,
+__kernel void CPUvsGPUTestKernel(__global  unsigned int * output,
                              __global  unsigned int * input,
                              const     unsigned int multiplier)
 {
