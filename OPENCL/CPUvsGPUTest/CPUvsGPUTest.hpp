@@ -103,18 +103,23 @@ jurisdiction and venue of these courts.
 #include <string>
 #include <fstream>
 
+#include <SDKCommon.hpp>
+#include <SDKApplication.hpp>
+#include <SDKCommandArgs.hpp>
+#include <SDKFile.hpp>
 
 /*** GLOBALS ***/
 
 /*
  * Input data is stored here.
  */
-cl_uint *input;
+cl_uint *inputA;
+cl_uint *inputB;
 
 /*
  * Output data is stored here.
  */
-cl_uint *output;
+cl_uint *outputC;
 
 /*
  * Multiplier is stored in this variable 
@@ -125,8 +130,9 @@ cl_uint multiplier;
 cl_uint width;
 
 /* The memory buffer that is used as input/output for OpenCL kernel */
-cl_mem   inputBuffer;
-cl_mem	 outputBuffer;
+cl_mem   inputBufferA;
+cl_mem	 inputBufferB;
+cl_mem	 outputBufferC;
 
 cl_context          context;
 cl_device_id        *devices;
@@ -137,7 +143,25 @@ cl_program program;
 /* This program uses only one kernel and this serves as a handle to it */
 cl_kernel  kernel;
 
+//class SDKTimer : public SDKSample
+//{
+//	public:
+//	streamsdk::SDKCommon *sampleCommon;
+//
+//	SDKTimer(std::string name) : SDKSample(name)
+//	{
+//
+//	}
+//	int initialize()
+	//{
+	//	sampleCommon = new streamsdk::SDKCommon();
+	//}
 
+	//~SDKTimer()
+	//{
+//		delete sampleCommon;
+//	}
+//};
 /*** FUNCTION DECLARATIONS ***/
 /*
  * OpenCL related initialisations are done here.

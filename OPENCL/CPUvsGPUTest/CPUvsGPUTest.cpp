@@ -100,34 +100,40 @@ jurisdiction and venue of these courts.
 int
 initializeHost(void)
 {
-    width				= 256;
-    input				= NULL;
-    output				= NULL;
+    width				= 1024*1024*32;//256;
+    inputA				= NULL;
+	inputB				= NULL;
+    outputC				= NULL;
     multiplier			= 2;
 
     /////////////////////////////////////////////////////////////////
     // Allocate and initialize memory used by host 
     /////////////////////////////////////////////////////////////////
     cl_uint sizeInBytes = width * sizeof(cl_uint);
-    input = (cl_uint *) malloc(sizeInBytes);
-    if(input == NULL)
+    inputA = (cl_uint *) malloc(sizeInBytes);
+	inputB = (cl_uint *) malloc(sizeInBytes);
+    if(inputA == NULL || inputB == NULL)
     {
         std::cout<<"Error: Failed to allocate input memory on host\n";
         return 1; 
     }
 
-    output = (cl_uint *) malloc(sizeInBytes);
-    if(output == NULL)
+    outputC = (cl_uint *) malloc(sizeInBytes);
+    if(outputC == NULL)
     {
         std::cout<<"Error: Failed to allocate output memory on host\n";
         return 1; 
     }
 
     for(cl_uint i = 0; i < width; i++)
-        input[i] = i;
+	{
+		inputA[i] = i;
+		inputB[i] = i*i;
+	}
 
-    // print input array
-    print1DArray(std::string("Input").c_str(), input, width);
+    // print input arrays
+    //print1DArray(std::string("Input A").c_str(), inputA, width);
+	//print1DArray(std::string("Input B").c_str(), inputB, width);
     return 0;
 }
 
@@ -185,7 +191,7 @@ initializeCL(void)
 {
     cl_int status = 0;
     size_t deviceListSize;
-
+//	sampleCommon = new streamsdk::SDKCommon();
     /*
      * Have a look at the available platforms and pick either
      * the AMD one if available or a reasonable default.
@@ -224,6 +230,7 @@ initializeCL(void)
                 return 1;
             }
             platform = platforms[i];
+			std::cout << "Device" << i << " = " << pbuff << std::endl;
             if(!strcmp(pbuff, "Advanced Micro Devices, Inc."))
             {
                 break;
@@ -302,7 +309,7 @@ initializeCL(void)
     commandQueue = clCreateCommandQueue(
                        context, 
                        devices[0], 
-                       0, 
+                       CL_QUEUE_PROFILING_ENABLE, 
                        &status);
     if(status != CL_SUCCESS) 
     { 
@@ -313,27 +320,39 @@ initializeCL(void)
     /////////////////////////////////////////////////////////////////
     // Create OpenCL memory buffers
     /////////////////////////////////////////////////////////////////
-    inputBuffer = clCreateBuffer(
+    inputBufferA = clCreateBuffer(
                       context, 
                       CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                       sizeof(cl_uint) * width,
-                      input, 
+                      inputA, 
                       &status);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<<"Error: clCreateBuffer (inputBuffer)\n";
+        std::cout<<"Error: clCreateBuffer (inputBufferA)\n";
         return 1;
     }
 
-    outputBuffer = clCreateBuffer(
+	inputBufferB = clCreateBuffer(
+                      context, 
+                      CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                      sizeof(cl_uint) * width,
+                      inputB, 
+                      &status);
+    if(status != CL_SUCCESS) 
+    { 
+        std::cout<<"Error: clCreateBuffer (inputBufferB)\n";
+        return 1;
+    }
+
+    outputBufferC = clCreateBuffer(
                        context, 
                        CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                        sizeof(cl_uint) * width,
-                       output, 
+                       outputC, 
                        &status);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<<"Error: clCreateBuffer (outputBuffer)\n";
+        std::cout<<"Error: clCreateBuffer (outputBufferC)\n";
         return 1;
     }
 
@@ -439,8 +458,11 @@ runCLKernels(void)
     }
     
     globalThreads[0] = width;
-    localThreads[0]  = 1;
+    localThreads[0]  = 1024;
 
+	std::cout << "Max dimensions: " << maxDims << std::endl;
+	std::cout << "Device maxWorkGroupSize = " << maxWorkGroupSize << std::endl;
+	std::cout << "Device maxWorkItemSizes = " << maxWorkItemSizes[0] << std::endl;
     if(localThreads[0] > maxWorkGroupSize ||
         localThreads[0] > maxWorkItemSizes[0])
     {
@@ -454,37 +476,37 @@ runCLKernels(void)
                     kernel, 
                     0, 
                     sizeof(cl_mem), 
-                    (void *)&outputBuffer);
+                    (void *)&outputBufferC);
     if(status != CL_SUCCESS) 
     { 
         std::cout<<"Error: Setting kernel argument. (output)\n";
         return 1;
     }
 
-    /* the input array to the kernel */
+    /* the input array A to the kernel */
     status = clSetKernelArg(
                     kernel, 
                     1, 
                     sizeof(cl_mem), 
-                    (void *)&inputBuffer);
+                    (void *)&inputBufferA);
     if(status != CL_SUCCESS) 
     { 
         std::cout<<"Error: Setting kernel argument. (input)\n";
         return 1;
     }
 
-    /*multiplier*/
+    /* the input array B to the kernel*/
     status = clSetKernelArg(
                     kernel, 
                     2, 
-                    sizeof(cl_uint), 
-                    (void *)&multiplier);
+                    sizeof(cl_mem), 
+                    (void *)&inputBufferB);
     if(status != CL_SUCCESS) 
     { 
         std::cout<< "Error: Setting kernel argument. (multiplier)\n";
         return 1;
     }
-
+	cl_ulong startTime, endTime;
     /* 
      * Enqueue a kernel run call.
      */
@@ -517,6 +539,13 @@ runCLKernels(void)
         return 1;
     }
 
+	clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START,
+	sizeof(cl_ulong), &startTime, NULL);
+	clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END,
+	sizeof(cl_ulong), &endTime, NULL);
+	cl_ulong kernelExecTimeNs = 1e-6*(endTime-startTime);
+	std::cout << "kernel execution time = " << kernelExecTimeNs << "ms." << std::endl;
+
     status = clReleaseEvent(events[0]);
     if(status != CL_SUCCESS) 
     { 
@@ -529,11 +558,11 @@ runCLKernels(void)
     /* Enqueue readBuffer*/
     status = clEnqueueReadBuffer(
                 commandQueue,
-                outputBuffer,
+                outputBufferC,
                 CL_TRUE,
                 0,
                 width * sizeof(cl_uint),
-                output,
+                outputC,
                 0,
                 NULL,
                 &events[1]);
@@ -590,13 +619,19 @@ cleanupCL(void)
         std::cout<<"Error: In clReleaseProgram\n";
         return 1; 
     }
-    status = clReleaseMemObject(inputBuffer);
+    status = clReleaseMemObject(inputBufferA);
     if(status != CL_SUCCESS)
     {
-        std::cout<<"Error: In clReleaseMemObject (inputBuffer)\n";
+        std::cout<<"Error: In clReleaseMemObject (inputBufferA)\n";
         return 1; 
     }
-    status = clReleaseMemObject(outputBuffer);
+	status = clReleaseMemObject(inputBufferB);
+    if(status != CL_SUCCESS)
+    {
+        std::cout<<"Error: In clReleaseMemObject (inputBufferB)\n";
+        return 1; 
+    }
+    status = clReleaseMemObject(outputBufferC);
     if(status != CL_SUCCESS)
     {
         std::cout<<"Error: In clReleaseMemObject (outputBuffer)\n";
@@ -625,15 +660,20 @@ cleanupCL(void)
 void
 cleanupHost(void)
 {
-    if(input != NULL)
+    if(inputA != NULL)
     {
-        free(input);
-        input = NULL;
+        free(inputA);
+        inputA = NULL;
     }
-    if(output != NULL)
+	if(inputB != NULL)
     {
-        free(output);
-        output = NULL;
+        free(inputB);
+        inputB = NULL;
+    }
+    if(outputC != NULL)
+    {
+        free(outputC);
+        outputC = NULL;
     }
     if(devices != NULL)
     {
@@ -670,7 +710,7 @@ void verify()
 {
     bool passed = true;
     for(unsigned int i = 0; i < width; ++i)
-        if(input[i] * multiplier != output[i])
+        if(inputA[i] * inputB[i] != outputC[i])
             passed = false;
 
     if(passed == true)
@@ -690,12 +730,20 @@ main(int argc, char * argv[])
     if(initializeCL()==1)
         return 1;
 
+	//int timer = sampleCommon->createTimer();
+    //sampleCommon->resetTimer(timer);
+    //sampleCommon->startTimer(timer);
+
     // Run the CL program
     if(runCLKernels()==1)
         return 1;
 
+	//sampleCommon->stopTimer(timer);
+    //double totalKernelTime = (double)(sampleCommon->readTimer(timer));
+
+	
     // Print output array
-    print1DArray(std::string("Output"), output, width);
+    //print1DArray(std::string("Output"), outputC, width);
 
     // Verify output
     verify();
