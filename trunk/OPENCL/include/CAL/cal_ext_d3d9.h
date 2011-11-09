@@ -1,6 +1,7 @@
+
 /* ============================================================
 
-Copyright (c) 2009-2010 Advanced Micro Devices, Inc.  All rights reserved.
+Copyright (c) 2007 Advanced Micro Devices, Inc.  All rights reserved.
  
 Redistribution and use of this material is permitted under the following 
 conditions:
@@ -20,7 +21,7 @@ OF ALL RIGHTS TO REDISTRIBUTE, ACCESS OR USE THIS MATERIAL.
 THIS MATERIAL IS PROVIDED BY ADVANCED MICRO DEVICES, INC. AND ANY COPYRIGHT 
 HOLDERS AND CONTRIBUTORS "AS IS" IN ITS CURRENT CONDITION AND WITHOUT ANY 
 REPRESENTATIONS, GUARANTEE, OR WARRANTY OF ANY KIND OR IN ANY WAY RELATED TO 
-SUPPORT, INDEMNITY, ERROR FREE OR UNINTERRUPTED OPERA TION, OR THAT IT IS FREE 
+SUPPORT, INDEMNITY, ERROR FREE OR UNINTERRUPTED OPERATION, OR THAT IT IS FREE 
 FROM DEFECTS OR VIRUSES.  ALL OBLIGATIONS ARE HEREBY DISCLAIMED - WHETHER 
 EXPRESS, IMPLIED, OR STATUTORY - INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED 
 WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, 
@@ -89,16 +90,93 @@ jurisdiction and venue of these courts.
 
 ============================================================ */
 
-/*!
- * Sample kernel which multiplies every element of the input array with
- * a constant and stores it at the corresponding output array
- */
 
-__kernel void CPUvsGPUTestKernel(__global  unsigned int * outputC,
-                             __global  unsigned int * inputA,
-							 __global  unsigned int * inputB)
-{
-    uint tid = get_global_id(0);
-    //outputC[tid] = inputA[tid] * inputB[tid];
-	outputC[tid] = sqrt(inputA[tid] * inputB[tid] / 12.34567) * sin(inputA[tid]);
+#ifndef __CAL_EXT_D3D9_H__
+#define __CAL_EXT_D3D9_H__
+
+#include "cal.h"
+#include <windows.h>
+#include <d3d9.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef CALAPIENTRYP
+#define CALAPIENTRYP CALAPIENTRY *
+#endif
+
+/*
+ * calD3D9Associate
+ * Enable a CAL device and a D3D device to share resources. 
+ * The CALdevice specified by device must be open. 
+ * The D3D device specified by d3dDevice must be created. 
+ * A D3D device must be associated with a CAL device prior to any resource sharing.
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if device is an invalid handle. 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D9ASSOCIATE) (CALdevice device, IDirect3DDevice9* d3dDevice);
+
+/*
+ * calD3D9MapTexture
+ * Return,  in d3dTex, a pointer to a created IDirect3DTexture9 interface for the supplied CAL resource res. 
+ * The IDirect3DTexture9 is created on the supplied D3D device specified by d3dDevice. 
+ * Use IDirect3DTexture9::GetLevelDesc() to get the description of the vertex buffer created. 
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if res is an invalid handle. 
+ * CAL_RESULT_INVALID_PARAMETER is returned if d3dTex or d3dDevice is null, 
+ * CAL_RESULT_ERROR is returned if the memory resource res  is not accessible
+ * by the physical adapter associated with the D3D Device d3DDevice. 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D9MAPTEXTUREFUNC) (IDirect3DTexture9 **d3dTex, IDirect3DDevice9* d3dDevice, CALresource res);
+
+/*
+ * calD3D9MapSurface 
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if res is an invalid handle. 
+ * CAL_RESULT_INVALID_PARAMETER is returned if d3dTex or d3dDevice is null, 
+ * CAL_RESULT_ERROR is returned if the memory resource res  is not accessible
+ * by the physical adapter associated with the D3D Device d3DDevice. 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D9MAPSURFACEFUNC) (CALresource* res, CALdevice dev, IDirect3DSurface9* tex, HANDLE shareHandle);
+
+/*
+ * calD3D9UnmapTexture
+ * Destroy the created Direct3D texture. 
+ * calD3D9UnmapTexture should only be called on textures created with calD3D9MapTexture.
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if res is an invalid handle, 
+ * CAL_RESULT_ERROR is returned if d3dTex wasn’t created by calD3D9CreateTexture.
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D9UNMAPTEXTUREFUNC) (IDirect3DTexture9 *d3dTex);
+
+/*
+ * calD3D9MapVertexBuffer 
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if res is an invalid handle. 
+ * CAL_RESULT_INVALID_PARAMETER is returned if d3dVB or d3dDevice is null, 
+ * CAL_RESULT_ERROR is returned if the memory resource res  is not accessible
+ * by the physical adapter associated with the D3D Device d3DDevice. 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D9MAPVERTEXBUFFERFUNC) (CALresource* res, CALdevice dev, IDirect3DVertexBuffer9* d3dVB, HANDLE shareHandle);
+
+/*
+ * calD3D9MapIndexBuffer 
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if res is an invalid handle. 
+ * CAL_RESULT_INVALID_PARAMETER is returned if d3dIB or d3dDevice is null, 
+ * CAL_RESULT_ERROR is returned if the memory resource res  is not accessible
+ * by the physical adapter associated with the D3D Device d3DDevice. 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D9MAPINDEXBUFFERFUNC) (CALresource* res, CALdevice dev, IDirect3DIndexBuffer9* d3dIB, HANDLE shareHandle);
+
+#ifdef __cplusplus
 }
+#endif
+#endif // __CAL_EXT_D3D9_H__

@@ -1,6 +1,7 @@
+
 /* ============================================================
 
-Copyright (c) 2009-2010 Advanced Micro Devices, Inc.  All rights reserved.
+Copyright (c) 2007 Advanced Micro Devices, Inc.  All rights reserved.
  
 Redistribution and use of this material is permitted under the following 
 conditions:
@@ -20,7 +21,7 @@ OF ALL RIGHTS TO REDISTRIBUTE, ACCESS OR USE THIS MATERIAL.
 THIS MATERIAL IS PROVIDED BY ADVANCED MICRO DEVICES, INC. AND ANY COPYRIGHT 
 HOLDERS AND CONTRIBUTORS "AS IS" IN ITS CURRENT CONDITION AND WITHOUT ANY 
 REPRESENTATIONS, GUARANTEE, OR WARRANTY OF ANY KIND OR IN ANY WAY RELATED TO 
-SUPPORT, INDEMNITY, ERROR FREE OR UNINTERRUPTED OPERA TION, OR THAT IT IS FREE 
+SUPPORT, INDEMNITY, ERROR FREE OR UNINTERRUPTED OPERATION, OR THAT IT IS FREE 
 FROM DEFECTS OR VIRUSES.  ALL OBLIGATIONS ARE HEREBY DISCLAIMED - WHETHER 
 EXPRESS, IMPLIED, OR STATUTORY - INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED 
 WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, 
@@ -89,16 +90,44 @@ jurisdiction and venue of these courts.
 
 ============================================================ */
 
-/*!
- * Sample kernel which multiplies every element of the input array with
- * a constant and stores it at the corresponding output array
- */
 
-__kernel void CPUvsGPUTestKernel(__global  unsigned int * outputC,
-                             __global  unsigned int * inputA,
-							 __global  unsigned int * inputB)
-{
-    uint tid = get_global_id(0);
-    //outputC[tid] = inputA[tid] * inputB[tid];
-	outputC[tid] = sqrt(inputA[tid] * inputB[tid] / 12.34567) * sin(inputA[tid]);
+#ifndef __CAL_EXT_D3D10_H__
+#define __CAL_EXT_D3D10_H__
+
+#include "cal.h"
+#include <windows.h>
+#include <D3D10.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef CALAPIENTRYP
+#define CALAPIENTRYP CALAPIENTRY *
+#endif
+
+/*
+ * calD3D10Associate
+ * 
+ * @brief Associate d3dDevice with CAL device dev for D3D10 interoperability
+ *
+ * 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D10ASSOCIATEFUNC) (CALdevice dev, ID3D10Device* d3dDevice);
+
+
+/*
+ * calD3D10MapResource
+ * 
+ * On success, CAL_RESULT_OK is returned. 
+ * On error, CAL_RESULT_BAD_HANDLE is returned if res is an invalid handle. 
+ * CAL_RESULT_INVALID_PARAMETER is returned if d3dRes or d3dDevice is null, 
+ * CAL_RESULT_ERROR is returned if the memory resource res  is not accessible
+ * by the physical adapter associated with the D3D Device d3DDevice. 
+ */
+typedef CALresult (CALAPIENTRYP PFNCALD3D10MAPRESOURCEFUNC) (CALresource* res, CALdevice dev, ID3D10Resource* d3dRes, HANDLE shareHandle);
+
+#ifdef __cplusplus
 }
+#endif
+#endif // __CAL_EXT_D3D10_H__
