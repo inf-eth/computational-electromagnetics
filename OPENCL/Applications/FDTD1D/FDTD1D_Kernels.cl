@@ -100,14 +100,28 @@ jurisdiction and venue of these courts.
 #pragma OPENCL EXTENSION cl_amd_fp64 : enable
 #endif
 
-__kernel void FDTD1DKernel(
-							 __global  double * outputC,
-                             __global  double * inputA,
-							 __global  double * inputB, const uint t, const uint w)
+//#define imp0 377.0
+
+__kernel void FDTD1DKernel(__global  double * Ez, __global  double * Hy, const uint t, const uint w, const uint flag)
 {
     uint tid = get_global_id(0);
-    //outputC[tid] = inputA[tid] * inputB[tid];
-	//outputC[tid] = sqrt(inputA[tid] * inputB[tid] / 12.34567) * sin(inputA[tid]);
-	//outputC[tid+w*t] = inputA[tid+w*t] + inputB[tid+w*t];
-	outputC[tid+t*w] = tid;
+	double imp0 = 377.0;
+	if (flag == 0)
+	{
+		if (tid != w-1)
+		{
+			Hy[tid+t*w] = Hy[tid+(t-1)*w] + ( (Ez[tid+1+(t-1)*w] - Ez[tid+(t-1)*w])/imp0 );
+		}
+	}
+	else
+	{
+		if (tid != 0)
+		{
+			Ez[tid+t*w] = Ez[tid+(t-1)*w] + ( (Hy[tid+t*w] - Hy[tid-1+t*w])*imp0 );
+		}
+		else
+		{
+			Ez[0+t*w] = Ez[0+t*w] + exp ( -1 * pow((t-30.), 2)/100 );
+		}
+	}
 }
