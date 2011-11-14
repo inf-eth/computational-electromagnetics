@@ -22,10 +22,10 @@ JEz = JSize+2*PMLw;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 800;                   % Maximum time.
+NNMax = 750;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is resolution factor.
-xResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
-yResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
+xResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+yResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
 Js = 2;                         % J-position of the plane wave front.
 
 % Different Constants.
@@ -237,12 +237,14 @@ for i=1:NNMax/TimeResolutionFactor-2
     figure (6)
     mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
-    zlim ( [-2 2] )
-    
+    zlim ( [-1 1] )
+    caxis ([-1 1])
+        
     figure (7)
     surf ( EzSnapshots (:, :, i) );
     view (0, 90)
     zlim ( [-10 10] )
+    caxis ([-1 1])
     
 end
 fprintf ( 1, 'Simulation completed! \n' );
