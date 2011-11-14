@@ -110,31 +110,26 @@ jurisdiction and venue of these courts.
 
 /*** GLOBALS ***/
 
+// Are we running on CPU or GPU?
+bool cpu;
+
+// Half timestep flag. Hy will be calculated when flag is false and Ez otherwise.
+cl_uint flagHalf;
 /*
  * Input data is stored here.
  */
-cl_double *inputA;
-cl_double *inputB;
-
-/*
- * Output data is stored here.
- */
-cl_double *outputC;
-
-/*
- * Multiplier is stored in this variable 
- */
-cl_uint multiplier;
+cl_double *Ez;
+cl_double *Hy;
 
 /* problem size for 1D algorithm and width of problem size for 2D algorithm */
 cl_uint width;
 cl_uint timeN;
 cl_uint w;
 cl_uint t;
+
 /* The memory buffer that is used as input/output for OpenCL kernel */
-cl_mem   inputBufferA;
-cl_mem	 inputBufferB;
-cl_mem	 outputBufferC;
+cl_mem   inputBufferEz;
+cl_mem	 inputBufferHy;
 
 cl_context          context;
 cl_device_id        *devices;

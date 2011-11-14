@@ -100,43 +100,36 @@ jurisdiction and venue of these courts.
 int
 initializeHost(void)
 {
-	timeN = 16;
-	w = 16;
-	t = 0;
-    width				= timeN * w;//*32;//256;
-    inputA				= NULL;
-	inputB				= NULL;
-    outputC				= NULL;
-    multiplier			= 2;
+	cpu			= false;	// Are we running on CPU or GPU?
+	flagHalf	= 0;		// Flag to determine half time step.
+	timeN		= 1024;		// Total number of time steps.
+	w			= 1024;		// Width of 1D array.
+	t			= 1;		// Instantaneous Time step.
+    width		= timeN * w;//*32;//256;
+    Ez			= NULL;
+	Hy			= NULL;
 
     /////////////////////////////////////////////////////////////////
     // Allocate and initialize memory used by host 
     /////////////////////////////////////////////////////////////////
     cl_uint sizeInBytes = width * sizeof(cl_double);
-    inputA = (cl_double *) malloc(sizeInBytes);
-	inputB = (cl_double *) malloc(sizeInBytes);
-    if(inputA == NULL || inputB == NULL)
+    Ez = (cl_double *) malloc(sizeInBytes);
+	Hy = (cl_double *) malloc(sizeInBytes);
+    if(Ez == NULL || Hy == NULL)
     {
         std::cout<<"Error: Failed to allocate input memory on host\n";
         return 1; 
     }
 
-    outputC = (cl_double *) malloc(sizeInBytes);
-    if(outputC == NULL)
-    {
-        std::cout<<"Error: Failed to allocate output memory on host\n";
-        return 1; 
-    }
-
     for(cl_uint i = 0; i < width; i++)
 	{
-		inputA[i] = 0;
-		inputB[i] = 0;
+		Ez[i] = 0;
+		Hy[i] = 0;
 	}
 
     // print input arrays
-    print1DArray(std::string("Input A").c_str(), inputA, width);
-	//print1DArray(std::string("Input B").c_str(), inputB, width);
+    //print1DArray(std::string("Input A").c_str(), Ez, width);
+	//print1DArray(std::string("Input B").c_str(), Hy, width);
     return 0;
 }
 
@@ -256,8 +249,21 @@ initializeCL(void)
     /////////////////////////////////////////////////////////////////
     // Create an OpenCL context
     /////////////////////////////////////////////////////////////////
+	cl_device_type type;
+	
+	if (cpu == true)
+	{
+		std::cout << "Running on CPU..." << std::endl;
+		type = CL_DEVICE_TYPE_CPU;
+	}
+	else
+	{
+		std::cout << "Running on GPU..." << std::endl;
+		type = CL_DEVICE_TYPE_GPU;
+	}
+
     context = clCreateContextFromType(cps, 
-                                      CL_DEVICE_TYPE_GPU, 
+                                      type, 
                                       NULL, 
                                       NULL, 
                                       &status);
@@ -323,42 +329,29 @@ initializeCL(void)
     /////////////////////////////////////////////////////////////////
     // Create OpenCL memory buffers
     /////////////////////////////////////////////////////////////////
-    inputBufferA = clCreateBuffer(
+    inputBufferEz = clCreateBuffer(
                       context, 
                       CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                       sizeof(cl_double) * width,
-                      inputA, 
+                      Ez, 
                       &status);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<<"Error: clCreateBuffer (inputBufferA)\n";
+        std::cout<<"Error: clCreateBuffer (inputBufferEz)\n";
         return 1;
     }
 
-	inputBufferB = clCreateBuffer(
+	inputBufferHy = clCreateBuffer(
                       context, 
                       CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                       sizeof(cl_double) * width,
-                      inputB, 
+                      Hy, 
                       &status);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<<"Error: clCreateBuffer (inputBufferB)\n";
+        std::cout<<"Error: clCreateBuffer (inputBufferHy)\n";
         return 1;
     }
-
-    outputBufferC = clCreateBuffer(
-                       context, 
-                       CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                       sizeof(cl_double) * width,
-                       outputC, 
-                       &status);
-    if(status != CL_SUCCESS) 
-    { 
-        std::cout<<"Error: clCreateBuffer (outputBufferC)\n";
-        return 1;
-    }
-
 
     /////////////////////////////////////////////////////////////////
     // Load CL file, build CL program object, create CL kernel object
@@ -461,7 +454,7 @@ runCLKernels(void)
     }
     
     globalThreads[0] = w;
-    localThreads[0]  = 1;
+    localThreads[0]  = 256;
 
 	std::cout << "Max dimensions: " << maxDims << std::endl;
 	std::cout << "Device maxWorkGroupSize = " << maxWorkGroupSize << std::endl;
@@ -474,59 +467,48 @@ runCLKernels(void)
     }
 
     /*** Set appropriate arguments to the kernel ***/
-    /* the output array to the kernel */
-    status = clSetKernelArg(
-                    kernel, 
-                    0, 
-                    sizeof(cl_mem), 
-                    (void *)&outputBufferC);
-    if(status != CL_SUCCESS) 
-    { 
-        std::cout<<"Error: Setting kernel argument. (output)\n";
-        return 1;
-    }
 
     /* the input array A to the kernel */
     status = clSetKernelArg(
                     kernel, 
-                    1, 
+                    0, 
                     sizeof(cl_mem), 
-                    (void *)&inputBufferA);
+                    (void *)&inputBufferEz);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<<"Error: Setting kernel argument. (input)\n";
+        std::cout<<"Error: Setting kernel argument. (inputBufferEz)\n";
         return 1;
     }
 
     /* the input array B to the kernel*/
     status = clSetKernelArg(
                     kernel, 
-                    2, 
+                    1, 
                     sizeof(cl_mem), 
-                    (void *)&inputBufferB);
+                    (void *)&inputBufferHy);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<< "Error: Setting kernel argument. (multiplier)\n";
+        std::cout<< "Error: Setting kernel argument. (inputBufferHy)\n";
+        return 1;
+    }
+	status = clSetKernelArg(
+                    kernel, 
+                    2, 
+                    sizeof(cl_uint), 
+                    (void *)&t);
+    if(status != CL_SUCCESS) 
+    { 
+        std::cout<< "Error: Setting kernel argument. (t)\n";
         return 1;
     }
 	status = clSetKernelArg(
                     kernel, 
                     3, 
                     sizeof(cl_uint), 
-                    (void *)&t);
-    if(status != CL_SUCCESS) 
-    { 
-        std::cout<< "Error: Setting kernel argument. (multiplier)\n";
-        return 1;
-    }
-	status = clSetKernelArg(
-                    kernel, 
-                    4, 
-                    sizeof(cl_uint), 
                     (void *)&w);
     if(status != CL_SUCCESS) 
     { 
-        std::cout<< "Error: Setting kernel argument. (multiplier)\n";
+        std::cout<< "Error: Setting kernel argument. (w)\n";
         return 1;
     }
 
@@ -534,60 +516,74 @@ runCLKernels(void)
 	cl_ulong kernelExecTimeNs;
 	cl_ulong kernelExecTimeNsT = 0;
 
-	for (t = 0; t < timeN; t++)
+	for (t = 1; t < timeN; t++)
 	{
-		std::cout << "Running for t=" << t << std::endl;
 		status = clSetKernelArg(
                     kernel, 
-                    3, 
+                    2, 
                     sizeof(cl_uint), 
                     (void *)&t);
 		if(status != CL_SUCCESS) 
 		{ 
-			std::cout<< "Error: Setting kernel argument. (multiplier)\n";
-			return 1;
-		}
-		
-		/* 
-		 * Enqueue a kernel run call.
-		 */
-		status = clEnqueueNDRangeKernel(
-					 commandQueue,
-					 kernel,
-					 1,
-					 NULL,
-					 globalThreads,
-					 localThreads,
-					 0,
-					 NULL,
-					 &events[0]);
-		if(status != CL_SUCCESS) 
-		{ 
-			std::cout<<
-				"Error: Enqueueing kernel onto command queue. \
-				(clEnqueueNDRangeKernel)\n";
+			std::cout<< "Error: Setting kernel argument. (t)\n";
 			return 1;
 		}
 
+		for ( cl_uint step=0; step < 2; step++)
+		{
+			status = clSetKernelArg(
+						kernel, 
+						4, 
+						sizeof(cl_uint), 
+						(void *)&flagHalf);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<< "Error: Setting kernel argument. (flag)\n";
+				return 1;
+			}
+			/* 
+			 * Enqueue a kernel run call.
+			 */
+			status = clEnqueueNDRangeKernel(
+						 commandQueue,
+						 kernel,
+						 1,
+						 NULL,
+						 globalThreads,
+						 localThreads,
+						 0,
+						 NULL,
+						 &events[0]);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<<
+					"Error: Enqueueing kernel onto command queue. \
+					(clEnqueueNDRangeKernel)\n";
+				return 1;
+			}
 
-		/* wait for the kernel call to finish execution */
-		status = clWaitForEvents(1, &events[0]);
-		if(status != CL_SUCCESS) 
-		{ 
-			std::cout<<
-				"Error: Waiting for kernel run to finish. \
-				(clWaitForEvents)\n";
-			return 1;
+
+			/* wait for the kernel call to finish execution */
+			status = clWaitForEvents(1, &events[0]);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<<
+					"Error: Waiting for kernel run to finish. \
+					(clWaitForEvents)\n";
+				return 1;
+			}
+
+			clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START,
+			sizeof(cl_ulong), &startTime, NULL);
+			clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END,
+			sizeof(cl_ulong), &endTime, NULL);
+			kernelExecTimeNs = 1e-3*(endTime-startTime);
+			kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
+
+			flagHalf = !flagHalf;
 		}
-
-		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START,
-		sizeof(cl_ulong), &startTime, NULL);
-		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END,
-		sizeof(cl_ulong), &endTime, NULL);
-		kernelExecTimeNs = 1e-6*(endTime-startTime);
-		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 	}
-	std::cout << "kernel execution time = " << kernelExecTimeNsT << "ms." << std::endl;
+	std::cout << "kernel execution time = " << kernelExecTimeNsT << "us." << std::endl;
     status = clReleaseEvent(events[0]);
     if(status != CL_SUCCESS) 
     { 
@@ -600,11 +596,11 @@ runCLKernels(void)
     /* Enqueue readBuffer*/
     status = clEnqueueReadBuffer(
                 commandQueue,
-                outputBufferC,
+                inputBufferEz,
                 CL_TRUE,
                 0,
                 width * sizeof(cl_double),
-                outputC,
+                Ez,
                 0,
                 NULL,
                 &events[1]);
@@ -628,6 +624,36 @@ runCLKernels(void)
         return 1;
     }
     
+	status = clEnqueueReadBuffer(
+                commandQueue,
+                inputBufferHy,
+                CL_TRUE,
+                0,
+                width * sizeof(cl_double),
+                Hy,
+                0,
+                NULL,
+                &events[1]);
+    
+    if(status != CL_SUCCESS) 
+    { 
+        std::cout << 
+            "Error: clEnqueueReadBuffer failed. \
+             (clEnqueueReadBuffer)\n";
+
+        return 1;
+    }
+    
+    /* Wait for the read buffer to finish execution */
+    status = clWaitForEvents(1, &events[1]);
+    if(status != CL_SUCCESS) 
+    { 
+        std::cout<<
+            "Error: Waiting for read buffer call to finish. \
+            (clWaitForEvents)\n";
+        return 1;
+    }
+
     status = clReleaseEvent(events[1]);
     if(status != CL_SUCCESS) 
     { 
@@ -639,6 +665,30 @@ runCLKernels(void)
     return 0;
 }
 
+void WriteSnapshots (cl_uint Resolutiont)
+{
+	// File handling from chapter 3 of Understanding FDTD. J. B. Schneider
+	char basename[20] = "./FieldData/Ez";
+	char filename[30];
+	cl_uint frame = 1;
+	FILE *snapshot;
+	cl_uint SnapshotResolutiont = 1;
+	bool SaveFields = false;
+	cl_uint i, t;
+
+	for (t=0; t<timeN; t+=Resolutiont)
+	{
+		// Write Ez snapshot.
+		sprintf_s (filename, "%s%d.fdt", basename, frame);
+		fopen_s (&snapshot, filename, "w");
+		for (i=0; i<w; i++)
+		{
+			fprintf_s (snapshot, "%g\n", Ez[i+t*w]);
+		}
+		fclose (snapshot);
+		frame++;
+	}
+}
 
 /*
  * \brief Release OpenCL resources (Context, Memory etc.) 
@@ -660,22 +710,16 @@ cleanupCL(void)
         std::cout<<"Error: In clReleaseProgram\n";
         return 1; 
     }
-    status = clReleaseMemObject(inputBufferA);
+    status = clReleaseMemObject(inputBufferEz);
     if(status != CL_SUCCESS)
     {
-        std::cout<<"Error: In clReleaseMemObject (inputBufferA)\n";
+        std::cout<<"Error: In clReleaseMemObject (inputBufferEz)\n";
         return 1; 
     }
-	status = clReleaseMemObject(inputBufferB);
+	status = clReleaseMemObject(inputBufferHy);
     if(status != CL_SUCCESS)
     {
-        std::cout<<"Error: In clReleaseMemObject (inputBufferB)\n";
-        return 1; 
-    }
-    status = clReleaseMemObject(outputBufferC);
-    if(status != CL_SUCCESS)
-    {
-        std::cout<<"Error: In clReleaseMemObject (outputBuffer)\n";
+        std::cout<<"Error: In clReleaseMemObject (inputBufferHy)\n";
         return 1; 
     }
     status = clReleaseCommandQueue(commandQueue);
@@ -701,20 +745,15 @@ cleanupCL(void)
 void
 cleanupHost(void)
 {
-    if(inputA != NULL)
+    if(Ez != NULL)
     {
-        free(inputA);
-        inputA = NULL;
+        free(Ez);
+        Ez = NULL;
     }
-	if(inputB != NULL)
+	if(Hy != NULL)
     {
-        free(inputB);
-        inputB = NULL;
-    }
-    if(outputC != NULL)
-    {
-        free(outputC);
-        outputC = NULL;
+        free(Hy);
+        Hy = NULL;
     }
     if(devices != NULL)
     {
@@ -736,12 +775,7 @@ void print1DArray(
 {
     cl_uint i, j;
 
-    std::cout << std::endl;
-    std::cout << arrayName << ":" << std::endl;
-	for (i=0; i<length; i++)
-	{
-		std::cout << arrayData[i] << " ";
-	}
+	std::cout << arrayName << ":" << std::endl;
 	std::cout << std::endl;
     for(i = 0; i < timeN; ++i)
     {
@@ -756,19 +790,6 @@ void print1DArray(
 
 }
 
-void verify()
-{
-    bool passed = true;
-    for(unsigned int i = 0; i < width; ++i)
-        if(inputA[i] * inputB[i] != outputC[i])
-            passed = false;
-
-    if(passed == true)
-        std::cout << "Passed!\n" << std::endl;
-    else
-        std::cout << "Failed!\n" << std::endl;
-}
-
 int 
 main(int argc, char * argv[])
 {
@@ -780,21 +801,15 @@ main(int argc, char * argv[])
     if(initializeCL()==1)
         return 1;
 
-	//int timer = sampleCommon->createTimer();
-    //sampleCommon->resetTimer(timer);
-    //sampleCommon->startTimer(timer);
-
     // Run the CL program
     if(runCLKernels()==1)
         return 1;
 
-	//sampleCommon->stopTimer(timer);
-    //double totalKernelTime = (double)(sampleCommon->readTimer(timer));
-
-	
+	WriteSnapshots (1);
     // Print output array
-    print1DArray(std::string("Output"), outputC, width);
-	//print1DArray(std::string("Output"), inputA, width);
+    //print1DArray(std::string("Output"), outputC, width);
+	//print1DArray(std::string("Ez"), Ez, width);
+	//print1DArray(std::string("Hy"), Hy, width);
 
     // Verify output
     //verify();
