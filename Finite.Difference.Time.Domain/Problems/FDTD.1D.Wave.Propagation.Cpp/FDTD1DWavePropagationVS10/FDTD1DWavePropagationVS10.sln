@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FDTD1DWavePropagationVS10", "FDTD1DWavePropagationVS10\FDTD1DWavePropagationVS10.vcxproj", "{7DCB1C82-817E-4ABD-B3F4-C044C166C8F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7DCB1C82-817E-4ABD-B3F4-C044C166C8F8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7DCB1C82-817E-4ABD-B3F4-C044C166C8F8}.Debug|Win32.Build.0 = Debug|Win32
+		{7DCB1C82-817E-4ABD-B3F4-C044C166C8F8}.Release|Win32.ActiveCfg = Release|Win32
+		{7DCB1C82-817E-4ABD-B3F4-C044C166C8F8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
