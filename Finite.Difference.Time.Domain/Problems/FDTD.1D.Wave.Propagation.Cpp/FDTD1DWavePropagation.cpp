@@ -6,7 +6,7 @@ typedef unsigned int uint;
 
 // Simulation parameters.
 const uint w = 1024;			// No. of spatial steps
-const uint TimeN = 1024;		// No. of time steps
+const uint TimeN = 30;		// No. of time steps
 const double imp0 = 377.0;		// Impedence of free space
 
 // Data Arrays.
@@ -20,8 +20,9 @@ int main (int argc, char **argv)
 	char filename[30];
 	uint frame = 1;
 	FILE *snapshot;
-	uint SnapshotResolutiont = 1;
-	bool SaveFields = true;
+	uint SnapshotResolutiont = 1;	// Fields snapshots will be saved after this much interval.
+	bool SaveFields = true;		// Save field snapshots?
+	bool Binary = true;			// Save fields in binary format?
 
 	// Initialization.
 	for (uint z = 0; z < (w*TimeN); z++)
@@ -52,9 +53,17 @@ int main (int argc, char **argv)
 		{
 			sprintf_s (filename, "%s%d.fdt", basename, frame);
 			fopen_s (&snapshot, filename, "w");
-			for (i=0; i<w; i++)
+
+			if (Binary == true)
 			{
-				fprintf_s (snapshot, "%g\n", Ez[i+t*w]);
+				fwrite ( (void*)&Ez[t*w], sizeof(double), w, snapshot);
+			}
+			else
+			{
+				for (i=0; i<w; i++)
+				{
+					fprintf_s (snapshot, "%g\n", Ez[i+t*w]);
+				}
 			}
 			fclose (snapshot);
 			frame++;
