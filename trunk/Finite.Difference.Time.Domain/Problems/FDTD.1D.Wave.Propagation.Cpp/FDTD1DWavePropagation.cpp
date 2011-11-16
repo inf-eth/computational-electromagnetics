@@ -8,13 +8,13 @@
 typedef unsigned int uint;
 
 // Simulation parameters.
-const uint w = 4*1024;			// No. of spatial steps
-const uint TimeN = 4*1024;		// No. of time steps
+const uint w = 1024*1024;			// No. of spatial steps
+const uint TimeN = 256;		// No. of time steps
 const double imp0 = 377.0;		// Impedence of free space
 
 // Data Arrays.
-double *Ez = new double[w*TimeN]; // z-component of E-field
-double *Hy = new double[w*TimeN]; // y-component of H-field
+double *Ez = new double[w*2]; // z-component of E-field
+double *Hy = new double[w*2]; // y-component of H-field
 
 int main (int argc, char **argv)
 {
@@ -34,13 +34,18 @@ int main (int argc, char **argv)
 	bool Binary = true;			// Save fields in binary format?
 
 	// Initialization.
-	for (uint z = 0; z < (w*TimeN); z++)
+	for (uint z = 0; z < (w*2); z++)
 	{
 		Ez[z] = 0;
 		Hy[z] = 0;
 	}
 
 	uint i, t;
+
+	// Present/future indices.
+	uint n0 = 0;
+	uint n1 = 1;
+
 	clock_t start, end;
 	start = clock();
 
@@ -49,14 +54,14 @@ int main (int argc, char **argv)
 		// Hy
 		for (i=0; i < (w-1); i++)
 		{
-			Hy[i+t*w] = Hy[i+(t-1)*w] + ( (Ez[i+1+(t-1)*w] - Ez[i+(t-1)*w])/imp0 );
+			Hy[i+n1*w] = Hy[i+n0*w] + ( (Ez[i+1+n0*w] - Ez[i+n0*w])/imp0 );
 		}
 		// Ez
 		for (i=1; i<w; i++)
 		{
-			Ez[i+t*w] = Ez[i+(t-1)*w] + ( (Hy[i+t*w] - Hy[i-1+t*w])*imp0 );
+			Ez[i+n1*w] = Ez[i+n0*w] + ( (Hy[i+n1*w] - Hy[i-1+n1*w])*imp0 );
 		}
-		Ez[0+t*w] = Ez[0+t*w] + exp ( -1 * pow((t-31.), 2)/100 );
+		Ez[0+n1*w] = exp ( -1 * pow((t-31.), 2)/100 );
 
 		// Write Ez snapshot.
 		if (t%SnapshotResolutiont == 0 && SaveFields == true)
@@ -72,9 +77,9 @@ int main (int argc, char **argv)
 			if (Binary == true)
 			{
 				#ifdef WIN32
-				fwrite ( (void*)(Ez+(t*w)), sizeof(double), w, snapshot);
+				fwrite ( (void*)(Ez+(n1*w)), sizeof(double), w, snapshot);
 				#else
-				write (fd, (void*)(Ez+(t*w)), sizeof(double)*w);
+				write (fd, (void*)(Ez+(n1*w)), sizeof(double)*w);
 				#endif
 			}
 			else
@@ -82,7 +87,7 @@ int main (int argc, char **argv)
 				#ifdef WIN32
 				for (i=0; i<w; i++)
 				{
-					fprintf_s (snapshot, "%g\n", Ez[i+t*w]);
+					fprintf_s (snapshot, "%g\n", Ez[i+n1*w]);
 				}
 				#endif
 			}
@@ -95,6 +100,8 @@ int main (int argc, char **argv)
 
 			frame++;
 		}
+		n0 = (n0+1)%2;
+		n1 = (n1+1)%2;
 	}
 
 	end = clock();
