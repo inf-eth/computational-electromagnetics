@@ -1,6 +1,7 @@
 #ifndef WIN32
 #include <fcntl.h>
 #endif
+#include <fstream>
 #include <iostream>
 #include <cmath>
 #include <ctime>
@@ -8,9 +9,9 @@
 typedef unsigned int uint;
 
 // Simulation parameters.
-const uint w = 1024*1024;			// No. of spatial steps
-const uint TimeN = 256;		// No. of time steps
-const double imp0 = 377.0;		// Impedence of free space
+const uint w = 1024;				// No. of spatial steps
+const uint TimeN = 256;				// No. of time steps
+const double imp0 = 377.0;			// Impedence of free space
 
 // Data Arrays.
 double *Ez = new double[w*2]; // z-component of E-field
@@ -23,14 +24,14 @@ int main (int argc, char **argv)
 	char filename[30];
 
 	#ifdef WIN32
-	FILE *snapshot;
+	std::fstream snapshot;
 	#else
 	int fd;
 	#endif
 
 	uint frame = 1;
 	uint SnapshotResolutiont = 1;	// Fields snapshots will be saved after this much interval.
-	bool SaveFields = false;		// Save field snapshots?
+	bool SaveFields = true;		// Save field snapshots?
 	bool Binary = true;			// Save fields in binary format?
 
 	// Initialization.
@@ -68,7 +69,7 @@ int main (int argc, char **argv)
 		{
 			#ifdef WIN32
 			sprintf_s (filename, "%s%d.fdt", basename, frame);
-			fopen_s (&snapshot, filename, "w");
+			snapshot.open (filename, std::ios::out|std::ios::binary);
 			#else
 			sprintf (filename, "%s%d.fdt", basename, frame);
 			fd = open ( filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU );
@@ -77,7 +78,7 @@ int main (int argc, char **argv)
 			if (Binary == true)
 			{
 				#ifdef WIN32
-				fwrite ( (void*)(Ez+(n1*w)), sizeof(double), w, snapshot);
+				snapshot.write ( (char*)(Ez+(n1*w)), sizeof(double)*w);
 				#else
 				write (fd, (void*)(Ez+(n1*w)), sizeof(double)*w);
 				#endif
@@ -87,13 +88,13 @@ int main (int argc, char **argv)
 				#ifdef WIN32
 				for (i=0; i<w; i++)
 				{
-					fprintf_s (snapshot, "%g\n", Ez[i+n1*w]);
+					snapshot << Ez[i+n1*w] << std::endl;
 				}
 				#endif
 			}
 
 			#ifdef WIN32
-			fclose (snapshot);
+			snapshot.close();
 			#else
 			close (fd);
 			#endif
