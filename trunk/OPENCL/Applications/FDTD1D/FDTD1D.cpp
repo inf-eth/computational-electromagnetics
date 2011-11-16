@@ -805,7 +805,7 @@ main(int argc, char * argv[])
     if(runCLKernels()==1)
         return 1;
 
-	WriteSnapshots (1);
+	//WriteSnapshots (1);
     // Print output array
     //print1DArray(std::string("Output"), outputC, width);
 	//print1DArray(std::string("Ez"), Ez, width);

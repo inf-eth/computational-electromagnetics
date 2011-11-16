@@ -113,13 +113,14 @@ jurisdiction and venue of these courts.
 /*
  * Input data is stored here.
  */
-cl_uint *inputA;
-cl_uint *inputB;
+cl_double *inputA;
+cl_double *inputB;
+bool cpu;
 
 /*
  * Output data is stored here.
  */
-cl_uint *outputC;
+cl_double *outputC;
 
 /*
  * Multiplier is stored in this variable 
