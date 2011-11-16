@@ -3,7 +3,7 @@
 basename = './FieldData/Ez';
 y_min = -1;
 y_max = 1;
-simTime = 1023;
+simTime = 255;
 frame = 1;
 figure(1);
 i = 0;

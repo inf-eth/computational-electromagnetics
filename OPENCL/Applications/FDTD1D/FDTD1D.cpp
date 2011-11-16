@@ -102,18 +102,19 @@ initializeHost(void)
 {
 	cpu			= false;	// Are we running on CPU or GPU?
 	flagHalf	= 0;		// Flag to determine half time step.
+
+	w			= 1024;		// Width of 1D array.
 	timeN		= 256;		// Total number of time steps.
-	w			= 1024*1024;		// Width of 1D array.
-	t			= 1;		// Instantaneous Time step.
-    width		= 2*w;		//*32;//256;
+
+    width		= 2*w;		// Size of Ez and Hy arrays.
     Ez			= NULL;
 	Hy			= NULL;
 
 	n0			= 0;
 	n1			= 1;
 
-	SaveFields	= false;	// Save fields?
-	Binary		= false;	// Save fields as binary or text format?
+	SaveFields	= true;	// Save fields?
+	Binary		= true;	// Save fields as binary or text format?
 
     /////////////////////////////////////////////////////////////////
     // Allocate and initialize memory used by host 
@@ -527,7 +528,7 @@ runCLKernels(void)
 	char filename[30];
 
 	#ifdef WIN32
-	FILE *snapshot;
+	std::fstream snapshot;
 	#else
 	int fd;
 	#endif
@@ -647,7 +648,7 @@ runCLKernels(void)
 		{
 			#ifdef WIN32
 			sprintf_s (filename, "%s%d.fdt", basename, frame);
-			fopen_s (&snapshot, filename, "w");
+			snapshot.open (filename, std::ios::out|std::ios::binary);
 			#else
 			sprintf (filename, "%s%d.fdt", basename, frame);
 			fd = open ( filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU );
@@ -656,7 +657,7 @@ runCLKernels(void)
 			if (Binary == true)
 			{
 				#ifdef WIN32
-				fwrite ( (void*)(Ez+(n1*w)), sizeof(double), w, snapshot);
+				snapshot.write ( (char*)(Ez+(n1*w)), sizeof(double)*w);
 				#else
 				write (fd, (void*)(Ez+(n1*w)), sizeof(double)*w);
 				#endif
@@ -666,13 +667,13 @@ runCLKernels(void)
 				#ifdef WIN32
 				for (unsigned int i=0; i<w; i++)
 				{
-					fprintf_s (snapshot, "%g\n", Ez[i+n1*w]);
+					snapshot << Ez[i+n1*w] << std::endl;
 				}
 				#endif
 			}
 
 			#ifdef WIN32
-			fclose (snapshot);
+			snapshot.close();
 			#else
 			close (fd);
 			#endif
