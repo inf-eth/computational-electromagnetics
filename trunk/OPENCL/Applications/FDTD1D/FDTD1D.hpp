@@ -113,6 +113,11 @@ jurisdiction and venue of these courts.
 // Are we running on CPU or GPU?
 bool cpu;
 
+// Save Field Snapshots?
+bool SaveFields;
+// Binary or text?
+bool Binary;
+
 // Half timestep flag. Hy will be calculated when flag is false and Ez otherwise.
 cl_uint flagHalf;
 /*
@@ -126,6 +131,7 @@ cl_uint width;
 cl_uint timeN;
 cl_uint w;
 cl_uint t;
+cl_uint n0, n1;		// Present/future indices.
 
 /* The memory buffer that is used as input/output for OpenCL kernel */
 cl_mem   inputBufferEz;
