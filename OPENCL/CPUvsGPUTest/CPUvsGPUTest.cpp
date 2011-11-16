@@ -100,25 +100,26 @@ jurisdiction and venue of these courts.
 int
 initializeHost(void)
 {
-    width				= 1024*1024*32;//256;
+    width				= 1024*1024*4;//*32;//256;
     inputA				= NULL;
 	inputB				= NULL;
     outputC				= NULL;
     multiplier			= 2;
+	cpu					= true;
 
     /////////////////////////////////////////////////////////////////
     // Allocate and initialize memory used by host 
     /////////////////////////////////////////////////////////////////
-    cl_uint sizeInBytes = width * sizeof(cl_uint);
-    inputA = (cl_uint *) malloc(sizeInBytes);
-	inputB = (cl_uint *) malloc(sizeInBytes);
+    cl_uint sizeInBytes = width * sizeof(cl_double);
+    inputA = (cl_double *) malloc(sizeInBytes);
+	inputB = (cl_double *) malloc(sizeInBytes);
     if(inputA == NULL || inputB == NULL)
     {
         std::cout<<"Error: Failed to allocate input memory on host\n";
         return 1; 
     }
 
-    outputC = (cl_uint *) malloc(sizeInBytes);
+    outputC = (cl_double *) malloc(sizeInBytes);
     if(outputC == NULL)
     {
         std::cout<<"Error: Failed to allocate output memory on host\n";
@@ -253,8 +254,10 @@ initializeCL(void)
     /////////////////////////////////////////////////////////////////
     // Create an OpenCL context
     /////////////////////////////////////////////////////////////////
+	cl_device_type type;
+	cpu == true ? type = CL_DEVICE_TYPE_CPU : type = CL_DEVICE_TYPE_GPU;
     context = clCreateContextFromType(cps, 
-                                      CL_DEVICE_TYPE_CPU, 
+                                      type, 
                                       NULL, 
                                       NULL, 
                                       &status);
@@ -323,7 +326,7 @@ initializeCL(void)
     inputBufferA = clCreateBuffer(
                       context, 
                       CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                      sizeof(cl_uint) * width,
+                      sizeof(cl_double) * width,
                       inputA, 
                       &status);
     if(status != CL_SUCCESS) 
@@ -335,7 +338,7 @@ initializeCL(void)
 	inputBufferB = clCreateBuffer(
                       context, 
                       CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                      sizeof(cl_uint) * width,
+                      sizeof(cl_double) * width,
                       inputB, 
                       &status);
     if(status != CL_SUCCESS) 
@@ -347,7 +350,7 @@ initializeCL(void)
     outputBufferC = clCreateBuffer(
                        context, 
                        CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                       sizeof(cl_uint) * width,
+                       sizeof(cl_double) * width,
                        outputC, 
                        &status);
     if(status != CL_SUCCESS) 
@@ -458,7 +461,7 @@ runCLKernels(void)
     }
     
     globalThreads[0] = width;
-    localThreads[0]  = 1024;
+    localThreads[0]  = 256;
 
 	std::cout << "Max dimensions: " << maxDims << std::endl;
 	std::cout << "Device maxWorkGroupSize = " << maxWorkGroupSize << std::endl;

@@ -94,9 +94,15 @@ jurisdiction and venue of these courts.
  * a constant and stores it at the corresponding output array
  */
 
-__kernel void CPUvsGPUTestKernel(__global  unsigned int * outputC,
-                             __global  unsigned int * inputA,
-							 __global  unsigned int * inputB)
+#ifdef KHR_DP_EXTENSION
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#else
+#pragma OPENCL EXTENSION cl_amd_fp64 : enable
+#endif
+
+__kernel void CPUvsGPUTestKernel(__global  double * outputC,
+                             __global  double * inputA,
+							 __global  double * inputB)
 {
     uint tid = get_global_id(0);
     //outputC[tid] = inputA[tid] * inputB[tid];

@@ -2,8 +2,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C++ Express 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPUvsGPUTest", "CPUvsGPUTestVS10.vcxproj", "{ACAD66F4-E783-43C8-81E3-D1DC81981C55}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SDKUtil", "..\SDKUtil\SDKUtil.vcxproj", "{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -20,14 +18,6 @@ Global
 		{ACAD66F4-E783-43C8-81E3-D1DC81981C55}.Release|Win32.Build.0 = Release|Win32
 		{ACAD66F4-E783-43C8-81E3-D1DC81981C55}.Release|x64.ActiveCfg = Release|x64
 		{ACAD66F4-E783-43C8-81E3-D1DC81981C55}.Release|x64.Build.0 = Release|x64
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Debug|Win32.ActiveCfg = Debug|Win32
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Debug|Win32.Build.0 = Debug|Win32
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Debug|x64.ActiveCfg = Debug|x64
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Debug|x64.Build.0 = Debug|x64
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Release|Win32.ActiveCfg = Release|Win32
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Release|Win32.Build.0 = Release|Win32
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Release|x64.ActiveCfg = Release|x64
-		{721EBCD6-B0AA-48AD-A3EF-87D3EF265564}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
