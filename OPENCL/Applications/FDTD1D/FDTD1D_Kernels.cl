@@ -102,7 +102,7 @@ jurisdiction and venue of these courts.
 
 //#define imp0 377.0
 
-__kernel void FDTD1DKernel(__global  double * Ez, __global  double * Hy, const uint t, const uint w, const uint flag)
+__kernel void FDTD1DKernel(__global  double * Ez, __global  double * Hy, const uint t, const uint w, const uint flag, const uint n0, const uint n1)
 {
     uint tid = get_global_id(0);
 	double imp0 = 377.0;
@@ -110,18 +110,18 @@ __kernel void FDTD1DKernel(__global  double * Ez, __global  double * Hy, const u
 	{
 		if (tid != w-1)
 		{
-			Hy[tid+t*w] = Hy[tid+(t-1)*w] + ( (Ez[tid+1+(t-1)*w] - Ez[tid+(t-1)*w])/imp0 );
+			Hy[tid+n1*w] = Hy[tid+n0*w] + ( (Ez[tid+1+n0*w] - Ez[tid+n0*w])/imp0 );
 		}
 	}
 	else
 	{
 		if (tid != 0)
 		{
-			Ez[tid+t*w] = Ez[tid+(t-1)*w] + ( (Hy[tid+t*w] - Hy[tid-1+t*w])*imp0 );
+			Ez[tid+n1*w] = Ez[tid+n0*w] + ( (Hy[tid+n1*w] - Hy[tid-1+n1*w])*imp0 );
 		}
 		else
 		{
-			Ez[0+t*w] = Ez[0+t*w] + exp ( -1 * pow((t-30.), 2)/100 );
+			Ez[0+n1*w] = exp ( -1 * pow((t-30.), 2)/100 );
 		}
 	}
 }

@@ -102,12 +102,18 @@ initializeHost(void)
 {
 	cpu			= false;	// Are we running on CPU or GPU?
 	flagHalf	= 0;		// Flag to determine half time step.
-	timeN		= 1024;		// Total number of time steps.
-	w			= 1024;		// Width of 1D array.
+	timeN		= 256;		// Total number of time steps.
+	w			= 1024*1024;		// Width of 1D array.
 	t			= 1;		// Instantaneous Time step.
-    width		= timeN * w;//*32;//256;
+    width		= 2*w;		//*32;//256;
     Ez			= NULL;
 	Hy			= NULL;
+
+	n0			= 0;
+	n1			= 1;
+
+	SaveFields	= false;	// Save fields?
+	Binary		= false;	// Save fields as binary or text format?
 
     /////////////////////////////////////////////////////////////////
     // Allocate and initialize memory used by host 
@@ -516,6 +522,19 @@ runCLKernels(void)
 	cl_ulong kernelExecTimeNs;
 	cl_ulong kernelExecTimeNsT = 0;
 
+	// File handling from chapter 3 of Understanding FDTD. J. B. Schneider
+	char basename[20] = "./FieldData/Ez";
+	char filename[30];
+
+	#ifdef WIN32
+	FILE *snapshot;
+	#else
+	int fd;
+	#endif
+
+	unsigned int frame = 1;
+	unsigned int SnapshotResolutiont = 1;	// Fields snapshots will be saved after this much interval.
+
 	for (t = 1; t < timeN; t++)
 	{
 		status = clSetKernelArg(
@@ -539,6 +558,26 @@ runCLKernels(void)
 			if(status != CL_SUCCESS) 
 			{ 
 				std::cout<< "Error: Setting kernel argument. (flag)\n";
+				return 1;
+			}
+			status = clSetKernelArg(
+						kernel, 
+						5, 
+						sizeof(cl_uint), 
+						(void *)&n0);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<< "Error: Setting kernel argument. (n0)\n";
+				return 1;
+			}
+			status = clSetKernelArg(
+						kernel, 
+						6, 
+						sizeof(cl_uint), 
+						(void *)&n1);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<< "Error: Setting kernel argument. (n1)\n";
 				return 1;
 			}
 			/* 
@@ -582,6 +621,67 @@ runCLKernels(void)
 
 			flagHalf = !flagHalf;
 		}
+		/* Enqueue readBuffer*/
+		status = clEnqueueReadBuffer(
+					commandQueue,
+					inputBufferEz,
+					CL_TRUE,
+					0,
+					width * sizeof(cl_double),
+					Ez,
+					0,
+					NULL,
+					&events[1]);
+    
+		if(status != CL_SUCCESS) 
+		{ 
+			std::cout << 
+				"Error: clEnqueueReadBuffer failed. \
+				 (clEnqueueReadBuffer)\n";
+
+			return 1;
+		}
+
+		// Write Ez snapshot.
+		if (t%SnapshotResolutiont == 0 && SaveFields == true)
+		{
+			#ifdef WIN32
+			sprintf_s (filename, "%s%d.fdt", basename, frame);
+			fopen_s (&snapshot, filename, "w");
+			#else
+			sprintf (filename, "%s%d.fdt", basename, frame);
+			fd = open ( filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU );
+			#endif
+
+			if (Binary == true)
+			{
+				#ifdef WIN32
+				fwrite ( (void*)(Ez+(n1*w)), sizeof(double), w, snapshot);
+				#else
+				write (fd, (void*)(Ez+(n1*w)), sizeof(double)*w);
+				#endif
+			}
+			else
+			{
+				#ifdef WIN32
+				for (unsigned int i=0; i<w; i++)
+				{
+					fprintf_s (snapshot, "%g\n", Ez[i+n1*w]);
+				}
+				#endif
+			}
+
+			#ifdef WIN32
+			fclose (snapshot);
+			#else
+			close (fd);
+			#endif
+
+			frame++;
+		}
+
+		n0 = (n0+1)%2;
+		n1 = (n1+1)%2;
 	}
 	std::cout << "kernel execution time = " << kernelExecTimeNsT << "us." << std::endl;
     status = clReleaseEvent(events[0]);
@@ -592,28 +692,6 @@ runCLKernels(void)
             (clReleaseEvent)\n";
         return 1;
     }
-
-    /* Enqueue readBuffer*/
-    status = clEnqueueReadBuffer(
-                commandQueue,
-                inputBufferEz,
-                CL_TRUE,
-                0,
-                width * sizeof(cl_double),
-                Ez,
-                0,
-                NULL,
-                &events[1]);
-    
-    if(status != CL_SUCCESS) 
-    { 
-        std::cout << 
-            "Error: clEnqueueReadBuffer failed. \
-             (clEnqueueReadBuffer)\n";
-
-        return 1;
-    }
-    
     /* Wait for the read buffer to finish execution */
     status = clWaitForEvents(1, &events[1]);
     if(status != CL_SUCCESS) 
@@ -673,7 +751,7 @@ void WriteSnapshots (cl_uint Resolutiont)
 	cl_uint frame = 1;
 	FILE *snapshot;
 	cl_uint SnapshotResolutiont = 1;
-	bool SaveFields = false;
+	
 	cl_uint i, t;
 
 	for (t=0; t<timeN; t+=Resolutiont)
