@@ -98,12 +98,16 @@ mpml = 250;          % Typical = 80;
 semax = 2.6e7;      % Typical = 3.7e6;
 for i=1:PMLw+1
     
-    sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
-    smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
+%     sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
+%     smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
     
+    sey(:, i+1) = 1.7e10;
+    smy(:, i) = 1.7e10;
     if i<PMLw+1
-        sey(:, JEz-PMLw+i) = semax*( (i)/dpml )^mpml;
-        smy(:, JHx-PMLw+i) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;  
+%         sey(:, JEz-PMLw+i) = semax*( (i)/dpml )^mpml;
+%         smy(:, JHx-PMLw+i) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;  
+        sey(:, JEz-PMLw+i) = 1.7e10;
+        smy(:, JHx-PMLw+i) = 1.7e10;
     end
     
 %     erEz(:, i+1) = 10;
@@ -210,10 +214,10 @@ for n=0:NNMax-2
     
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
-%     if ( n < NHW )
+    if ( n < NHW )
     Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * sin ( TwoPIFDeltaT * n );
     Dz (:, Js, n1) = e0 * Ez (:, Js, n1);
-%     end
+    end
    % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
 %     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
 %     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
@@ -250,4 +254,8 @@ for i=1:NNMax/TimeResolutionFactor-2
 %     colorbar
     
 end
+
+figure (8)
+% plot (reshape(EzSnapshots(IEz/2, 40, :), 500, 1))
+plot ( squeeze(EzSnapshots(IEz/2, 40, :)))
 fprintf ( 1, 'Simulation completed! \n' );

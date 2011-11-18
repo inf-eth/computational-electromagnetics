@@ -22,11 +22,11 @@ JEz = JSize+2*PMLw;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 800;                   % Maximum time.
+NNMax = 750;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is resolution factor.
-xResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
-yResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
-Js = 2+PMLw;                         % J-position of the plane wave front.
+xResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+yResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+Js = 2+PMLw;                    % J-position of the plane wave front.
 
 % Different Constants.
 Cl = 299792458;
@@ -93,7 +93,7 @@ AEz = zeros ( IEz, JEz-2*PMLw-1 );
 wpsquaredEz = zeros( IEz, JEz-2*PMLw-1 );
 wpmsquaredHx = zeros (IHx, JHx-2*PMLw );
 
-smaskEz = zeros ( IEz, JEz );
+smaskEz = ones ( IEz, JEz-2*PMLw-1 );
 % ---------------------------------------------------
 
 Bx = zeros ( IHx, JHx, 3 );
@@ -163,24 +163,28 @@ for i=1:IHy     % IHy is size+1 or maximum I size.
     end
         
     if i <= PMLw+1
-        sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
-        smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
+%         sey(:, i+1) = semax*( (PMLw-i)/dpml )^mpml;
+%         smy(:, i) = (1/1)*(u0/e0)*semax*( (PMLw-i+0.5)/dpml )^mpml;
+        sey(:, i+1) = 6e9;
+        smy(:, i) = 6e9;
     end
     
     if i < PMLw+1
-        sey(:, JEz-PMLw+i) = semax*( (i)/dpml )^mpml;
-        smy(:, JHx-PMLw+i) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;  
+%         sey(:, JEz-PMLw+i) = semax*( (i)/dpml )^mpml;
+%         smy(:, JHx-PMLw+i) = (1/1)*(u0/e0)*semax*( (i-0.5)/dpml )^mpml;  
+        sey(:, JEz-PMLw+i) = 6e9;
+        smy(:, JHx-PMLw+i) = 6e9;
     end
     
 end
 
 figure (1)
-mesh ( urrHx )
-title ( 'ur' )
+mesh ( sey )
+title ( 'sey' )
 view (4, 4)
 figure (2)
-mesh ( ezzEz )
-title ( 'ez' )
+mesh ( smy )
+title ( 'smy' )
 view (4, 4)
 figure (3)
 mesh ( uphiHx )
@@ -194,6 +198,12 @@ figure (5)
 mesh ( wpsquaredEz )
 title ( 'wp squared' )
 view (4, 4)
+
+% PML space.
+Scsx = (DT*sex)./(2*1);
+Scsy = (DT*sey)./(2*1);
+ScmsmxHy = (DT*smx)./(2*1);
+ScmsmyHx = (DT*smy)./(2*1);
 
 fprintf ( 1, 'Initialization done.\n' );
 % ############ Initialization Complete ##############
@@ -242,10 +252,16 @@ for n=0:NNMax-2
     ByAve (2:IHx-1, 2:JHx-1, 3) = ( By(1:IHx-2, 2:JHx-1, 3) + By(2:IHx-1, 1:JHx-2, 3) + By(1:IHx-2, 1:JHx-2, 3) + By(2:IHx-1, 2:JHx-1, 3) )/4;
 
     Hx ( :, (1+PMLw):(JHx-PMLw), n1 ) = ( ax.*Bx ( :, (1+PMLw):(JHx-PMLw), n1 ) + bx.*Bx ( :, (1+PMLw):(JHx-PMLw), n0) + cx.*Bx ( :, (1+PMLw):(JHx-PMLw), 3) + dx.*ByAve (1:IHy-1, (1+PMLw):(JHy-PMLw-1), n1) + ex.*ByAve (1:IHy-1, (1+PMLw):(JHy-PMLw-1), n0) + fx.*ByAve (1:IHy-1, (1+PMLw):(JHy-PMLw-1), 3) - (gx.*Hx(:,(1+PMLw):(JHx-PMLw),n0) + hx.*Hx(:,(1+PMLw):(JHx-PMLw),3)) ) ./ lx;
+    % Hx in PML space.
+    Hx(:, 1:PMLw, n1) = (1/u0)*Bx(:, 1:PMLw, n1);
+    Hx(:, JHx-PMLw+1:JHx, n1) = (1/u0)*Bx(:, JHx-PMLw+1:JHx, n1);
 
 %     Hy ( 1:IHy-1, 1:JHy-1, n1 ) = ( ay(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n1 ) + by(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, n0) + cy(1:IHy-1, 1:JHy-1).*By ( 1:IHy-1, 1:JHy-1, 3) + dy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n1) + ey(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, n0) + fy(1:IHy-1, 1:JHy-1).*BxAve (1:IHy-1, 1:JHy-1, 3) - (gy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,n0) + hy(1:IHy-1, 1:JHy-1).*Hy(1:IHy-1, 1:JHy-1,3)) ) ./ ly (1:IHy-1, 1:JHy-1);
     
     Hy ( 1:IHy-1, (2+PMLw):(JHy-PMLw-1), n1 ) = ( ay(1:IHy-1, 1:JHy-1-2*PMLw-1).*By ( 1:IHy-1, (2+PMLw):(JHy-PMLw-1), n1 ) + by(1:IHy-1, 1:JHy-1-2*PMLw-1).*By ( 1:IHy-1, (2+PMLw):(JHy-PMLw-1), n0) + cy(1:IHy-1, 1:JHy-1-2*PMLw-1).*By ( 1:IHy-1, (2+PMLw):(JHy-PMLw-1), 3) + dy(1:IHy-1, 1:JHy-1-2*PMLw-1).*BxAve (1:IHy-1, (2+PMLw):(JHy-PMLw-1), n1) + ey(1:IHy-1, 1:JHy-1-2*PMLw-1).*BxAve (1:IHy-1, (2+PMLw):(JHy-PMLw-1), n0) + fy(1:IHy-1, 1:JHy-1-2*PMLw-1).*BxAve (1:IHy-1, (2+PMLw):(JHy-PMLw-1), 3) - (gy(1:IHy-1, 1:JHy-1-2*PMLw-1).*Hy(1:IHy-1, (2+PMLw):(JHy-PMLw-1),n0) + hy(1:IHy-1, 1:JHy-1-2*PMLw-1).*Hy(1:IHy-1, (2+PMLw):(JHy-PMLw-1),3)) ) ./ ly (1:IHy-1, 1:JHy-1-2*PMLw-1);
+    % Hy in PML space.
+    Hy(2:IHy-1, 2:PMLw+1, n1) = (1/u0)*By(2:IHy-1, 2:PMLw+1, n1);
+    Hy(2:IHy-1, JHy-PMLw:JHy-1, n1) = (1/u0)*By(2:IHy-1, JHy-PMLw:JHy-1, n1);
     
 %     Dz ( :, 2:JEz-1, n1 ) = (  Dz ( :, 2:JEz-1, n0 ) ) + ( (DT/delta) * ( Hy ( 2:IHy, 2:JHy-1, n1 ) - Hy ( 1:IHy-1, 2:JHy-1, n1 ) + Hx ( :, 1:JHx-1,n1 ) - Hx ( :, 2:JHx, n1 ) ));
     
@@ -265,7 +281,10 @@ for n=0:NNMax-2
     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
     
     Ez ( :, (2+PMLw):(JEz-1-PMLw), n1 ) =  ( (1/(e0*(DT^2)))*Dz ( :, (2+PMLw):(JEz-1-PMLw), n1 ) - (2/(e0*(DT^2)))*Dz ( :, (2+PMLw):(JEz-1-PMLw), n0) + (1/(e0*(DT^2)))*Dz( :, (2+PMLw):(JEz-1-PMLw), 3) + AEz(:, 2:(JEz-1-2*PMLw)).*(2/(DT^2)-wpsquaredEz(:, 2:(JEz-1-2*PMLw))/2).*Ez(:, (2+PMLw):(JEz-1-PMLw), n0) - AEz(:, 2:(JEz-1-2*PMLw)).*(1/(DT^2)+wpsquaredEz(:, 2:(JEz-1-2*PMLw))/4).*Ez (:, (2+PMLw):(JEz-1-PMLw), 3) ) ./ (AEz(:, 2:(JEz-1-2*PMLw)).*( 1/(DT^2) + wpsquaredEz(:,2:(JEz-1-2*PMLw))/4));
-
+    % Ez in PML space.
+    Ez(:, 2:PMLw+1, n1) = (1/e0)*Dz(:, 2:PMLw+1, n1);
+    Ez(:, JEz-PMLw:JEz-1, n1) = (1/e0)*Dz(:, JEz-PMLw:JEz-1, n1);
+    
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
 %     if ( n < NHW )
     Ez ( :, Js, n1 ) = Ez ( :, Js, n1 ) + 1 * sin ( TwoPIFDeltaT * n );
@@ -273,8 +292,8 @@ for n=0:NNMax-2
 %     end
 
     % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
-    Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
-    Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
+    Ez ( :, (2+PMLw):(JEz-1-PMLw), n1 ) = smaskEz ( :, 2:(JEz-1-2*PMLw)) .* Ez ( :, (2+PMLw):(JEz-1-PMLw), n1 );
+    Dz ( :, (2+PMLw):(JEz-1-PMLw), n1 ) = smaskEz ( :, 2:(JEz-1-2*PMLw)) .* Dz ( :, (2+PMLw):(JEz-1-PMLw), n1 );
 
     if ( mod(n, TimeResolutionFactor) == 0)
         EzSnapshots ( :, :, n/TimeResolutionFactor + 1 ) = Ez ( 1+(0:xResolutionFactor:(IEz-1)), 1+(0:yResolutionFactor:(JEz-1)), n1);
@@ -292,12 +311,14 @@ for i=1:NNMax/TimeResolutionFactor-2
     figure (6)
     mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
-    zlim ( [-2 2] )
+    zlim ( [-1 1] )
+    caxis([-1 1])
     
     figure (7)
     surf ( EzSnapshots (:, :, i) );
     view (0, 90)
     zlim ( [-10 10] )
+    caxis([-1 1])
     
 end
 fprintf ( 1, 'Simulation completed! \n' );
