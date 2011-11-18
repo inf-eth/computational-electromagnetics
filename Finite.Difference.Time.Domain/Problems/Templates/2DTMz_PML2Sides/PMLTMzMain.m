@@ -190,8 +190,8 @@ for n=0:NNMax-2
     Dz(:, (2+PMLw):(JEz-1-PMLw), n1) = ((1-Sc(:, (2+PMLw):(JEz-1-PMLw)))./(1+Sc(:, (2+PMLw):(JEz-1-PMLw)))) .* Dz(:, (2+PMLw):(JEz-1-PMLw), n0) + ( ((DT/delta)./(1+Sc(:, (2+PMLw):(JEz-1-PMLw)))) .* ( Hy(2:IHy, (2+PMLw):(JHy-1-PMLw), n1) - Hy(1:IHy-1, (2+PMLw):(JHy-1-PMLw), n1) - Hx(:, (2+PMLw):(JHx-PMLw), n1) + Hx(:, (1+PMLw):(JHx-1-PMLw), n1) ));
     
     % PML space.
-    Dz(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dz(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
-    Dz(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dz(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
+%     Dz(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dz(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
+%     Dz(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dz(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
     
 %     Dz(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dz(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
 %     Dz(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dz(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
@@ -202,6 +202,13 @@ for n=0:NNMax-2
 %     Dzx(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) ));
 %     Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dzy(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
 
+    % Lower PML.
+    Dzx(:, 2:PMLw+1, n1) = ((1-Scsx(:, 2:PMLw+1))./(1+Scsx(:, 2:PMLw+1))) .* Dzx(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsx(:, 2:PMLw+1))) .* ( Hy(2:IHy, 2:PMLw+1, n1) - Hy(1:IHy-1, 2:PMLw+1, n1) ));
+    Dzy(:, 2:PMLw+1, n1) = ((1-Scsy(:, 2:PMLw+1))./(1+Scsy(:, 2:PMLw+1))) .* Dzy(:, 2:PMLw+1, n0) + ( ((DT/delta)./(1+Scsy(:, 2:PMLw+1))) .* ( - Hx(:, 2:PMLw+1, n1) + Hx(:, 1:PMLw, n1) ));
+    
+    % Upper PML.
+    Dzx(:, JEz-PMLw:JEz-1, n1) = ((1-Scsx(:, JEz-PMLw:JEz-1))./(1+Scsx(:, JEz-PMLw:JEz-1))) .* Dzx(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsx(:, JEz-PMLw:JEz-1))) .* ( Hy(2:IHy, JHy-PMLw:JHy-1, n1) - Hy(1:IHy-1, JHy-PMLw:JHy-1, n1) ));
+    Dzy(:, JEz-PMLw:JEz-1, n1) = ((1-Scsy(:, JEz-PMLw:JEz-1))./(1+Scsy(:, JEz-PMLw:JEz-1))) .* Dzy(:, JEz-PMLw:JEz-1, n0) + ( ((DT/delta)./(1+Scsy(:, JEz-PMLw:JEz-1))) .* ( - Hx(:, JHx-PMLw+1:JHx, n1) + Hx(:, JHx-PMLw-0:JHx-1, n1) ));
     % Boundary conditions on Dz. Soft grid truncation.
 %     Dz ( 2:IEz-1, 1, n1 ) = (1/3) * ( Dz ( 1:IEz-2, 2, n0 ) + Dz ( 2:IEz-1, 2, n0 ) + Dz ( 3:IEz, 2, n0 ) );
 %     Dz ( 2:IEz-1, JEz, n1 ) = (1/3) * ( Dz ( 1:IEz-2, JEz-1, n0 ) + Dz ( 2:IEz-1, JEz-1, n0 ) + Dz ( 3:IEz, JEz-1, n0 ) );
@@ -210,7 +217,9 @@ for n=0:NNMax-2
 %     Dz ( 1, JEz, n1 ) = (1/2) * ( Dz ( 1, JEz-1, n0 ) + Dz ( 2, JEz-1, n0 ) );
 %     Dz ( IEz, JEz, n1 ) = (1/2) * ( Dz ( IEz, JEz-1, n0 ) + Dz ( IEz-1, JEz-1, n0 ) );
 
-    Dz(:, :, n1) = Dz(:, :, n1)+Dzx(:, :, n1)+Dzy(:, :, n1);
+    Dz(:, 2:PMLw+1, n1) = Dzx(:, 2:PMLw+1, n1) + Dzy(:, 2:PMLw+1, n1); 
+    Dz(:, JEz-PMLw:JEz-1, n1) = Dzx(:, JEz-PMLw:JEz-1, n1) + Dzy(:, JEz-PMLw:JEz-1, n1);
+%     Dz(:, :, n1) = Dz(:, :, n1)+Dzx(:, :, n1)+Dzy(:, :, n1);
     
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
