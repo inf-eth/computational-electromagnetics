@@ -1,7 +1,8 @@
-#ifndef WIN32
+#ifdef WIN32
+#include <fstream>
+#else
 #include <fcntl.h>
 #endif
-#include <fstream>
 #include <iostream>
 #include <cmath>
 #include <ctime>
