@@ -1,0 +1,1 @@
+g++ FDTD1DWavePropagation.cpp -o bin/debug/FDTD1D.o -O3
