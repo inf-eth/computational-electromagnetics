@@ -1,0 +1,1 @@
+To compile on linux run 'compile' (./compile). Output binary file is placed in /bin/debug
