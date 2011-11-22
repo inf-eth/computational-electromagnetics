@@ -3,7 +3,16 @@
 int main (int argc, char **argv)
 {
 	CFDTD2D FDTDSim;
-	FDTDSim.Initialize();
+	FDTDSim.StartClock ();
+	FDTDSim.Initialize ();
+	FDTDSim.StopClock ();
+	std::cout << "Initialization Elapsed Time (sec): " << FDTDSim.GetElapsedTime () << std::endl;
+
+	FDTDSim.StartClock ();
+	FDTDSim.RunSimulation ();
+	FDTDSim.StopClock ();
+	std::cout << "Simulation Elapsed Time (sec): " << FDTDSim.GetElapsedTime () << std::endl;
+	
 	/*
 	// File handling from chapter 3 of Understanding FDTD. J. B. Schneider
 	char basename[20] = "../../FieldData/Ez";
