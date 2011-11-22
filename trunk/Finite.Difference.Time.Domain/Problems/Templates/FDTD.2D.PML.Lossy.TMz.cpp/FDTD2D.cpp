@@ -1,13 +1,13 @@
 #include "FDTD2D.h"
 CFDTD2D::CFDTD2D () : 
-						I(1024),
-						J(1024),
+						I(200),
+						J(200),
 						c(299792458),
 						delta(5e-3),
 						dx(delta),
 						dy(delta),
 						dt(delta/(sqrt(2.)*c)),
-						PMLw(50),
+						PMLw(0),
 						NMax(256),
 						f(2e9),
 						pi(4*atan(1.)),
@@ -19,10 +19,10 @@ CFDTD2D::CFDTD2D () :
 						Is(2),
 						n0(0),
 						n1(1),
+						n2(2),
 						tResolution(1),
 						xResolution(1),
 						yResolution(1),
-						n2(2),
 						IHx(I),
 						JHx(J+2*PMLw-1),
 						IHy(I+1),
@@ -97,7 +97,130 @@ void CFDTD2D::Initialize ()
 	ScmsmxHy = new double[IHy*JHy];
 	ScmsmyHx = new double[IHx*JHx];
 
+	uint i, j, t;
+	for (t=0; t<3; t++)
+	{
+		for (i=0; i<IHy; i++)
+		{
+			for(j=0; j<JHy; j++)
+			{
+				// Field initialization.
+
+				Hy[i+IHy*j+t*IHy*JHy] = 0.;
+				By[i+IHy*j+t*IHy*JHy] = 0.;
+
+				if (i<IHx && j<JHx)
+				{
+					Hx[i+IHx*j+t*IHx*JHx] = 0.;
+					Bx[i+IHx*j+t*IHx*JHx] = 0.;
+				}
+				if (i<IEz && J<JEz)
+				{
+					Ez[i+IEz*j+t*IEz*JEz] = 0.;
+					Dz[i+IEz*j+t*IEz*JEz] = 0.;
+					Dzx[i+IEz*j+t*IEz*JEz] = 0.;
+					Dzy[i+IEz*j+t*IEz*JEz] = 0.;
+				}
+
+				if (t==0)
+				{
+					// Hy related arrays.
+					urHy[i+IHy*j] = 1.;
+					smHy[i+IHy*j] = 0.;
+					ScmHy[i+IHy*j] = (dt*smHy[i+IHy*j])/(2*urHy[i+IHy*j]);
+					smx[i+IHy*j] = 0.;
+					ScmsmxHy[i+IHy*j] = (dt*smx[i+IHy*j])/(2*urHy[i+IHy*j]);
+
+					// Hx related arrays.
+					if (i<IHx && j<JHx)
+					{
+						urHx[i+IHx*j] = 1.;
+						smHx[i+IHx*j] = 0.;
+						ScmHx[i+IHx*j] = (dt*smHx[i+IHx*j])/(2*urHx[i+IHx*j]);
+
+						// Initializing PML conductances.
+						if (j < PMLw+1)
+						{
+							smy[i+IHx*j] = 1.7e10;
+							if (J < PMLw)
+								smy[i+IHx*(JHx-PMLw+j-1)] = 1.7e10;
+						}
+						else
+							smy[i+IHx*j] = 0.;
+
+						ScmsmyHx[i+IHx*j] = (dt*smy[i+IHx*j])/(2*urHx[i+IHx*j]);
+					}
+
+					// Ez related arrays.
+					if (i<IEz && j<JEz)
+					{
+						erEz[i+IEz*j] = 1.;
+						sEz[i+IEz*j] = 0.;
+						Sc[i+IEz*j] = (dt*sEz[i+IEz*j])/(2*erEz[i+IEz*j]);
+						sex[i+IEz*j] = 0.;
+
+						// Initializing PML conductances.
+						if (j < PMLw+1)
+						{
+							sey[i+IEz*j] = 1.7e10;
+							if (J < PMLw)
+								sey[i+IEz*(JEz-PMLw+j-1)] = 1.7e10;
+						}
+						else
+							sey[i+IEz*j] = 0.;
+
+						Scsx[i+IEz*j] = (dt*sex[i+IEz*j])/(2*erEz[i+IEz*j]);
+						Scsy[i+IEz*j] = (dt*sey[i+IEz*j])/(2*erEz[i+IEz*j]);
+					}
+				}
+			}
+		}
+	}
 }
+
+void CFDTD2D::RunSimulation ()
+{
+	// Time loop.
+	uint t, i, j;
+	for (t=0; t < NMax-1; t++)
+	{
+		// t = 1/2.
+		// Magnetic field. IHx and JHx are one less than IHy and JHy.
+		for (i=0; i < IHx; i++)
+		{
+			for (j=0; j < JHx; j++)
+			{
+				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmHx[i+IHx*j])/(1+ScmHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
+				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
+
+				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmHy[(i+1)+IHy*(j+1)])/(1+ScmHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
+				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);
+			}
+		}
+		// t = 1.
+		// Electric field.
+		for (i=0; i < IEz; i++)
+		{
+			for (j=0; j < JEz-1; j++)
+			{
+				Dz[i+IEz*(j+1)+IEz*JEz*n2] = (1-Sc[i+IEz*(j+1)])/(1+Sc[i+IEz*(j+1)]) * Dz[i+IEz*(j+1)+IEz*JEz*n1] + ( (dt/delta)/(1+Sc[i+IEz*(j+1)]) * ( Hy[(i+1)*IHy*(j+1)+IHy*JHy*n2] - Hy[i*IHy*(j+1)+IHy*JHy*n2]) );
+				Ez[i+IEz*(j+1)+IEz*JEz*n2] = Dz[i+IEz*(j+1)+IEz*JEz*n2]/(e0*erEz[i+IEz*(j+1)]);
+
+				// Source.
+				if (j==Js)
+				{
+					Ez[i+IEz*(j+1)+IEz*JEz*n2] = Ez[i+IEz*(j+1)+IEz*JEz*n2] + sin (Two_pi_f_deltat * t);
+					Dz[i+IEz*(j+1)+IEz*JEz*n2] = e0 * Ez[i+IEz*(j+1)+IEz*JEz*n2];
+				}
+			}
+		}
+		uint temp = n0;
+		n0 = n1;
+		n1 = n2;
+		n2 = temp;
+	}
+}
+
 CFDTD2D::~CFDTD2D ()
 {
 

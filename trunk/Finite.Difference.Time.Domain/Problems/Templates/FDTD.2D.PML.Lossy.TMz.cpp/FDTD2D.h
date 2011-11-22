@@ -97,8 +97,20 @@ private:
 	double *ScmsmxHy;
 	double *ScmsmyHx;
 
+	// Timing.
+	clock_t tStart;
+	clock_t tEnd;
+	clock_t tElapsed;
+
 public:
 	CFDTD2D ();
 	void Initialize ();			// Initialize with default parameters.
+	void RunSimulation ();
+
+	// Timing.
+	inline void StartClock () { tStart = clock(); }
+	inline void StopClock () { tEnd = clock(); }
+	inline double GetElapsedTime () { return (double)(tEnd-tStart)/CLOCKS_PER_SEC; }
+
 	~CFDTD2D ();
 };
