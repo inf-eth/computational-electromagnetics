@@ -1,21 +1,21 @@
 #include "FDTD2D.h"
 CFDTD2D::CFDTD2D () : 
-						I(200),
-						J(200),
-						c(299792458),
-						delta(5e-3),
+						I(100),
+						J(100),
+						c(299792458.),
+						delta(5.0e-3),
 						dx(delta),
 						dy(delta),
-						dt(delta/(sqrt(2.)*c)),
+						dt(delta*1/(sqrt(2.)*c)),
 						PMLw(0),
 						NMax(256),
-						f(2e9),
+						f(2.e9),
 						pi(4*atan(1.)),
-						e0(1e-9/(36*pi)),
-						u0(1e-7*4*pi),
+						e0(1.e-9/(36.*pi)),
+						u0(1.e-7*4.*pi),
 						Two_pi_f_deltat(2*pi*f*dt),
-						NHW(1/(2*f*dt)),
-						Js(2+PMLw),
+						NHW(1./(2.*f*dt)),
+						Js(20+PMLw),
 						Is(2),
 						n0(0),
 						n1(1),
@@ -178,11 +178,22 @@ void CFDTD2D::Initialize ()
 	}
 }
 
-void CFDTD2D::RunSimulation ()
+void CFDTD2D::RunSimulation (bool SaveFields)
 {
 	// Time loop.
-	uint t, i, j;
-	for (t=0; t < NMax-1; t++)
+	uint n, i, j;
+
+	// File Handling.
+	char basename[20] = "../../FieldData/Ez";
+	char filename[30];
+	#ifdef WIN32
+	std::fstream snapshot;
+	#else
+	int fd;
+	#endif
+	uint frame = 1;
+
+	for (n=0; n < NMax-1; n++)
 	{
 		// t = 1/2.
 		// Magnetic field. IHx and JHx are one less than IHy and JHy.
@@ -201,23 +212,48 @@ void CFDTD2D::RunSimulation ()
 		// Electric field.
 		for (i=0; i < IEz; i++)
 		{
-			for (j=0; j < JEz-1; j++)
+			for (j=1; j < JEz-1; j++)
 			{
-				Dz[i+IEz*(j+1)+IEz*JEz*n2] = (1-Sc[i+IEz*(j+1)])/(1+Sc[i+IEz*(j+1)]) * Dz[i+IEz*(j+1)+IEz*JEz*n1] + ( (dt/delta)/(1+Sc[i+IEz*(j+1)]) * ( Hy[(i+1)*IHy*(j+1)+IHy*JHy*n2] - Hy[i*IHy*(j+1)+IHy*JHy*n2]) );
-				Ez[i+IEz*(j+1)+IEz*JEz*n2] = Dz[i+IEz*(j+1)+IEz*JEz*n2]/(e0*erEz[i+IEz*(j+1)]);
+				Dz[i+IEz*j+IEz*JEz*n2] = (1-Sc[i+IEz*j])/(1+Sc[i+IEz*j]) * Dz[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Sc[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2] - Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
+				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
 
 				// Source.
-				if (j==Js)
+				if (j == Js && n < NHW)
 				{
-					Ez[i+IEz*(j+1)+IEz*JEz*n2] = Ez[i+IEz*(j+1)+IEz*JEz*n2] + sin (Two_pi_f_deltat * t);
-					Dz[i+IEz*(j+1)+IEz*JEz*n2] = e0 * Ez[i+IEz*(j+1)+IEz*JEz*n2];
+					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + sin (Two_pi_f_deltat * n);
+					Dz[i+IEz*j+IEz*JEz*n2] = e0 * Ez[i+IEz*j+IEz*JEz*n2];
 				}
 			}
 		}
-		uint temp = n0;
-		n0 = n1;
-		n1 = n2;
-		n2 = temp;
+
+		// Write field snapshot.
+		if (n % tResolution == 0 && SaveFields == true)
+		{
+			#ifdef WIN32
+			sprintf_s (filename, "%s%d.fdt", basename, frame);
+			snapshot.open (filename, std::ios::out|std::ios::binary);
+			#else
+			sprintf (filename, "%s%d.fdt", basename, frame);
+			fd = open ( filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU );
+			#endif
+
+			#ifdef WIN32
+			snapshot.write ( (char*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
+			#else
+			write (fd, (void*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
+			#endif
+
+			#ifdef WIN32
+			snapshot.close();
+			#else
+			close (fd);
+			#endif
+
+			frame++;
+		}
+		n0 = (n0+1)%3;
+		n1 = (n1+1)%3;
+		n2 = (n2+1)%3;
 	}
 }
 

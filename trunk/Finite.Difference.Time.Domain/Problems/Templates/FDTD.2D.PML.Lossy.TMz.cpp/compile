@@ -1,1 +1,1 @@
-g++ FDTD1DWavePropagation.cpp -o bin/debug/FDTD1D.o -O3
+g++ FDTD2DTMzMain.cpp FDTD2D.cpp -o bin/debug/FDTD2D.o -O3
