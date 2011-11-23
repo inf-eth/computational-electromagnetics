@@ -16,6 +16,7 @@ private:
 	// Generic simulation parameters.
 	const uint I;				// Width.
 	const uint J;				// Height.
+	const double c;				// Speed of light.
 	const double delta;			// dx and dy.
 	const double dx;			// dx if being used.
 	const double dy;			// dy if being used.
@@ -25,7 +26,6 @@ private:
 	const uint NMax;			// Maximum n
 
 	// Constants.
-	const double c;				// Speed of light.
 	const double f;				// frequency
 	const double pi;			// pi
 	const double e0;			// epsilon nought
@@ -105,7 +105,7 @@ private:
 public:
 	CFDTD2D ();
 	void Initialize ();			// Initialize with default parameters.
-	void RunSimulation ();
+	void RunSimulation (bool=true);
 
 	// Timing.
 	inline void StartClock () { tStart = clock(); }

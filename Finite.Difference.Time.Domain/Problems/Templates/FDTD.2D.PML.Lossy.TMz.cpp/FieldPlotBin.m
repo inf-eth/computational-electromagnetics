@@ -6,7 +6,11 @@ y_min = -1;
 y_max = 1;
 simTime = 255;     % Number of frames to be read. Last saved field number 
                     % If last field saved is Ez1023.fdt, maximum simTime should be 1023.
-size = [1024 1];    % Spatial size or width w.
+I = 100;
+J = 100;
+xres = 1;
+yres = 1;
+size = [I J];    % Spatial size or width w.
 frame = 1;
 figure(1);
 i = 0;
@@ -17,8 +21,11 @@ while i < simTime
         return;
     end
     data = fread (fid, size, 'double'); 
-    plot (data)
-    axis ([0 length(data) y_min y_max]);
+    surf (data(1:xres:I,1:yres:J))
+    view (0, 90)
+    zlim ( [-10 10] )
+    caxis([-1 1])
+    
     reel (frame) = getframe;
     frame = frame+1;
     i = i+1;
