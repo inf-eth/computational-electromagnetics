@@ -1,14 +1,14 @@
 #include "FDTD2D.h"
 CFDTD2D::CFDTD2D () : 
-						I(100),
-						J(100),
+						I(200),
+						J(200),
 						c(299792458.),
-						delta(5.0e-3),
+						delta(2.5e-3),
 						dx(delta),
 						dy(delta),
-						dt(delta*1/(sqrt(2.)*c)),
+						dt(delta*1/(sqrt(2.)*c)/2),
 						PMLw(0),
-						NMax(256),
+						NMax(256*4),
 						f(2.e9),
 						pi(4*atan(1.)),
 						e0(1.e-9/(36.*pi)),
@@ -63,7 +63,8 @@ CFDTD2D::CFDTD2D () :
 						ScmsmxHy(NULL),
 						ScmsmyHx(NULL)
 {
-
+	double bytes = I*J*17*3*8+50*8;		// Dynamic arrays + predefined variables.
+	std:: cout << "Approximate memory required for simulation: " << bytes/1024 << " Kbytes (" << bytes/(1024*1024) << " MB)." << std::endl;
 }
 // Initialize data arrays.
 void CFDTD2D::Initialize ()
@@ -193,8 +194,13 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 	#endif
 	uint frame = 1;
 
+	uint ProgressResolution;
+	NMax > 200 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
+	std::cout << "Simulation started..." << std::endl;
 	for (n=0; n < NMax-1; n++)
 	{
+		if (n%ProgressResolution == 0)
+			std::cout << std::setprecision(4) << (float)n/(NMax-1)*100 << "%" << std::endl;
 		// t = 1/2.
 		// Magnetic field. IHx and JHx are one less than IHy and JHy.
 		for (i=0; i < IHx; i++)
@@ -255,9 +261,35 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		n1 = (n1+1)%3;
 		n2 = (n2+1)%3;
 	}
+	std::cout << "Simulation complete!" << std::endl;
 }
 
 CFDTD2D::~CFDTD2D ()
 {
-
+	if (Hx != NULL) delete[] Hx;
+	if (Bx != NULL) delete[] Bx;
+	if (Hy != NULL) delete[] Hy;
+	if (By != NULL) delete[] By;
+	if (Ez != NULL) delete[] Ez;
+	if (Dz != NULL) delete[] Dz;
+	if (Dzx != NULL) delete[] Dzx;
+	if (Dzy != NULL) delete[] Dzy;
+	if (EzSnapshots != NULL) delete[] EzSnapshots;
+	if (urHx != NULL) delete[] urHx;
+	if (urHy != NULL) delete[] urHy;
+	if (erEz != NULL) delete[] erEz;
+	if (smHx != NULL) delete[] smHx;
+	if (smHy != NULL) delete[] smHy;
+	if (sEz != NULL) delete[] sEz;
+	if (Sc != NULL) delete[] Sc;
+	if (ScmHx != NULL) delete[] ScmHx;
+	if (ScmHy != NULL) delete[] ScmHy;
+	if (sex != NULL) delete[] sex;
+	if (sey != NULL) delete[] sey;
+	if (smx != NULL) delete[] smx;
+	if (smy != NULL) delete[] smy;
+	if (Scsx != NULL) delete[] Scsx;
+	if (Scsy != NULL) delete[] Scsy;
+	if (ScmsmxHy != NULL) delete[] ScmsmxHy;
+	if (ScmsmyHx != NULL) delete[] ScmsmyHx;
 }

@@ -1,15 +1,15 @@
-% Plots field snapshots as a movie. Taken from appendices of
+% Plots field snapshots as a movie. Taken from appendix of
 % Understanding FDTD, J. B Schneider.
 % Input files are assumed to be in binary format.
 basename = './FieldData/Ez';
 y_min = -1;
 y_max = 1;
-simTime = 255;     % Number of frames to be read. Last saved field number 
+simTime = 256*4-1;     % Number of frames to be read. Last saved field number 
                     % If last field saved is Ez1023.fdt, maximum simTime should be 1023.
-I = 100;
-J = 100;
-xres = 1;
-yres = 1;
+I = 200;
+J = 200;
+xres = 2;
+yres = 2;
 size = [I J];    % Spatial size or width w.
 frame = 1;
 figure(1);
