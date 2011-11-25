@@ -260,7 +260,11 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		if (n % tResolution == 0 && SaveFields == true)
 		{
 			#ifdef WIN32
+			#if _MSC_VER < 1300
+			sprintf (filename, "%s%d.fdt", basename, frame);
+			#else
 			sprintf_s (filename, "%s%d.fdt", basename, frame);
+			#endif
 			snapshot.open (filename, std::ios::out|std::ios::binary);
 			#else
 			sprintf (filename, "%s%d.fdt", basename, frame);
