@@ -42,7 +42,7 @@ while i < simTime
     caxis([-1 1])
     
 %     reel (frame) = getframe;
-    frame = frame+trez;
+    frame = frame+1;
     i = i+1;
     fclose (fid);
 end
