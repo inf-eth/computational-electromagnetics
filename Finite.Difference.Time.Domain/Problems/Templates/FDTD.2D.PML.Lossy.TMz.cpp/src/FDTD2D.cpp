@@ -209,14 +209,17 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 	uint n, i, j;
 
 	// File Handling.
+	std::stringstream framestream;
 	std::string basename = "../../FieldData/Ez";
 	std::string filename;
+	uint frame = 1;
+
 	#ifdef WIN32
 	std::fstream snapshot;
 	#else
 	int fd;
 	#endif
-	uint frame = 1;
+
 
 	uint ProgressResolution;
 	NMax > 200 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
@@ -259,7 +262,6 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
-			std::stringstream framestream;
 			framestream << frame;
 			filename = basename + framestream.str() + ".fdt";
 
