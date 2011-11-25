@@ -1,1 +1,1 @@
-g++ FDTD2DTMzMain.cpp FDTD2D.cpp -o bin/debug/FDTD2D.o -O3
+g++ ./src/FDTD2DTMzMain.cpp ./src/FDTD2D.cpp -o bin/debug/FDTD2D.o -O3
