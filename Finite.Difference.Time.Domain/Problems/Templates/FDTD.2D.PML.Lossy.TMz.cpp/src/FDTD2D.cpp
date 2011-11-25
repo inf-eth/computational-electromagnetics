@@ -6,7 +6,7 @@ CFDTD2D::CFDTD2D () :
 						delta(2.5e-3),
 						dx(delta),
 						dy(delta),
-						dtscalar(1.),
+						dtscalar(2.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
 						PMLw(0),
 						NMax(256*2),
@@ -209,8 +209,8 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 	uint n, i, j;
 
 	// File Handling.
-	char basename[20] = "../../FieldData/Ez";
-	char filename[30];
+	std::string basename = "../../FieldData/Ez";
+	std::string filename;
 	#ifdef WIN32
 	std::fstream snapshot;
 	#else
@@ -224,7 +224,7 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 	for (n=0; n < NMax-1; n++)
 	{
 		if (n%ProgressResolution == 0)
-			std::cout << std::setprecision(4) << (float)n/(NMax-1)*100 << "%" << std::endl;
+			std::cout << std::setprecision(4) << std::setw(3) << "\r" << (float)n/(NMax-1)*100 << "%";
 		// t = 1/2.
 		// Magnetic field. IHx and JHx are one less than IHy and JHy.
 		for (i=0; i < IHx; i++)
@@ -259,27 +259,17 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
-			#ifdef WIN32
-			#if _MSC_VER < 1300
-			sprintf (filename, "%s%d.fdt", basename, frame);
-			#else
-			sprintf_s (filename, "%s%d.fdt", basename, frame);
-			#endif
-			snapshot.open (filename, std::ios::out|std::ios::binary);
-			#else
-			sprintf (filename, "%s%d.fdt", basename, frame);
-			fd = open ( filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU );
-			#endif
+			std::stringstream framestream;
+			framestream << frame;
+			filename = basename + framestream.str() + ".fdt";
 
 			#ifdef WIN32
+			snapshot.open (filename.c_str(), std::ios::out|std::ios::binary);
 			snapshot.write ( (char*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
-			#else
-			write (fd, (void*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
-			#endif
-
-			#ifdef WIN32
 			snapshot.close();
 			#else
+			fd = open (filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+			write (fd, (void*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
 			close (fd);
 			#endif
 
@@ -289,7 +279,7 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		n1 = (n1+1)%3;
 		n2 = (n2+1)%3;
 	}
-	std::cout << "Simulation complete!" << std::endl;
+	std::cout << std::endl << "Simulation complete!" << std::endl;
 }
 
 CFDTD2D::~CFDTD2D ()

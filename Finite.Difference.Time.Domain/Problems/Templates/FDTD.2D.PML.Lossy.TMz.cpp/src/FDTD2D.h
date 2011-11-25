@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #endif
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <cmath>
 #include <ctime>
@@ -72,7 +73,7 @@ private:
 	double *EzSnapshots;		// For storing Ez snapshots.
 
 	// ========= Field specific arrays =======
-	
+
 	// Permeability and permittivity.
 	double *urHx;
 	double *urHy;
