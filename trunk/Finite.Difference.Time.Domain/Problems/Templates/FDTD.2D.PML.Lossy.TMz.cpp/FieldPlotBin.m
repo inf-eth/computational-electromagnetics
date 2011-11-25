@@ -2,17 +2,25 @@
 % Understanding FDTD, J. B Schneider.
 % Input files are assumed to be in binary format.
 basename = './FieldData/Ez';
-y_min = -1;
-y_max = 1;
-simTime = 256*4-1;     % Number of frames to be read. Last saved field number 
-                    % If last field saved is Ez1023.fdt, maximum simTime should be 1023.
-I = 200;
-J = 200;
-xres = 2;
-yres = 2;
+
+fidp = fopen ('./FieldData/Parameters.smp', 'r', 'l');
+if fidp == -1
+    return;
+end
+datap = fread (fidp, 6, 'uint');
+fclose (fidp);
+
+I = datap(1)
+J = datap(2)
+trez = datap(3)
+xrez = datap(4)
+yrez = datap(5)
+simTime = datap(6)-1    % Number of frames to be read. Last saved field number 
+                     % If last field saved is Ez1023.fdt, maximum simTime should be 1023.
+                    
 size = [I J];    % Spatial size or width w.
 frame = 1;
-figure(1);
+reel = 0;
 i = 0;
 while i < simTime
     filename = sprintf ('%s%d.fdt', basename, frame);
@@ -21,14 +29,21 @@ while i < simTime
         return;
     end
     data = fread (fid, size, 'double'); 
-    surf (data(1:xres:I,1:yres:J))
+    figure(1);
+    surf (data(1:xrez:I,1:yrez:J))
     view (0, 90)
-    zlim ( [-10 10] )
+    zlim ( [-2 2] )
     caxis([-1 1])
     
-    reel (frame) = getframe;
-    frame = frame+1;
+    figure(2);
+    mesh (data(1:xrez:I,1:yrez:J))
+    view (4, 4)
+    zlim ( [-2 2] )
+    caxis([-1 1])
+    
+%     reel (frame) = getframe;
+    frame = frame+trez;
     i = i+1;
     fclose (fid);
 end
-%movie (reel, 1);
+% movie (reel, 1);

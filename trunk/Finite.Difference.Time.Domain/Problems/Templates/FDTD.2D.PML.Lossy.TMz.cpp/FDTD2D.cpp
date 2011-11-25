@@ -6,9 +6,10 @@ CFDTD2D::CFDTD2D () :
 						delta(2.5e-3),
 						dx(delta),
 						dy(delta),
-						dt(delta*1/(sqrt(2.)*c)/2),
+						dtscalar(3.),
+						dt(delta/(sqrt(2.)*c) /dtscalar),
 						PMLw(0),
-						NMax(256*4),
+						NMax(256),
 						f(2.e9),
 						pi(4*atan(1.)),
 						e0(1.e-9/(36.*pi)),
@@ -21,8 +22,8 @@ CFDTD2D::CFDTD2D () :
 						n1(1),
 						n2(2),
 						tResolution(1),
-						xResolution(1),
-						yResolution(1),
+						xResolution(2),
+						yResolution(2),
 						IHx(I),
 						JHx(J+2*PMLw-1),
 						IHy(I+1),
@@ -65,6 +66,29 @@ CFDTD2D::CFDTD2D () :
 {
 	double bytes = I*J*17*3*8+50*8;		// Dynamic arrays + predefined variables.
 	std:: cout << "Approximate memory required for simulation: " << bytes/1024 << " Kbytes (" << bytes/(1024*1024) << " MB)." << std::endl;
+
+	// Writing simulation parameters for plotting.
+	#ifdef WIN32
+	std::fstream parametersfile;
+	parametersfile.open ("../../FieldData/Parameters.smp", std::ios::out|std::ios::binary);
+	parametersfile.write ((char*)&I, sizeof(uint));
+	parametersfile.write ((char*)&J, sizeof(uint));
+	parametersfile.write ((char*)&tResolution, sizeof(uint));
+	parametersfile.write ((char*)&xResolution, sizeof(uint));
+	parametersfile.write ((char*)&yResolution, sizeof(uint));
+	parametersfile.write ((char*)&NMax, sizeof(uint));
+	parametersfile.close ();
+	#else
+	int fdp;
+	fdp = open ( "../../FieldData/Parameters.smp", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU );
+	write (fdp, (void*)&I, sizeof(uint));
+	write (fdp, (void*)&J, sizeof(uint));
+	write (fdp, (void*)&tResolution, sizeof(uint));
+	write (fdp, (void*)&xResolution, sizeof(uint));
+	write (fdp, (void*)&yResolution, sizeof(uint));
+	write (fdp, (void*)&NMax, sizeof(uint));
+	close (fdp);
+	#endif
 }
 // Initialize data arrays.
 void CFDTD2D::Initialize ()
@@ -226,7 +250,7 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 				// Source.
 				if (j == Js && n < NHW)
 				{
-					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + sin (Two_pi_f_deltat * n);
+					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + 1 * sin (Two_pi_f_deltat * n) / sqrt(dtscalar);
 					Dz[i+IEz*j+IEz*JEz*n2] = e0 * Ez[i+IEz*j+IEz*JEz*n2];
 				}
 			}

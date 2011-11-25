@@ -21,6 +21,7 @@ private:
 	const double delta;			// dx and dy.
 	const double dx;			// dx if being used.
 	const double dy;			// dy if being used.
+	const double dtscalar;		// dt scale factor. dt will be divided by this factor.
 	const double dt;			// dt.
 	const uint PMLw;			// Width of PML layer.
 
