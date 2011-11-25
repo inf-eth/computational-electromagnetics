@@ -6,10 +6,10 @@ CFDTD2D::CFDTD2D () :
 						delta(2.5e-3),
 						dx(delta),
 						dy(delta),
-						dtscalar(3.),
+						dtscalar(1.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
 						PMLw(0),
-						NMax(256),
+						NMax(256*2),
 						f(2.e9),
 						pi(4*atan(1.)),
 						e0(1.e-9/(36.*pi)),
@@ -250,7 +250,7 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 				// Source.
 				if (j == Js && n < NHW)
 				{
-					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + 1 * sin (Two_pi_f_deltat * n) / sqrt(dtscalar);
+					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + 1 * sin (Two_pi_f_deltat * n) / dtscalar;
 					Dz[i+IEz*j+IEz*JEz*n2] = e0 * Ez[i+IEz*j+IEz*JEz*n2];
 				}
 			}
