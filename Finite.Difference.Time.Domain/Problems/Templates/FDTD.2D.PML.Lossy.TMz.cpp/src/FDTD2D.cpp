@@ -9,7 +9,7 @@ CFDTD2D::CFDTD2D () :
 						dtscalar(2.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
 						PMLw(0),
-						NMax(256*2),
+						NMax(256),
 						f(2.e9),
 						pi(4*atan(1.)),
 						e0(1.e-9/(36.*pi)),
@@ -21,7 +21,7 @@ CFDTD2D::CFDTD2D () :
 						n0(0),
 						n1(1),
 						n2(2),
-						tResolution(1),
+						tResolution(4),
 						xResolution(2),
 						yResolution(2),
 						IHx(I),
@@ -220,14 +220,15 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 	int fd;
 	#endif
 
-
 	uint ProgressResolution;
-	NMax > 200 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
+	NMax > 3000 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
 	std::cout << "Simulation started..." << std::endl;
+
 	for (n=0; n < NMax-1; n++)
 	{
 		if (n%ProgressResolution == 0)
 			std::cout << std::setprecision(4) << std::setw(3) << "\r" << (float)n/(NMax-1)*100 << "%";
+
 		// t = 1/2.
 		// Magnetic field. IHx and JHx are one less than IHy and JHy.
 		for (i=0; i < IHx; i++)
@@ -262,6 +263,7 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
+			framestream.str(std::string());			// Clearing stringstream contents.
 			framestream << frame;
 			filename = basename + framestream.str() + ".fdt";
 
@@ -281,7 +283,7 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		n1 = (n1+1)%3;
 		n2 = (n2+1)%3;
 	}
-	std::cout << std::endl << "Simulation complete!" << std::endl;
+	std::cout << "\r" << "Simulation complete!" << std::endl;
 }
 
 CFDTD2D::~CFDTD2D ()
