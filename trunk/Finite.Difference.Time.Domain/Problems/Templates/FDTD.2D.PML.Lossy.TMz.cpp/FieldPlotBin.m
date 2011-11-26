@@ -15,7 +15,7 @@ J = datap(2)
 trez = datap(3)
 xrez = datap(4)
 yrez = datap(5)
-simTime = datap(6)-1    % Number of frames to be read. Last saved field number 
+simTime = datap(6)/trez-1    % Number of frames to be read. Last saved field number 
                      % If last field saved is Ez1023.fdt, maximum simTime should be 1023.
                     
 size = [I J];    % Spatial size or width w.
