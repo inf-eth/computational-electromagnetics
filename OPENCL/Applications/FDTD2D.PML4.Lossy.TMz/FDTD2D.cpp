@@ -155,7 +155,9 @@ CFDTD2D::CFDTD2D () :
 						Scsx(NULL),
 						Scsy(NULL),
 						ScmsmxHy(NULL),
-						ScmsmyHx(NULL)
+						ScmsmyHx(NULL),
+						cpu(false),
+						flagHalf(0)
 {
 	cl_double bytes = I*J*17*3*8+50*8;		// Dynamic arrays + predefined variables.
 	std:: cout << "Approximate memory required for simulation: " << bytes/1024 << " Kbytes (" << bytes/(1024*1024) << " MB)." << std::endl;
@@ -299,15 +301,230 @@ int CFDTD2D::Initialize ()
 
 int CFDTD2D::initializeCL ()
 {
+	cl_int status = 0;
+	size_t deviceListSize;
+	//	sampleCommon = new streamsdk::SDKCommon();
+	/*
+	* Have a look at the available platforms and pick either
+	* the AMD one if available or a reasonable default.
+	*/
 
+	cl_uint numPlatforms;
+	cl_platform_id platform = NULL;
+	status = clGetPlatformIDs(0, NULL, &numPlatforms);
+	if(status != CL_SUCCESS)
+	{
+		std::cout << "Error: Getting Platforms. (clGetPlatformsIDs)\n";
+		return 1;
+	}
+
+	if(numPlatforms > 0)
+	{
+		cl_platform_id* platforms = new cl_platform_id[numPlatforms];
+		status = clGetPlatformIDs(numPlatforms, platforms, NULL);
+		if(status != CL_SUCCESS)
+		{
+			std::cout << "Error: Getting Platform Ids. (clGetPlatformsIDs)\n";
+			return 1;
+		}
+		for(unsigned int i=0; i < numPlatforms; ++i)
+		{
+			char pbuff[100];
+			status = clGetPlatformInfo(
+				platforms[i],
+				CL_PLATFORM_VENDOR,
+				sizeof(pbuff),
+				pbuff,
+				NULL);
+			if(status != CL_SUCCESS)
+			{
+				std::cout << "Error: Getting Platform Info.(clGetPlatformInfo)\n";
+				return 1;
+			}
+			platform = platforms[i];
+			std::cout << "Device" << i << " = " << pbuff << std::endl;
+			if(!strcmp(pbuff, "Advanced Micro Devices, Inc."))
+			{
+				break;
+			}
+		}
+		delete platforms;
+	}
+
+	if(NULL == platform)
+	{
+		std::cout << "NULL platform found so Exiting Application." << std::endl;
+		return 1;
+	}
+
+	/*
+	* If we could find our platform, use it. Otherwise use just available platform.
+	*/
+	cl_context_properties cps[3] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platform, 0 };
+
+	/////////////////////////////////////////////////////////////////
+	// Create an OpenCL context
+	/////////////////////////////////////////////////////////////////
+	cl_device_type type;
+
+	if (cpu == true)
+	{
+		std::cout << "Running on CPU..." << std::endl;
+		type = CL_DEVICE_TYPE_CPU;
+	}
+	else
+	{
+		std::cout << "Running on GPU..." << std::endl;
+		type = CL_DEVICE_TYPE_GPU;
+	}
+
+	context = clCreateContextFromType(cps, 
+		type, 
+		NULL, 
+		NULL, 
+		&status);
+	if(status != CL_SUCCESS) 
+	{  
+		std::cout<<"Error: Creating Context. (clCreateContextFromType)\n";
+		return 1; 
+	}
+
+	/* First, get the size of device list data */
+	status = clGetContextInfo(context, 
+		CL_CONTEXT_DEVICES, 
+		0, 
+		NULL, 
+		&deviceListSize);
+	if(status != CL_SUCCESS) 
+	{  
+		std::cout<<
+			"Error: Getting Context Info \
+			(device list size, clGetContextInfo)\n";
+		return 1;
+	}
+
+	/////////////////////////////////////////////////////////////////
+	// Detect OpenCL devices
+	/////////////////////////////////////////////////////////////////
+	devices = (cl_device_id *)malloc(deviceListSize);
+	if(devices == 0)
+	{
+		std::cout<<"Error: No devices found.\n";
+		return 1;
+	}
+
+	/* Now, get the device list data */
+	status = clGetContextInfo(
+		context, 
+		CL_CONTEXT_DEVICES, 
+		deviceListSize, 
+		devices, 
+		NULL);
+	if(status != CL_SUCCESS) 
+	{ 
+		std::cout<<
+			"Error: Getting Context Info \
+			(device list, clGetContextInfo)\n";
+		return 1;
+	}
+
+	/////////////////////////////////////////////////////////////////
+	// Create an OpenCL command queue
+	/////////////////////////////////////////////////////////////////
+	commandQueue = clCreateCommandQueue(
+		context, 
+		devices[0], 
+		CL_QUEUE_PROFILING_ENABLE, 
+		&status);
+	if(status != CL_SUCCESS) 
+	{ 
+		std::cout<<"Creating Command Queue. (clCreateCommandQueue)\n";
+		return 1;
+	}
 	return 0;
 }
 
 int CFDTD2D::initializeFDTD2DKernel ()
 {
+	cl_int status;
+	/////////////////////////////////////////////////////////////////
+	// Create OpenCL memory buffers
+	/////////////////////////////////////////////////////////////////
+	// Fields.
+	inputBufferHx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, Hx, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferHx)" << std::endl; return 1; }
+	inputBufferBx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, Bx, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferBx)" << std::endl; return 1; }
+	inputBufferHy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy, Hy, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferHy)" << std::endl; return 1; }
+	inputBufferBy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy, By, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferBy)" << std::endl; return 1; }
+	inputBufferEz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Ez, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferEz)" << std::endl; return 1; }
+	inputBufferDz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Dz, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferDz)" << std::endl; return 1; }
+	inputBufferDzx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Dzx, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferDzx)" << std::endl; return 1; }
+	inputBufferDzy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Dzy, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferDzy)" << std::endl; return 1; }
+
+	inputBufferurHx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, urHx, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferurHx)" << std::endl; return 1; }
+	inputBufferurHy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy, urHy, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferurHy)" << std::endl; return 1; }
+	inputBuffererEz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, erEz, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBuffererEz)" << std::endl; return 1; }
+
+	inputBufferScmHx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, ScmHx, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferScmHx)" << std::endl; return 1; }
+	inputBufferScmHy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy, ScmHy, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferScmHy)" << std::endl; return 1; }
+	inputBufferSc = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Sc, &status);
+	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferSc)" << std::endl; return 1; }
+	/////////////////////////////////////////////////////////////////
+	// Load CL file, build CL program object, create CL kernel object
+	/////////////////////////////////////////////////////////////////
+	const char * filename  = "FDTD2D_Kernels.cl";
+	std::string  sourceStr = convertToString(filename);
+	const char * source    = sourceStr.c_str();
+	size_t sourceSize[]    = { strlen(source) };
+
+	program = clCreateProgramWithSource(
+		context, 
+		1, 
+		&source,
+		sourceSize,
+		&status);
+	if(status != CL_SUCCESS) 
+	{ 
+		std::cout<<
+			"Error: Loading Binary into cl_program \
+			(clCreateProgramWithBinary)\n";
+		return 1;
+	}
+
+	/* create a cl program executable for all the devices specified */
+	status = clBuildProgram(program, 1, devices, NULL, NULL, NULL);
+	if(status != CL_SUCCESS) 
+	{ 
+		std::cout<<"Error: Building Program (clBuildProgram)\n";
+		return 1; 
+	}
+
+	/* get a kernel object handle for a kernel with the given name */
+	kernel = clCreateKernel(program, "FDTD2DKernel", &status);
+	if(status != CL_SUCCESS) 
+	{  
+		std::cout<<"Error: Creating Kernel from program. (clCreateKernel)\n";
+		return 1;
+	}
 	return 0;
 }
 
+int runCLFDTD2DKernels ()
+{
+	return 0;
+}
 int CFDTD2D::RunSimulationCPU (bool SaveFields)
 {
 	// Time loop.

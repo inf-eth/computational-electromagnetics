@@ -101,11 +101,47 @@ jurisdiction and venue of these courts.
 #endif
 
 //#define imp0 377.0
-
-__kernel void FDTD2DKernel(__global  cl_double *Ez, __global  cl_double *Hy, const cl_uint t, const cl_uint w, const cl_uint flag, const cl_uint n0, const cl_uint n1)
+// Number of const uint or double arguments does NOT have any significant impact on performance.
+__kernel void FDTD2DKernel(
+							__global cl_double *Hx,
+							__global cl_double *Bx,
+							__global cl_double *Hy,
+							__global cl_double *By,
+							__global cl_double *Ez,
+							__global cl_double *Dz,
+							__global cl_double *Dzx,
+							__global cl_double *Dzy,
+							__global cl_double *urHx,
+							__global cl_double *urHy,
+							__global cl_double *erEz,
+							__global cl_double *ScmHx,
+							__global cl_double *ScmHy,
+							__global cl_double *Sc,
+							const cl_double delta,
+							const cl_double dtscalar,
+							const cl_double dt,
+							const cl_uint PMLw
+							const cl_double e0,
+							const cl_double u0,
+							const cl_double Two_pi_f_deltat,
+							const cl_uint NHW,
+							const cl_uint Is,
+							const cl_uint Js,
+							const cl_uint n,
+							const cl_uint n0,
+							const cl_uint n1,
+							const cl_uint n2,
+							const cl_uint IHx,
+							const cl_uint JHx,
+							const cl_uint IHy,
+							const cl_uint JHy,
+							const cl_uint IEz,
+							const cl_uint JEz,
+							const cl_uint flag)
 {
-    cl_uint tid = get_global_id(0);
-	cl_double imp0 = 377.0;
+    cl_uint i = get_global_id(0);
+	cl_uint j = get_global_id(1);
+	/*
 	if (flag == 0)
 	{
 		if (tid != w-1)
@@ -123,5 +159,5 @@ __kernel void FDTD2DKernel(__global  cl_double *Ez, __global  cl_double *Hy, con
 		{
 			Ez[0+n1*w] = exp ( -1 * pow((t-30.), 2)/100 );
 		}
-	}
+	}*/
 }
