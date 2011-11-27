@@ -301,7 +301,6 @@ private:
 	cl_mem inputBufferBx;
 	cl_mem inputBufferHy;
 	cl_mem inputBufferBy;
-
 	cl_mem inputBufferEz;
 	cl_mem inputBufferDz;
 	cl_mem inputBufferDzx;
@@ -335,6 +334,7 @@ public:
 	int Initialize ();						// Initialize with default parameters.
 	int initializeCL ();
 	int initializeFDTD2DKernel ();
+	int runCLFDTD2DKernels ();
 	int RunSimulationCPU (bool=true);		// Run simulation on CPU single-threaded.
 
 	std::string convertToString(const char * filename);
