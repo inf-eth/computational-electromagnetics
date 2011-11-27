@@ -102,45 +102,44 @@ jurisdiction and venue of these courts.
 
 //#define imp0 377.0
 // Number of const uint or double arguments does NOT have any significant impact on performance.
-__kernel void FDTD2DKernel(
-							__global cl_double *Hx,
-							__global cl_double *Bx,
-							__global cl_double *Hy,
-							__global cl_double *By,
-							__global cl_double *Ez,
-							__global cl_double *Dz,
-							__global cl_double *Dzx,
-							__global cl_double *Dzy,
-							__global cl_double *urHx,
-							__global cl_double *urHy,
-							__global cl_double *erEz,
-							__global cl_double *ScmHx,
-							__global cl_double *ScmHy,
-							__global cl_double *Sc,
-							const cl_double delta,
-							const cl_double dtscalar,
-							const cl_double dt,
-							const cl_uint PMLw
-							const cl_double e0,
-							const cl_double u0,
-							const cl_double Two_pi_f_deltat,
-							const cl_uint NHW,
-							const cl_uint Is,
-							const cl_uint Js,
-							const cl_uint n,
-							const cl_uint n0,
-							const cl_uint n1,
-							const cl_uint n2,
-							const cl_uint IHx,
-							const cl_uint JHx,
-							const cl_uint IHy,
-							const cl_uint JHy,
-							const cl_uint IEz,
-							const cl_uint JEz,
-							const cl_uint flag)
+__kernel void FDTD2DKernel( __global double *Hx,
+							__global double *Bx,
+							__global double *Hy,
+							__global double *By,
+							__global double *Ez,
+							__global double *Dz,
+							__global double *Dzx,
+							__global double *Dzy,
+							__global double *urHx,
+							__global double *urHy,
+							__global double *erEz,
+							__global double *ScmHx,
+							__global double *ScmHy,
+							__global double *Sc,
+							const double delta,
+							const double dtscalar,
+							const double dt,
+							const uint PMLw,
+							const double e0,
+							const double u0,
+							const double Two_pi_f_deltat,
+							const uint NHW,
+							const uint Is,
+							const uint Js,
+							const uint IHx,
+							const uint JHx,
+							const uint IHy,
+							const uint JHy,
+							const uint IEz,
+							const uint JEz,
+							const uint n,
+							const uint n0,
+							const uint n1,
+							const uint n2,
+							const uint flag)
 {
-    cl_uint i = get_global_id(0);
-	cl_uint j = get_global_id(1);
+    uint i = get_global_id(0);
+	uint j = get_global_id(1);
 	/*
 	if (flag == 0)
 	{

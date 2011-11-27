@@ -229,7 +229,7 @@ private:
 	const cl_double NHW;			// Half wave cycle.
 	const cl_uint Js;				// J position of plane wave front.
 	const cl_uint Is;				// I position of plane wave front.
-	cl_uint n0, n1, n2;			// past/present/future time indices.
+	cl_uint n, n0, n1, n2;			// past/present/future time indices.
 	const cl_uint tResolution;		// Snapshots will be saved after this much time.
 	const cl_uint xResolution;		// Resolution of plotted field will be divided by this factor.
 	const cl_uint yResolution;
@@ -343,6 +343,7 @@ public:
 	inline void StopClock () { tEnd = clock(); }
 	inline cl_double GetElapsedTime () { return (cl_double)(tEnd-tStart)/CLOCKS_PER_SEC; }
 
+	int CleanupCL ();
 	~CFDTD2D ();
 };
 

@@ -93,8 +93,8 @@ jurisdiction and venue of these courts.
 #include "FDTD2D.hpp"
 
 CFDTD2D::CFDTD2D () : 
-						I(200),
-						J(200),
+						I(256),
+						J(256),
 						c(299792458.),
 						delta(2.5e-3),
 						dx(delta),
@@ -111,6 +111,7 @@ CFDTD2D::CFDTD2D () :
 						NHW(1./(2.*f*dt)),
 						Js(20+PMLw),
 						Is(2),
+						n(1),
 						n0(0),
 						n1(1),
 						n2(2),
@@ -451,21 +452,21 @@ int CFDTD2D::initializeFDTD2DKernel ()
 	// Create OpenCL memory buffers
 	/////////////////////////////////////////////////////////////////
 	// Fields.
-	inputBufferHx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, Hx, &status);
+	inputBufferHx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx*3, Hx, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferHx)" << std::endl; return 1; }
-	inputBufferBx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, Bx, &status);
+	inputBufferBx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx*3, Bx, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferBx)" << std::endl; return 1; }
-	inputBufferHy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy, Hy, &status);
+	inputBufferHy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy*3, Hy, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferHy)" << std::endl; return 1; }
-	inputBufferBy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy, By, &status);
+	inputBufferBy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHy*JHy*3, By, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferBy)" << std::endl; return 1; }
-	inputBufferEz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Ez, &status);
+	inputBufferEz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz*3, Ez, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferEz)" << std::endl; return 1; }
-	inputBufferDz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Dz, &status);
+	inputBufferDz = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz*3, Dz, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferDz)" << std::endl; return 1; }
-	inputBufferDzx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Dzx, &status);
+	inputBufferDzx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz*3, Dzx, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferDzx)" << std::endl; return 1; }
-	inputBufferDzy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz, Dzy, &status);
+	inputBufferDzy = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IEz*JEz*3, Dzy, &status);
 	if(status != CL_SUCCESS) { std::cout<<"Error: clCreateBuffer (inputBufferDzy)" << std::endl; return 1; }
 
 	inputBufferurHx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(cl_double) * IHx*JHx, urHx, &status);
@@ -521,8 +522,304 @@ int CFDTD2D::initializeFDTD2DKernel ()
 	return 0;
 }
 
-int runCLFDTD2DKernels ()
+int CFDTD2D::runCLFDTD2DKernels ()
 {
+	cl_int status;
+	cl_uint maxDims;
+	cl_event events[2];
+	size_t globalThreads[2];
+	size_t localThreads[1];
+	size_t maxWorkGroupSize;
+	size_t maxWorkItemSizes[3];
+
+	/**
+	* Query device capabilities. Maximum 
+	* work item dimensions and the maximmum
+	* work item sizes
+	*/ 
+	status = clGetDeviceInfo(
+		devices[0], 
+		CL_DEVICE_MAX_WORK_GROUP_SIZE, 
+		sizeof(size_t), 
+		(void*)&maxWorkGroupSize, 
+		NULL);
+	if(status != CL_SUCCESS) 
+	{  
+		std::cout<<"Error: Getting Device Info. (clGetDeviceInfo)\n";
+		return 1;
+	}
+
+	status = clGetDeviceInfo(
+		devices[0], 
+		CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, 
+		sizeof(cl_uint), 
+		(void*)&maxDims, 
+		NULL);
+	if(status != CL_SUCCESS) 
+	{  
+		std::cout<<"Error: Getting Device Info. (clGetDeviceInfo)\n";
+		return 1;
+	}
+
+	status = clGetDeviceInfo(
+		devices[0], 
+		CL_DEVICE_MAX_WORK_ITEM_SIZES, 
+		sizeof(size_t)*maxDims,
+		(void*)maxWorkItemSizes,
+		NULL);
+	if(status != CL_SUCCESS) 
+	{
+		std::cout<<"Error: Getting Device Info. (clGetDeviceInfo)\n";
+		return 1;
+	}
+
+	globalThreads[0] = I;
+	globalThreads[1] = J;
+	localThreads[0]  = 256;
+
+	std::cout << "Max dimensions: " << maxDims << std::endl;
+	std::cout << "Device maxWorkGroupSize = " << maxWorkGroupSize << std::endl;
+	std::cout << "Device maxWorkItemSizes = " << maxWorkItemSizes[0] << std::endl;
+	if(localThreads[0] > maxWorkGroupSize ||
+		localThreads[0] > maxWorkItemSizes[0])
+	{
+		std::cout<<"Unsupported: Device does not support requested number of work items.";
+		return 1;
+	}
+
+	// ====== Set appropriate arguments to the kernel ======
+
+	// Input Field arrays.
+	status = clSetKernelArg( kernel, 0, sizeof(cl_mem), (void *)&inputBufferHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferHx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 1, sizeof(cl_mem), (void *)&inputBufferBx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferBx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 2, sizeof(cl_mem), (void *)&inputBufferHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferHy)\n"; return 1; }
+	status = clSetKernelArg( kernel, 3, sizeof(cl_mem), (void *)&inputBufferBy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferBy)\n"; return 1; }
+	status = clSetKernelArg( kernel, 4, sizeof(cl_mem), (void *)&inputBufferEz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferEz)\n"; return 1; }
+	status = clSetKernelArg( kernel, 5, sizeof(cl_mem), (void *)&inputBufferDz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferDz)\n"; return 1; }
+	status = clSetKernelArg( kernel, 6, sizeof(cl_mem), (void *)&inputBufferDzx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferDzx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 7, sizeof(cl_mem), (void *)&inputBufferDzy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferDzy)\n"; return 1; }
+
+	// Permeability and permittivity.
+	status = clSetKernelArg( kernel, 8, sizeof(cl_mem), (void *)&inputBufferurHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferurHx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 9, sizeof(cl_mem), (void *)&inputBufferurHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferurHy)\n"; return 1; }
+	status = clSetKernelArg( kernel, 10, sizeof(cl_mem), (void *)&inputBuffererEz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBuffererEz)\n"; return 1; }
+
+	// Conductance.
+	status = clSetKernelArg( kernel, 11, sizeof(cl_mem), (void *)&inputBufferScmHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferurScmHx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 12, sizeof(cl_mem), (void *)&inputBufferScmHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferurScmHy)\n"; return 1; }
+	status = clSetKernelArg( kernel, 13, sizeof(cl_mem), (void *)&inputBufferSc);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (inputBufferSc)\n"; return 1; }
+
+	status = clSetKernelArg( kernel, 14, sizeof(cl_double), (void *)&delta);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (delta)\n"; return 1; }
+	status = clSetKernelArg( kernel, 15, sizeof(cl_double), (void *)&dtscalar);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (dtscalar)\n"; return 1; }
+	status = clSetKernelArg( kernel, 16, sizeof(cl_double), (void *)&dt);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (dt)\n"; return 1; }
+	status = clSetKernelArg( kernel, 17, sizeof(cl_uint), (void *)&PMLw);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (PMLw)\n"; return 1; }
+	status = clSetKernelArg( kernel, 18, sizeof(cl_double), (void *)&e0);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (e0)\n"; return 1; }
+	status = clSetKernelArg( kernel, 19, sizeof(cl_double), (void *)&u0);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (u0)\n"; return 1; }
+	status = clSetKernelArg( kernel, 20, sizeof(cl_double), (void *)&Two_pi_f_deltat);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (Two_pi_f_deltat)\n"; return 1; }
+	status = clSetKernelArg( kernel, 21, sizeof(cl_uint), (void *)&NHW);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (NHW)\n"; return 1; }
+	status = clSetKernelArg( kernel, 22, sizeof(cl_uint), (void *)&Is);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (Is)\n"; return 1; }
+	status = clSetKernelArg( kernel, 23, sizeof(cl_uint), (void *)&Js);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (Js)\n"; return 1; }
+	status = clSetKernelArg( kernel, 24, sizeof(cl_uint), (void *)&IHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (IHx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 25, sizeof(cl_uint), (void *)&JHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (JHx)\n"; return 1; }
+	status = clSetKernelArg( kernel, 26, sizeof(cl_uint), (void *)&IHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (IHy)\n"; return 1; }
+	status = clSetKernelArg( kernel, 27, sizeof(cl_uint), (void *)&JHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (JHy)\n"; return 1; }
+	status = clSetKernelArg( kernel, 28, sizeof(cl_uint), (void *)&IEz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (IEz)\n"; return 1; }
+	status = clSetKernelArg( kernel, 29, sizeof(cl_uint), (void *)&JEz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (JEz)\n"; return 1; }
+
+	// Time indices.
+	status = clSetKernelArg( kernel, 30, sizeof(cl_uint), (void *)&n);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n)\n"; return 1; }
+	status = clSetKernelArg( kernel, 31, sizeof(cl_uint), (void *)&n0);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n0)\n"; return 1; }
+	status = clSetKernelArg( kernel, 32, sizeof(cl_uint), (void *)&n1);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n1)\n"; return 1; }
+	status = clSetKernelArg( kernel, 33, sizeof(cl_uint), (void *)&n2);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n2)\n"; return 1; }
+	status = clSetKernelArg( kernel, 34, sizeof(cl_uint), (void *)&flagHalf);
+	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (JHx)\n"; return 1; }
+
+	// ==========================================================
+
+	cl_ulong startTime, endTime;
+	cl_ulong kernelExecTimeNs;
+	cl_ulong kernelExecTimeNsT = 0;
+
+	// File handling from chapter 3 of Understanding FDTD. J. B. Schneider
+	std::stringstream framestream;
+	std::string basename = "../../FieldData/Ez";
+	std::string filename;
+	cl_uint frame = 1;
+
+	#ifdef WIN32
+	std::fstream snapshot;
+	#else
+	int fd;
+	#endif
+
+	cl_uint ProgressResolution;
+	NMax > 3000 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
+	std::cout << "Simulation started..." << std::endl;
+
+	for (t = 1; t < timeN; t++)
+	{
+		status = clSetKernelArg( kernel, 30, sizeof(cl_uint), (void *)&n);
+		if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n)\n"; return 1; }
+
+		for ( cl_uint step=0; step < 2; step++)
+		{
+			status = clSetKernelArg( kernel, 31, sizeof(cl_uint), (void *)&n0);
+			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n0)\n"; return 1; }
+			status = clSetKernelArg( kernel, 32, sizeof(cl_uint), (void *)&n1);
+			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n1)\n"; return 1; }
+			status = clSetKernelArg( kernel, 33, sizeof(cl_uint), (void *)&n2);
+			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n2)\n"; return 1; }
+			status = clSetKernelArg( kernel, 34, sizeof(cl_uint), (void *)&flagHalf);
+			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (flagHalf)\n"; return 1; }
+
+			/* 
+			* Enqueue a kernel run call.
+			*/
+			status = clEnqueueNDRangeKernel(
+				commandQueue,
+				kernel,
+				2,
+				NULL,
+				globalThreads,
+				localThreads,
+				0,
+				NULL,
+				&events[0]);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<<
+					"Error: Enqueueing kernel onto command queue. \
+					(clEnqueueNDRangeKernel)\n";
+				return 1;
+			}
+
+			/* wait for the kernel call to finish execution */
+			status = clWaitForEvents(1, &events[0]);
+			if(status != CL_SUCCESS) 
+			{ 
+				std::cout<<
+					"Error: Waiting for kernel run to finish. \
+					(clWaitForEvents)\n";
+				return 1;
+			}
+
+			clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START,
+				sizeof(cl_ulong), &startTime, NULL);
+			clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END,
+				sizeof(cl_ulong), &endTime, NULL);
+			kernelExecTimeNs = 1e-3*(endTime-startTime);
+			kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
+
+			flagHalf = !flagHalf;
+		}
+		/* Enqueue readBuffer*/
+		status = clEnqueueReadBuffer(
+			commandQueue,
+			inputBufferEz,
+			CL_TRUE,
+			0,
+			sizeof(cl_double) * IEz*JEz*3,
+			Ez,
+			0,
+			NULL,
+			&events[1]);
+
+		if(status != CL_SUCCESS) 
+		{ 
+			std::cout << 
+				"Error: clEnqueueReadBuffer failed. \
+				(clEnqueueReadBuffer)\n";
+
+			return 1;
+		}
+		// Wait for the read buffer to finish execution
+		status = clWaitForEvents(1, &events[1]);
+		if(status != CL_SUCCESS) 
+		{ 
+			std::cout<<
+				"Error: Waiting for read buffer call to finish. \
+				(clWaitForEvents)\n";
+			return 1;
+		}
+
+		// Write field snapshot.
+		if (n % tResolution == 0 && SaveFields == true)
+		{
+			framestream.str(std::string());			// Clearing stringstream contents.
+			framestream << frame;
+			filename = basename + framestream.str() + ".fdt";
+
+			#ifdef WIN32
+			snapshot.open (filename.c_str(), std::ios::out|std::ios::binary);
+			snapshot.write ( (char*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
+			snapshot.close();
+			#else
+			fd = open (filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+			write (fd, (void*)&(Ez[IEz*JEz*n2]), sizeof(double)*IEz*JEz);
+			close (fd);
+			#endif
+
+			frame++;
+		}
+		n0 = (n0+1)%3;
+		n1 = (n1+1)%3;
+		n2 = (n2+1)%3;
+	}
+	std::cout << "\r" << "Simulation complete!" << std::endl;
+	std::cout << "kernel execution time = " << kernelExecTimeNsT << "us." << std::endl;
+	status = clReleaseEvent(events[0]);
+	if(status != CL_SUCCESS) 
+	{ 
+		std::cout<<
+			"Error: Release event object. \
+			(clReleaseEvent)\n";
+		return 1;
+	}
+	/*
+	*/
+
+	status = clReleaseEvent(events[1]);
+	if(status != CL_SUCCESS) 
+	{ 
+		std::cout<<
+			"Error: Release event object. \
+			(clReleaseEvent)\n";
+		return 1;
+	}
 	return 0;
 }
 int CFDTD2D::RunSimulationCPU (bool SaveFields)
@@ -647,6 +944,70 @@ std::string CFDTD2D::convertToString(const char *filename)
 	return NULL;
 }
 
+int CFDTD2D::CleanupCL ()
+{
+	cl_int status;
+
+	status = clReleaseKernel(kernel);
+	if(status != CL_SUCCESS)
+	{
+		std::cout<<"Error: In clReleaseKernel \n";
+		return 1; 
+	}
+	status = clReleaseProgram(program);
+	if(status != CL_SUCCESS)
+	{
+		std::cout<<"Error: In clReleaseProgram\n";
+		return 1; 
+	}
+	status = clReleaseCommandQueue(commandQueue);
+	if(status != CL_SUCCESS)
+	{
+		std::cout<<"Error: In clReleaseCommandQueue\n";
+		return 1;
+	}
+	status = clReleaseContext(context);
+	if(status != CL_SUCCESS)
+	{
+		std::cout<<"Error: In clReleaseContext\n";
+		return 1;
+	}
+
+	// Releasing memory buffers.
+	status = clReleaseMemObject(inputBufferHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferHx)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferBx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferBx)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferHy)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferBy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferBy)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferEz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferEz)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferDz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferDz)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferDzx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferDzx)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferDzy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferDzy)\n"; return 1; }
+
+	status = clReleaseMemObject(inputBufferurHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferurHx)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferurHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferurHy)\n"; return 1; }
+	status = clReleaseMemObject(inputBuffererEz);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBuffererEz)\n"; return 1; }
+
+	status = clReleaseMemObject(inputBufferScmHx);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferScmHx)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferScmHy);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferScmHy)\n"; return 1; }
+	status = clReleaseMemObject(inputBufferSc);
+	if(status != CL_SUCCESS) { std::cout<<"Error: In clReleaseMemObject (inputBufferSc)\n"; return 1; }
+
+	return 0;
+}
+
 CFDTD2D::~CFDTD2D ()
 {
 	if (Hx != NULL) delete[] Hx;
@@ -675,6 +1036,7 @@ CFDTD2D::~CFDTD2D ()
 	if (Scsy != NULL) delete[] Scsy;
 	if (ScmsmxHy != NULL) delete[] ScmsmxHy;
 	if (ScmsmyHx != NULL) delete[] ScmsmyHx;
+	if (devices != NULL) { free(devices); devices = NULL; }
 }
 
 /*
@@ -1437,6 +1799,23 @@ void print1DArray(
 int 
 main(int argc, char * argv[])
 {
+	CFDTD2D FDTD2DSim;
+
+	if (FDTD2DSim.Initialize () == 1)
+		return 1;
+
+	if (FDTD2DSim.initializeCL () == 1)
+		return 1;
+	
+	if (FDTD2DSim.initializeFDTD2DKernel () == 1)
+		return 1;
+
+	if (FDTD2DSim.runCLFDTD2DKernels () == 1)
+		return 1;
+
+	if (FDTD2DSim.CleanupCL () == 1)
+		return 1;
+	/*
     // Initialize Host application 
     if(initializeHost()==1)
         return 1;
@@ -1467,6 +1846,6 @@ main(int argc, char * argv[])
 
     // Release host resources
     cleanupHost();
-
+	*/
     return 0;
 }
