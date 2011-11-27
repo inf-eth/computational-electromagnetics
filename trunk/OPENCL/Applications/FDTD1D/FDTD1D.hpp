@@ -88,13 +88,8 @@ courts in Austin, Texas, and all defenses are hereby waived concerning personal
 jurisdiction and venue of these courts.
 
 ============================================================ */
-
-
-#ifndef CPUVSGPUTEST_H_
-#define CPUVSGPUTEST_H_
-
-
-
+#ifndef FDTD1D_H_
+#define FDTD1D_H_
 
 #include <CL/cl.h>
 #include <string.h>
@@ -173,6 +168,7 @@ cl_kernel  kernel;
  * and to load the programs into memory and get kernel handles.
  */
 int initializeCL(void);
+int initializeFDTD1DKernel (void);
 
 /*
  *
@@ -208,4 +204,4 @@ void print1DArray(
          const unsigned int length);
 
 
-#endif  /* #ifndef CPUVSGPUTEST_H_ */
+#endif  /* #ifndef FDTD1D_H_ */
