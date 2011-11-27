@@ -106,101 +106,12 @@ jurisdiction and venue of these courts.
 #include <cstdlib>
 #include <string>
 #include <CL/cl.h>
-
+/*
 #include <SDKCommon.hpp>
 #include <SDKApplication.hpp>
 #include <SDKCommandArgs.hpp>
 #include <SDKFile.hpp>
-
-/*** GLOBALS ***/
-
-// Are we running on CPU or GPU?
-bool cpu;
-
-// Save Field Snapshots?
-bool SaveFields;
-// Binary or text?
-bool Binary;
-
-// Half timestep flag. Hy will be calculated when flag is false and Ez otherwise.
-cl_uint flagHalf;
-/*
- * Input data is stored here.
- */
-cl_double *Ez;
-cl_double *Hy;
-
-/* problem size for 1D algorithm and width of problem size for 2D algorithm */
-cl_uint width;
-cl_uint timeN;
-cl_uint w;
-cl_uint t;
-cl_uint n0, n1;		// Present/future indices.
-
-/* The memory buffer that is used as input/output for OpenCL kernel */
-cl_mem   inputBufferEz;
-cl_mem	 inputBufferHy;
-
-cl_context          context;
-cl_device_id        *devices;
-cl_command_queue    commandQueue;
-
-cl_program program;
-
-/* This program uses only one kernel and this serves as a handle to it */
-cl_kernel  kernel;
-
-//class SDKTimer : public SDKSample
-//{
-//	public:
-//	streamsdk::SDKCommon *sampleCommon;
-//
-//	SDKTimer(std::string name) : SDKSample(name)
-//	{
-//
-//	}
-//	int initialize()
-	//{
-	//	sampleCommon = new streamsdk::SDKCommon();
-	//}
-
-	//~SDKTimer()
-	//{
-//		delete sampleCommon;
-//	}
-//};
-/*** FUNCTION DECLARATIONS ***/
-/*
- * OpenCL related initialisations are done here.
- * Context, Device list, Command Queue are set up.
- * Calls are made to set up OpenCL memory buffers that this program uses
- * and to load the programs into memory and get kernel handles.
- */
-int initializeCL(void);
-int initializeFDTD2DKernel (void);
-
-/*
- *
- */
-std::string convertToString(const char * filename);
-
-/*
- * This is called once the OpenCL context, memory etc. are set up,
- * the program is loaded into memory and the kernel handles are ready.
- * 
- * It sets the values for kernels' arguments and enqueues calls to the kernels
- * on to the command queue and waits till the calls have finished execution.
- *
- * It also gets kernel start and end time if profiling is enabled.
- */
-int runCLKernels(void);
-
-/* Releases OpenCL resources (Context, Memory etc.) */
-int cleanupCL(void);
-
-/* Releases program's resources */
-void cleanupHost(void);
-
+*/
 class CFDTD2D
 {
 private:
@@ -334,7 +245,7 @@ public:
 	int Initialize ();						// Initialize with default parameters.
 	int initializeCL ();
 	int initializeFDTD2DKernel ();
-	int runCLFDTD2DKernels ();
+	int runCLFDTD2DKernels (bool=true);
 	int RunSimulationCPU (bool=true);		// Run simulation on CPU single-threaded.
 
 	std::string convertToString(const char * filename);
