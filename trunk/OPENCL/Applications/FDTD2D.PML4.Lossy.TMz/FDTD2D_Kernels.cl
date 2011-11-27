@@ -102,10 +102,10 @@ jurisdiction and venue of these courts.
 
 //#define imp0 377.0
 
-__kernel void FDTD2DKernel(__global  double * Ez, __global  double * Hy, const uint t, const uint w, const uint flag, const uint n0, const uint n1)
+__kernel void FDTD2DKernel(__global  cl_double *Ez, __global  cl_double *Hy, const cl_uint t, const cl_uint w, const cl_uint flag, const cl_uint n0, const cl_uint n1)
 {
-    uint tid = get_global_id(0);
-	double imp0 = 377.0;
+    cl_uint tid = get_global_id(0);
+	cl_double imp0 = 377.0;
 	if (flag == 0)
 	{
 		if (tid != w-1)
