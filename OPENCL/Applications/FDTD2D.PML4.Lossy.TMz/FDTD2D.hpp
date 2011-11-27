@@ -91,12 +91,21 @@ jurisdiction and venue of these courts.
 #ifndef FDTD2D_H_
 #define FDTD2D_H_
 
-#include <CL/cl.h>
+#ifdef WIN32
+#include <fstream>
+#else
+#include <fcntl.h>
+#endif
+
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <cmath>
+#include <ctime>
 #include <string.h>
 #include <cstdlib>
-#include <iostream>
 #include <string>
-#include <fstream>
+#include <CL/cl.h>
 
 #include <SDKCommon.hpp>
 #include <SDKApplication.hpp>
@@ -192,16 +201,150 @@ int cleanupCL(void);
 /* Releases program's resources */
 void cleanupHost(void);
 
-/*
- * Prints no more than 256 elements of the given array.
- * Prints full array if length is less than 256.
- *
- * Prints Array name followed by elements.
- */
-void print1DArray(
-		 const std::string arrayName, 
-         const cl_double * arrayData, 
-         const unsigned int length);
+class CFDTD2D
+{
+private:
+
+	// Generic simulation parameters.
+	const cl_uint I;				// Width.
+	const cl_uint J;				// Height.
+	const cl_double c;				// Speed of light.
+	const cl_double delta;			// dx and dy.
+	const cl_double dx;			// dx if being used.
+	const cl_double dy;			// dy if being used.
+	const cl_double dtscalar;		// dt scale factor. dt will be divided by this factor.
+	const cl_double dt;			// dt.
+	const cl_uint PMLw;			// Width of PML layer.
+
+	const cl_uint NMax;			// Maximum n
+
+	// Constants.
+	const cl_double f;				// frequency
+	const cl_double pi;			// pi
+	const cl_double e0;			// epsilon nought
+	const cl_double u0;			// mu nought
+
+	// miscellenaeous
+	const cl_double Two_pi_f_deltat;
+	const cl_double NHW;			// Half wave cycle.
+	const cl_uint Js;				// J position of plane wave front.
+	const cl_uint Is;				// I position of plane wave front.
+	cl_uint n0, n1, n2;			// past/present/future time indices.
+	const cl_uint tResolution;		// Snapshots will be saved after this much time.
+	const cl_uint xResolution;		// Resolution of plotted field will be divided by this factor.
+	const cl_uint yResolution;
+
+	// TMz parameters.
+	const cl_uint IHx;
+	const cl_uint JHx;
+	const cl_uint IHy;
+	const cl_uint JHy;
+	const cl_uint IEz;
+	const cl_uint JEz;
+
+	// Geometry parameters.
+	const cl_uint XCenter;
+	const cl_uint YCenter;
+	const cl_double ra;
+	const cl_double rb;
+	const cl_double imp0;			// Impedence of free space
+
+	// =========== Data Arrays ==========
+	cl_double *Hx;					// Hx, magnetic field.
+	cl_double *Bx;
+	cl_double *Hy;					// Hy, magnetic field.
+	cl_double *By;
+
+	cl_double *Ez;					// Ez, electric field.
+	cl_double *Dz;
+
+	cl_double *Dzx;
+	cl_double *Dzy;
+	cl_double *EzSnapshots;		// For storing Ez snapshots.
+
+	// ========= Field specific arrays =======
+
+	// Permeability and permittivity.
+	cl_double *urHx;
+	cl_double *urHy;
+	cl_double *erEz;
+
+	// Magnetic and electric conductances.
+	cl_double *smHx;
+	cl_double *smHy;
+	cl_double *sEz;
+
+	// s*dt/(2*er) and sm*dt/(2*ur)
+	cl_double *Sc;
+	cl_double *ScmHx;
+	cl_double *ScmHy;
+
+	// PML conductance arrays.
+	cl_double *sex;	// sigma ex
+	cl_double *sey;	// sigma ey
+	cl_double *smx;	// sigma mx
+	cl_double *smy;	// sigma my
+
+	cl_double *Scsx;
+	cl_double *Scsy;
+	cl_double *ScmsmxHy;
+	cl_double *ScmsmyHx;
+
+	// Timing.
+	clock_t tStart;
+	clock_t tEnd;
+	clock_t tElapsed;
+
+	// === OPENCL memory buffers ===
+	// Fields
+	cl_mem inputBufferHx;
+	cl_mem inputBufferBx;
+	cl_mem inputBufferHy;
+	cl_mem inputBufferBy;
+
+	cl_mem inputBufferEz;
+	cl_mem inputBufferDz;
+	cl_mem inputBufferDzx;
+	cl_mem inputBufferDzy;
+
+	// Permeability, permittivity and conductance.
+	cl_mem inputBufferurHx;
+	cl_mem inputBufferurHy;
+	cl_mem inputBuffererEz;
+
+	cl_mem inputBufferScmHx;
+	cl_mem inputBufferScmHy;
+	cl_mem inputBufferSc;
+	// =============================
+
+	// OPENCL related parameters.
+	bool cpu;		// Is OPENCL using CPU or GPU?
+	cl_uint flagHalf;
+
+	// OPENCL context/device/program
+	cl_context context;
+	cl_device_id *devices;
+	cl_command_queue commandQueue;
+	cl_program program;
+
+	/* This program uses only one kernel and this serves as a handle to it */
+	cl_kernel  kernel;
+
+public:
+	CFDTD2D ();
+	int Initialize ();						// Initialize with default parameters.
+	int initializeCL ();
+	int initializeFDTD2DKernel ();
+	int RunSimulationCPU (bool=true);		// Run simulation on CPU single-threaded.
+
+	std::string convertToString(const char * filename);
+	// Timing.
+	inline void StartClock () { tStart = clock(); }
+	inline void StopClock () { tEnd = clock(); }
+	inline cl_double GetElapsedTime () { return (cl_double)(tEnd-tStart)/CLOCKS_PER_SEC; }
+
+	~CFDTD2D ();
+};
 
 
 #endif  /* #ifndef FDTD2D_H_ */
