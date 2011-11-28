@@ -102,20 +102,20 @@ CFDTD2D::CFDTD2D () :
 						dtscalar(2.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
 						PMLw(0),
-						NMax(256),
+						NMax(1000),
 						f(2.e9),
 						pi(4*atan(1.)),
 						e0(1.e-9/(36.*pi)),
 						u0(1.e-7*4.*pi),
 						Two_pi_f_deltat(2*pi*f*dt),
-						NHW(1./(2.*f*dt)),
+						NHW((cl_uint)1./(2.*f*dt)),
 						Js(20+PMLw),
 						Is(2),
 						n(1),
 						n0(0),
 						n1(1),
 						n2(2),
-						tResolution(1),
+						tResolution(5),
 						xResolution(2),
 						yResolution(2),
 						IHx(I),
@@ -185,6 +185,8 @@ CFDTD2D::CFDTD2D () :
 	write (fdp, (void*)&NMax, sizeof(cl_uint));
 	close (fdp);
 	#endif
+
+	std::cout << "NHW = " << NHW << std::endl;
 }
 // Initialize data arrays.
 int CFDTD2D::Initialize ()
@@ -693,9 +695,6 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 
 	for (n = 1; n < NMax; n++)
 	{
-		if (n%ProgressResolution == 0)
-			std::cout << std::setprecision(4) << std::setw(3) << "\r" << (float)n/(NMax-1)*100 << "%";
-
 		status = clSetKernelArg( kernel, 30, sizeof(cl_uint), (void *)&n);
 		if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n)\n"; return 1; }
 
@@ -735,8 +734,8 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 				if ( status == CL_INVALID_CONTEXT ) std::cout << "CL_INVALID_CONTEXT." << std::endl;
 				if ( status == CL_INVALID_KERNEL_ARGS ) std::cout << "CL_INVALID_KERNEL_ARGS." << std::endl;
 				if ( status == CL_INVALID_WORK_GROUP_SIZE ) std::cout << "CL_INVALID_WORK_GROUP_SIZE." << std::endl;
-				if ( status == CL_INVALID_CONTEXT ) std::cout << "CL_INVALID_CONTEXT." << std::endl;
-				if ( status == CL_INVALID_CONTEXT ) std::cout << "CL_INVALID_CONTEXT." << std::endl;
+				if ( status == CL_INVALID_WORK_ITEM_SIZE ) std::cout << "CL_INVALID_WORK_ITEM_SIZE." << std::endl;
+				if ( status == CL_INVALID_GLOBAL_OFFSET ) std::cout << "CL_INVALID_GLOBAL_OFFSET." << std::endl;
 				return 1;
 			}
 
@@ -811,9 +810,12 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 		n0 = (n0+1)%3;
 		n1 = (n1+1)%3;
 		n2 = (n2+1)%3;
+
+		if (n%ProgressResolution == 0)
+			std::cout << std::setprecision(4) << std::setw(3) << "\r" << (float)n/(NMax-1)*100 << "%";
 	}
 	std::cout << "\r" << "Simulation complete!" << std::endl;
-	std::cout << "kernel execution time = " << kernelExecTimeNsT << "us." << std::endl;
+	std::cout << "kernel execution time = " << kernelExecTimeNsT/1e6 << "sec (" << kernelExecTimeNsT/1e3 << "ms or " << kernelExecTimeNsT << "us)" << std::endl;
 	status = clReleaseEvent(events[0]);
 	if(status != CL_SUCCESS) 
 	{ 

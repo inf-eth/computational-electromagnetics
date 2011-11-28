@@ -137,7 +137,7 @@ private:
 
 	// miscellenaeous
 	const cl_double Two_pi_f_deltat;
-	const cl_double NHW;			// Half wave cycle.
+	const cl_uint NHW;			// Half wave cycle.
 	const cl_uint Js;				// J position of plane wave front.
 	const cl_uint Is;				// I position of plane wave front.
 	cl_uint n, n0, n1, n2;			// past/present/future time indices.
