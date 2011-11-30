@@ -115,7 +115,7 @@ CFDTD2D::CFDTD2D () :
 						n0(0),
 						n1(1),
 						n2(2),
-						tResolution(5),
+						tResolution(1),
 						xResolution(2),
 						yResolution(2),
 						IHx(I),
@@ -185,8 +185,6 @@ CFDTD2D::CFDTD2D () :
 	write (fdp, (void*)&NMax, sizeof(cl_uint));
 	close (fdp);
 	#endif
-
-	std::cout << "NHW = " << NHW << std::endl;
 }
 // Initialize data arrays.
 int CFDTD2D::Initialize ()
@@ -409,7 +407,7 @@ int CFDTD2D::initializeCL ()
 	/////////////////////////////////////////////////////////////////
 	// Detect OpenCL devices
 	/////////////////////////////////////////////////////////////////
-	devices = (cl_device_id *)malloc(deviceListSize);
+	devices = new cl_device_id[deviceListSize/sizeof(cl_device_id)];
 	if(devices == 0)
 	{
 		std::cout<<"Error: No devices found.\n";
@@ -921,6 +919,21 @@ int CFDTD2D::RunSimulationCPU (bool SaveFields)
 	return 0;
 }
 
+void CFDTD2D::DisplaySimulationParameters ()
+{
+	std::cout << "======= Simulation Parameters =======" << std::endl;
+	std::cout << "I = " << I << std::endl;
+	std::cout << "J = " << I << std::endl;
+	std::cout << "NMax = " << NMax << std::endl;
+	std::cout << "f = " << f << std::endl;
+	std::cout << "delta = " << delta << std::endl;
+	std::cout << "dt = " << dt << std::endl;
+	std::cout << "t rez = " << tResolution << std::endl;
+	std::cout << "x rez = " << xResolution << std::endl;
+	std::cout << "y rez = " << yResolution << std::endl;
+	std::cout << "=====================================" << std::endl;
+}
+
 // Converts contents of a file into a string. From OPENCL examples.
 std::string CFDTD2D::convertToString(const char *filename)
 {
@@ -1051,36 +1064,5 @@ CFDTD2D::~CFDTD2D ()
 	if (Scsy != NULL) delete[] Scsy;
 	if (ScmsmxHy != NULL) delete[] ScmsmxHy;
 	if (ScmsmyHx != NULL) delete[] ScmsmyHx;
-	if (devices != NULL) { free(devices); devices = NULL; }
-}
-
-int main(int argc, char * argv[])
-{
-	CFDTD2D FDTD2DSim;
-	
-	// =================== Initialization ===================
-	FDTD2DSim.StartClock ();	
-	if (FDTD2DSim.Initialize () == 1)
-		return 1;
-	
-	if (FDTD2DSim.initializeCL () == 1)
-		return 1;
-	
-	if (FDTD2DSim.initializeFDTD2DKernel () == 1)
-		return 1;
-	
-	FDTD2DSim.StopClock ();
-	std::cout << "Initialization elapsed time (sec): " << FDTD2DSim.GetElapsedTime () << std::endl;
-
-	// ================== Simulation ========================
-	FDTD2DSim.StartClock ();
-	if (FDTD2DSim.runCLFDTD2DKernels () == 1)
-		return 1;
-	FDTD2DSim.StopClock ();
-	std::cout << "Simulation total elapsed time (sec): " << FDTD2DSim.GetElapsedTime () << std::endl;
-	// ================== Clean up ======================
-	if (FDTD2DSim.CleanupCL () == 1)
-		return 1;
-
-    return 0;
+	if (devices != NULL) { delete[] devices; devices = NULL; }
 }
