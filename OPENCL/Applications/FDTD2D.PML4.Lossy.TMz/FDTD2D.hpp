@@ -248,6 +248,7 @@ public:
 	int runCLFDTD2DKernels (bool=true);
 	int RunSimulationCPU (bool=true);		// Run simulation on CPU single-threaded.
 
+	void DisplaySimulationParameters ();
 	std::string convertToString(const char * filename);
 	// Timing.
 	inline void StartClock () { tStart = clock(); }

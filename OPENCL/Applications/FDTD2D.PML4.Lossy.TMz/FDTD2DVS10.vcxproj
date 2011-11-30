@@ -157,6 +157,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FDTD2D.cpp" />
+    <ClCompile Include="FDTD2DTMzMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FDTD2D_Kernels.cl" />
