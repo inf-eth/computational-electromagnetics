@@ -8,7 +8,7 @@ int main (int argc, char **argv)
 	std::cout << "Initialization Elapsed Time (sec): " << FDTDSim.GetElapsedTime () << std::endl;
 
 	FDTDSim.StartClock ();
-	FDTDSim.RunSimulation ();
+	FDTDSim.RunSimulation (true);
 	FDTDSim.StopClock ();
 	std::cout << "Simulation Elapsed Time (sec): " << FDTDSim.GetElapsedTime () << std::endl;
 

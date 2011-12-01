@@ -1,7 +1,7 @@
 #include "FDTD2D.h"
 CFDTD2D::CFDTD2D () : 
-						I(200),
-						J(200),
+						I(256),
+						J(256),
 						c(299792458.),
 						delta(2.5e-3),
 						dx(delta),
@@ -9,7 +9,7 @@ CFDTD2D::CFDTD2D () :
 						dtscalar(2.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
 						PMLw(0),
-						NMax(256),
+						NMax(1000),
 						f(2.e9),
 						pi(4*atan(1.)),
 						e0(1.e-9/(36.*pi)),
@@ -21,7 +21,7 @@ CFDTD2D::CFDTD2D () :
 						n0(0),
 						n1(1),
 						n2(2),
-						tResolution(4),
+						tResolution(1),
 						xResolution(2),
 						yResolution(2),
 						IHx(I),
