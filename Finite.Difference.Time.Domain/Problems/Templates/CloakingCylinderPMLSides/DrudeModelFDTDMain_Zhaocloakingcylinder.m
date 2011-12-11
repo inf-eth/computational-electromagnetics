@@ -10,7 +10,7 @@ clc
 clear all
 
 % ============== Simulation related parameters ================
-[ISize JSize XCenter YCenter delta ra rb DTp PMLw] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DTp PMLw dtscalar] = Parameters;
 
 IHx = ISize;
 JHx = JSize+2*PMLw-1;
@@ -22,10 +22,10 @@ JEz = JSize+2*PMLw;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 750;                   % Maximum time.
+NNMax = 1000;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is resolution factor.
-xResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
-yResolutionFactor = 1;          % Resolution of plotted field is divided by this factor.
+xResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
+yResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
 Js = 2+PMLw;                    % J-position of the plane wave front.
 
 % Different Constants.
@@ -287,7 +287,7 @@ for n=0:NNMax-2
     
     % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
 %     if ( n < NHW )
-    Ez ( :, Js, n1 ) = Ez ( :, Js, n1 ) + 1 * sin ( TwoPIFDeltaT * n );
+    Ez ( :, Js, n1 ) = Ez ( :, Js, n1 ) + 1 * sin ( TwoPIFDeltaT * n ) / dtscalar;
     Dz ( :, Js, n1 ) = e0 * Ez ( :, Js, n1 );
 %     end
 
