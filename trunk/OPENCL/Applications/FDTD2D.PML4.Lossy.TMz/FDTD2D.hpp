@@ -102,7 +102,7 @@ jurisdiction and venue of these courts.
 #include <iomanip>
 #include <cmath>
 #include <ctime>
-#include <string.h>
+#include <cstring>
 #include <cstdlib>
 #include <string>
 #include <CL/cl.h>
