@@ -1,14 +1,14 @@
 #include "FDTD2D.h"
 CFDTD2D::CFDTD2D () : 
-						I(256),
-						J(256),
+						I(128),
+						J(128),
 						c(299792458.),
 						delta(2.5e-3),
 						dx(delta),
 						dy(delta),
 						dtscalar(2.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
-						PMLw(0),
+						PMLw(20),
 						NMax(1000),
 						f(2.e9),
 						pi(4*atan(1.)),
@@ -22,8 +22,8 @@ CFDTD2D::CFDTD2D () :
 						n1(1),
 						n2(2),
 						tResolution(1),
-						xResolution(2),
-						yResolution(2),
+						xResolution(1),
+						yResolution(1),
 						IHx(I),
 						JHx(J+2*PMLw-1),
 						IHy(I+1),
@@ -77,6 +77,7 @@ CFDTD2D::CFDTD2D () :
 	parametersfile.write ((char*)&xResolution, sizeof(uint));
 	parametersfile.write ((char*)&yResolution, sizeof(uint));
 	parametersfile.write ((char*)&NMax, sizeof(uint));
+	parametersfile.write ((char*)&PMLw, sizeof(uint));
 	parametersfile.close ();
 	#else
 	int fdp;
@@ -87,6 +88,7 @@ CFDTD2D::CFDTD2D () :
 	write (fdp, (void*)&xResolution, sizeof(uint));
 	write (fdp, (void*)&yResolution, sizeof(uint));
 	write (fdp, (void*)&NMax, sizeof(uint));
+	write (fdp, (void*)&PMLw, sizeof(uint));
 	close (fdp);
 	#endif
 }
@@ -164,11 +166,9 @@ void CFDTD2D::Initialize ()
 						ScmHx[i+IHx*j] = (dt*smHx[i+IHx*j])/(2*urHx[i+IHx*j]);
 
 						// Initializing PML conductances.
-						if (j < PMLw+1)
+						if (j < PMLw+1 || j > JHx-PMLw-1)
 						{
-							smy[i+IHx*j] = 1.7e10;
-							if (J < PMLw)
-								smy[i+IHx*(JHx-PMLw+j-1)] = 1.7e10;
+							smy[i+IHx*j] = 1.6e10;
 						}
 						else
 							smy[i+IHx*j] = 0.;
@@ -185,11 +185,9 @@ void CFDTD2D::Initialize ()
 						sex[i+IEz*j] = 0.;
 
 						// Initializing PML conductances.
-						if (j < PMLw+1)
+						if (j < PMLw+1 || j > JEz-PMLw-1)
 						{
-							sey[i+IEz*j] = 1.7e10;
-							if (J < PMLw)
-								sey[i+IEz*(JEz-PMLw+j-1)] = 1.7e10;
+							sey[i+IEz*j] = 1.6e10;
 						}
 						else
 							sey[i+IEz*j] = 0.;
@@ -233,7 +231,8 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 		// Magnetic field. IHx and JHx are one less than IHy and JHy.
 		for (i=0; i < IHx; i++)
 		{
-			for (j=0; j < JHx; j++)
+			// Normal Space.
+			for (j=PMLw; j < JHx-PMLw; j++)
 			{
 				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmHx[i+IHx*j])/(1+ScmHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
 				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
@@ -241,12 +240,31 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmHy[(i+1)+IHy*(j+1)])/(1+ScmHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
 				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);
 			}
+			// Lower PML region.
+			for (j=0; j < PMLw; j++)
+			{
+				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
+				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
+
+				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
+				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);
+			}
+			// Upper PML region.
+			for (j=JHx-PMLw; j < JHx; j++)
+			{
+				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
+				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
+
+				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
+				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);
+			}
 		}
 		// t = 1.
 		// Electric field.
 		for (i=0; i < IEz; i++)
 		{
-			for (j=1; j < JEz-1; j++)
+			// Normal space.
+			for (j=PMLw+1; j < JEz-PMLw-1; j++)
 			{
 				Dz[i+IEz*j+IEz*JEz*n2] = (1-Sc[i+IEz*j])/(1+Sc[i+IEz*j]) * Dz[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Sc[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2] - Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
 				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
@@ -257,6 +275,22 @@ void CFDTD2D::RunSimulation (bool SaveFields)
 					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + 1 * sin (Two_pi_f_deltat * n) / dtscalar;
 					Dz[i+IEz*j+IEz*JEz*n2] = e0 * Ez[i+IEz*j+IEz*JEz*n2];
 				}
+			}
+			// Lower PML.
+			for (j=1; j < PMLw+1; j++)
+			{
+				Dzx[i+IEz*j+IEz*JEz*n2] = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * Dzx[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2]) );
+				Dzy[i+IEz*j+IEz*JEz*n2] = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * Dzy[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
+				Dz[i+IEz*j+IEz*JEz*n2] = Dzx[i+IEz*j+IEz*JEz*n2] + Dzy[i+IEz*j+IEz*JEz*n2];
+				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
+			}
+			// Upper PML.
+			for (j=JEz-PMLw-1; j < JEz-1; j++)
+			{
+				Dzx[i+IEz*j+IEz*JEz*n2] = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * Dzx[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2]) );
+				Dzy[i+IEz*j+IEz*JEz*n2] = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * Dzy[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
+				Dz[i+IEz*j+IEz*JEz*n2] = Dzx[i+IEz*j+IEz*JEz*n2] + Dzy[i+IEz*j+IEz*JEz*n2];
+				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
 			}
 		}
 
