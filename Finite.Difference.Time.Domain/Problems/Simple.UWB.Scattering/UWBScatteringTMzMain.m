@@ -222,11 +222,10 @@ for n=0:NNMax-2
 %     Dz(:, :, n1) = Dz(:, :, n1)+Dzx(:, :, n1)+Dzy(:, :, n1);
     
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
-    % Comment out the if statement for a continuous source. Otherwise, a single pulse will be used.
-    if ( n < NHW )
-    Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * sin ( TwoPIFDeltaT * n );
+    
+    Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * exp (- 1 * ( (n-31)^2) / 100);
     Dz (:, Js, n1) = e0 * Ez (:, Js, n1);
-    end
+    
    % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
 %     Ez ( :, :, n1 ) = smaskEz (:, :) .* Ez ( :, :, n1 );
 %     Dz ( :, :, n1 ) = smaskEz (:, :) .* Dz ( :, :, n1 );
