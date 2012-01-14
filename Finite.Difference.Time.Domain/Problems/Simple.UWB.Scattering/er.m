@@ -1,14 +1,15 @@
-% conductance
-function rsc = sc (i, j)
+% relative permittivity
+function rer = er (i, j)
 [ISize JSize XCenter YCenter delta ra rb DT PMLw dtscalar Skin TissueIW TissueIIW PulseWidth] = Parameters;
-rsc = 0;
+rer = 1;
 abs = j-YCenter;
 if (abs > 0 && abs <= Skin/delta)
-    rsc = 0.0002;
+    rer = 36;
 end
 if (abs > Skin/delta && abs <= TissueIW/delta)
-    rsc = 0.02;
+    rer = 4.108;
 end
 if (abs > TissueIW/delta && abs <= TissueIIW/delta)
-    rsc = 0.036;
+    rer = 4.848;
 end
+

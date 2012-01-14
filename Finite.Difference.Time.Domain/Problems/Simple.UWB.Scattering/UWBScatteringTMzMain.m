@@ -4,7 +4,7 @@ clc
 clear all
 
 % ============== Simulation related parameters ================
-[ISize JSize XCenter YCenter delta ra rb DTp PMLw] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DTp PMLw dtscalar SkinIW TissueIW TissueIIW PulseWidth] = Parameters;
 
 IHx = ISize;
 JHx = JSize+2*PMLw-1;
@@ -86,10 +86,11 @@ EzSnapshots = zeros ( IEz/ResolutionFactor, JEz/ResolutionFactor, NNMax/TimeReso
 fprintf ( 1, 'Initializing...' );
 fprintf ( 1, '\nInitializing parametric arrays...' );
 % Initializing parametric arrays.
-for i=1:IHx
+for i=1:IEz
     fprintf ( 1, '%g %% \n', ((i-1)*100)/IHx );
-    for j=1:JHx      
-               
+    for j=1:JEz      
+          sEz (i, j) = sc (i, j);
+          erEz (i, j) = er (i, j);
     end
 end
 % Initializing PML conductance arrays.
@@ -121,10 +122,10 @@ figure (2)
 mesh ( sey )
 title ( 'sey' )
 view (4, 4)
-% figure (3)
-% mesh ( uphiHx )
-% title ( 'uphi' )
-% view (4, 4)
+figure (3)
+mesh ( erEz )
+title ( 'erEz' )
+view (4, 4)
 % figure (4)
 % mesh ( wpmsquaredHx )
 % title ( 'wpm squared' )
@@ -223,7 +224,7 @@ for n=0:NNMax-2
     
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     
-    Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * exp (- 1 * ( (n-31)^2) / 100);
+    Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * exp (- 1 * ( (n-PulseWidth)^2) / 100);% / dtscalar;
     Dz (:, Js, n1) = e0 * Ez (:, Js, n1);
     
    % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
@@ -266,4 +267,5 @@ end
 figure (8)
 % plot (reshape(EzSnapshots(IEz/2, 40, :), 500, 1))
 plot ( squeeze(EzSnapshots(IEz/2, 40, :)))
+axis ([0 length(squeeze(EzSnapshots(IEz/2, 40, :))) -1 1])
 fprintf ( 1, 'Simulation completed! \n' );
