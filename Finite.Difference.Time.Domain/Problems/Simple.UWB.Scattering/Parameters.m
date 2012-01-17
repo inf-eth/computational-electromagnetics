@@ -1,6 +1,6 @@
 % Simulation related parameters.
 
-function [ISize JSize XCenter YCenter delta ra rb DT PMLw dtscalar Skin TissueIW TissueIIW PulseWidth] = Parameters
+function [ISize JSize XCenter YCenter delta ra rb DT PMLw dtscalar Skin TissueIW TissueIIW PulseWidth TumourX TumourY TumourRadius] = Parameters
 
 ISize = 200;
 JSize = 300;
@@ -9,12 +9,15 @@ YCenter = (JSize-1)/2;
 delta = 1.0e-3;
 
 % Skin layers.
-% |SkinI|SkinII|Tissue|
-% | 5mm | 10mm | 40mm |
+% |Skin |TissueI|TissueII|
+% | 5mm | 40mm  | 60mm   |
 
 Skin = 5e-3;
 TissueIW = 40e-3;
 TissueIIW = 60e-3;
+TumourX = 0.0e-3;
+TumourY = 50e-3;
+TumourRadius = 4e-3;
 
 ra = 0.1;
 rb = 0.2;
