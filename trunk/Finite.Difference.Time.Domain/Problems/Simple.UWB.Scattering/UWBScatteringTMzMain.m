@@ -4,7 +4,7 @@ clc
 clear all
 
 % ============== Simulation related parameters ================
-[ISize JSize XCenter YCenter delta ra rb DTp PMLw dtscalar SkinIW TissueIW TissueIIW PulseWidth] = Parameters;
+[ISize JSize XCenter YCenter delta ra rb DTp PMLw dtscalar SkinIW TissueIW TissueIIW PulseWidth TumourX TumourY TumourRadius] = Parameters;
 
 IHx = ISize;
 JHx = JSize+2*PMLw-1;
@@ -16,7 +16,7 @@ JEz = JSize+2*PMLw;
 % Time indices for field calculation.
 n0 = 1;
 n1 = 2;
-NNMax = 500;                   % Maximum time.
+NNMax = 750;                   % Maximum time.
 TimeResolutionFactor = 1;      % E field snapshots will be saved every x frames where x is time resolution factor.
 ResolutionFactor = 2;          % Resolution of plotted field is divided by this factor.
 Js = 100;                       % J-position of the plane wave front.
@@ -123,7 +123,7 @@ mesh ( sey )
 title ( 'sey' )
 view (4, 4)
 figure (3)
-mesh ( erEz )
+surf ( erEz )
 title ( 'erEz' )
 view (4, 4)
 % figure (4)
@@ -251,7 +251,7 @@ for i=1:NNMax/TimeResolutionFactor-2
     caxis([0 1])
     xlabel ('y-axis')
     ylabel ('x-axis')
-%     colorbar
+    %     colorbar
     
     figure (7)
     surf ( EzSnapshots (:, :, i) );
@@ -268,4 +268,12 @@ figure (8)
 % plot (reshape(EzSnapshots(IEz/2, 40, :), 500, 1))
 plot ( squeeze(EzSnapshots(IEz/2, 40, :)))
 axis ([0 length(squeeze(EzSnapshots(IEz/2, 40, :))) -1 1])
+figure (9)
+surf (squeeze (EzSnapshots (:, 40, 1:5:NNMax)));
+view (0, 90)
+zlim ( [-1 1] )
+caxis([0 1])
+title ('Scattering Immage')
+xlabel ('y-axis')
+ylabel ('x-axis')
 fprintf ( 1, 'Simulation completed! \n' );
