@@ -114,14 +114,14 @@ for i=1:PMLw+1
 %     erEz(:, i+1) = 10;
 %     erEz(:, JEz-PMLw+i-1) = 10;
 end
-figure (1)
-mesh ( smy )
-title ( 'smy' )
-view (4, 4)
-figure (2)
-mesh ( sey )
-title ( 'sey' )
-view (4, 4)
+% figure (1)
+% mesh ( smy )
+% title ( 'smy' )
+% view (4, 4)
+% figure (2)
+% mesh ( sey )
+% title ( 'sey' )
+% view (4, 4)
 figure (3)
 surf ( erEz )
 title ( 'erEz' )
@@ -224,7 +224,7 @@ for n=0:NNMax-2
     
     Ez (:, :, n1) = (1/e0) * Dz (:, :, n1) ./ (erEz);
     
-    Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * exp (- 1 * ( (n-PulseWidth)^2) / 100);% / dtscalar;
+    Ez (:, Js, n1) = Ez (:, Js, n1) + 1 * exp (- 1 * ((n-PulseWidth)/15)^2);% / dtscalar;
     Dz (:, Js, n1) = e0 * Ez (:, Js, n1);
     
    % Uncomment this to zero out the field at PEC points. PEC points can be defined in s.m file.
@@ -268,12 +268,23 @@ figure (8)
 % plot (reshape(EzSnapshots(IEz/2, 40, :), 500, 1))
 plot ( squeeze(EzSnapshots(IEz/2, 40, :)))
 axis ([0 length(squeeze(EzSnapshots(IEz/2, 40, :))) -1 1])
+
 figure (9)
 surf (squeeze (EzSnapshots (:, 40, 1:5:NNMax)));
 view (0, 90)
 zlim ( [-1 1] )
 caxis([0 1])
-title ('Scattering Immage')
+title ('Scattering Image at j=40')
 xlabel ('y-axis')
 ylabel ('x-axis')
+
+figure (10)
+surf (squeeze (EzSnapshots (:, 150, 1:5:NNMax)));
+view (0, 90)
+zlim ( [-1 1] )
+caxis([0 1])
+title ('Scattering Image at j= 150')
+xlabel ('y-axis')
+ylabel ('x-axis')
+
 fprintf ( 1, 'Simulation completed! \n' );
