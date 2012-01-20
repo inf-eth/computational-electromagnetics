@@ -91,13 +91,12 @@ jurisdiction and venue of these courts.
 #ifndef FDTD2D_H_
 #define FDTD2D_H_
 
-#ifdef WIN32
-#include <fstream>
-#else
+#ifndef WIN32
 #include <fcntl.h>
 #endif
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>

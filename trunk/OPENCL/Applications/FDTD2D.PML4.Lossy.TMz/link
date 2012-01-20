@@ -1,0 +1,1 @@
+g++ -o FDTD2D FDTD2D.o FDTD2DTMzMain.o -m32 -lpthread -ldl -L/usr/X11R6/lib    -lOpenCL   -L/opt/AMDAPP/lib/x86  -L/opt/AMDAPP/TempSDKUtil/lib/x86 -L"/opt/AMDAPP/lib/x86"

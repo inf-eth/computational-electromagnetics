@@ -1,0 +1,2 @@
+g++  -m32 -msse2 -Wpointer-arith   -Wfloat-equal -g3 -ffor-scope   -I  /opt/AMDAPP/samples/opencl/SDKUtil/include -I  "/opt/AMDAPP/include"  -I  /opt/AMDAPP/include  -o FDTD2D.o -c  FDTD2D.cpp 
+g++  -m32 -msse2 -Wpointer-arith   -Wfloat-equal -g3 -ffor-scope   -I  /opt/AMDAPP/samples/opencl/SDKUtil/include -I  "/opt/AMDAPP/include"  -I  /opt/AMDAPP/include  -o FDTD2DTMzMain.o -c  FDTD2DTMzMain.cpp
