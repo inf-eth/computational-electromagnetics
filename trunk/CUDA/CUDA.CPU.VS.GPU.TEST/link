@@ -1,0 +1,1 @@
+g++ -fPIC   -m32 -o template template.cu.o       -L /usr/local/cuda/lib -L /opt/NVIDIA_GPU_Computing_SDK_4.1/C/lib -L /opt/NVIDIA_GPU_Computing_SDK_4.1/C/common/lib/linux -L /opt/NVIDIA_GPU_Computing_SDK_4.1/CUDALibraries/common/lib -L /opt/NVIDIA_GPU_Computing_SDK_4.1/shared/lib -lcudart -lcutil
