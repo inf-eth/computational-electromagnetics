@@ -1,0 +1,13 @@
+http://en.wikibooks.org/wiki/LaTeX/Tables
+
+@-expressions
+
+The column separator can be specified with the @{...} construct.
+It typically takes some text as its argument, and when appended to a column, it will automatically insert that text into each cell in that column before the actual data for that cell. This command kills the inter-column space and replaces it with whatever is between the curly braces. To add space, use @{\hspace{width}}.
+Admittedly, this is not that clear, and so will require a few examples to clarify. Sometimes, it is desirable in scientific tables to have the numbers aligned on the decimal point. This can be achieved by doing the following:
+
+\begin{tabular}{r@{.}l}
+  3   & 14159 \\
+  16  & 2     \\
+  123 & 456   \\
+\end{tabular}
