@@ -33,7 +33,14 @@ int main(int argc, char * argv[])
 	
 	FDTD2DSim.StopClock ();
 	std::cout << "Cleanup total elapsed time (sec): " << FDTD2DSim.GetElapsedTime () << std::endl;
+		
+	/*// ================== CPU Simulation ================
+	FDTD2DSim.StartClock ();
+	if (FDTD2DSim.RunSimulationCPU (false) == 1)
+		return 1;
+	FDTD2DSim.StopClock ();
+	std::cout << "CPU Simulation time (sec): " << FDTD2DSim.GetElapsedTime () << std::endl;
+	*/
 	CUT_EXIT(argc, argv);
-	
 	return 0;
 }

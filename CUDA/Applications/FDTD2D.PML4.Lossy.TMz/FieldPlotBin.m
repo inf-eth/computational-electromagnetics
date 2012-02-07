@@ -7,7 +7,7 @@ fidp = fopen ('./FieldData/Parameters.smp', 'r', 'l');
 if fidp == -1
     return;
 end
-datap = fread (fidp, 6, 'uint');
+datap = fread (fidp, 7, 'uint');
 fclose (fidp);
 
 I = datap(1)
@@ -15,14 +15,17 @@ J = datap(2)
 trez = datap(3)
 xrez = datap(4)
 yrez = datap(5)
-simTime = datap(6)/trez-1    % Number of frames to be read. Last saved field number 
+simTime = datap(6)
+frames = simTime/trez-1    % Number of frames to be read. Last saved field number 
                      % If last field saved is Ez1023.fdt, maximum simTime should be 1023.
+PMLw = datap(7)
+J = J+2*PMLw;
                     
 size = [I J];    % Spatial size or width w.
 frame = 1;
 reel = 0;
 i = 0;
-while i < simTime
+while i < frames
     filename = sprintf ('%s%d.fdt', basename, frame);
     fid = fopen (filename, 'r', 'l');
     if fid == -1

@@ -128,9 +128,19 @@ private:
 	float* d_urHy;
 	float* d_erEz;
 
+	float* d_smHx;
+	float* d_smHy;
+	float* d_sEz;
+	
 	float* d_ScmHx;
 	float* d_ScmHy;
 	float* d_Sc;
+	
+	// PML conductance arrays.
+	float* d_Scsx;
+	float* d_Scsy;
+	float* d_ScmsmxHy;
+	float* d_ScmsmyHx;
 	// =============================
 
 	bool cpu;		// Should simulation run on CPU or GPU?
