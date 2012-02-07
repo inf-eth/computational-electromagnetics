@@ -9,7 +9,7 @@ CFDTD2D::CFDTD2D () :
 						dy(delta),
 						dtscalar(2.),
 						dt(delta/(sqrt(2.)*c) /dtscalar),
-						PMLw(30),
+						PMLw(32),
 						NMax(1000),
 						f(2.e9),
 						pi(4*atan(1.)),
@@ -23,7 +23,7 @@ CFDTD2D::CFDTD2D () :
 						n0(0),
 						n1(1),
 						n2(2),
-						tResolution(5),
+						tResolution(2),
 						xResolution(2),
 						yResolution(2),
 						IHx(I),
@@ -68,8 +68,8 @@ CFDTD2D::CFDTD2D () :
 						cpu(false),
 						flagHalf(0)
 {
-	float bytes = I*J*17*3*8+50*8;		// Dynamic arrays + predefined variables.
-	std:: cout << "Approximate memory required for simulation: " << bytes/1024 << " Kbytes (" << bytes/(1024*1024) << " MB)." << std::endl;
+	uint tbytes = 0.5*I*(J+2*PMLw)*17*3*8+50*8;		// Dynamic arrays + predefined variables.
+	std::cout << "Approximate memory required for simulation: " << (float)tbytes/1024 << " Kbytes (" << (float)tbytes/(1024*1024) << " MB)." << std::endl;
 
 	// Writing simulation parameters for plotting.
 	#ifdef WIN32
@@ -81,6 +81,7 @@ CFDTD2D::CFDTD2D () :
 	parametersfile.write ((char*)&xResolution, sizeof(unsigned int));
 	parametersfile.write ((char*)&yResolution, sizeof(unsigned int));
 	parametersfile.write ((char*)&NMax, sizeof(unsigned int));
+	parametersfile.write ((char*)&PMLw, sizeof(uint));
 	parametersfile.close ();
 	#else
 	int fdp;
@@ -91,6 +92,7 @@ CFDTD2D::CFDTD2D () :
 	write (fdp, (void*)&xResolution, sizeof(unsigned int));
 	write (fdp, (void*)&yResolution, sizeof(unsigned int));
 	write (fdp, (void*)&NMax, sizeof(unsigned int));
+	write (fdp, (void*)&PMLw, sizeof(uint));
 	close (fdp);
 	#endif
 }
@@ -168,11 +170,9 @@ int CFDTD2D::Initialize ()
 						ScmHx[i+IHx*j] = (dt*smHx[i+IHx*j])/(2*urHx[i+IHx*j]);
 
 						// Initializing PML conductances.
-						if (j < PMLw+1)
+						if (j < PMLw+1 || j > JHx-PMLw-1)
 						{
-							smy[i+IHx*j] = 1.7e10;
-							if (J < PMLw)
-								smy[i+IHx*(JHx-PMLw+j-1)] = 1.7e10;
+							smy[i+IHx*j] = 1.6e10;
 						}
 						else
 							smy[i+IHx*j] = 0.;
@@ -189,11 +189,9 @@ int CFDTD2D::Initialize ()
 						sex[i+IEz*j] = 0.;
 
 						// Initializing PML conductances.
-						if (j < PMLw+1)
+						if (j < PMLw+1 || j > JEz-PMLw-1)
 						{
-							sey[i+IEz*j] = 1.7e10;
-							if (J < PMLw)
-								sey[i+IEz*(JEz-PMLw+j-1)] = 1.7e10;
+							sey[i+IEz*j] = 1.6e10;
 						}
 						else
 							sey[i+IEz*j] = 0.;
@@ -220,14 +218,23 @@ int CFDTD2D::initializeFDTD2DKernel ()
 	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_Dzx, sizeof(float) * IEz*JEz*3) );
 	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_Dzy, sizeof(float) * IEz*JEz*3) );
 	
-	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_urHx, sizeof(float) * IHx*JHx*3) );
-	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_urHy, sizeof(float) * IHy*JHy*3) );
-	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_erEz, sizeof(float) * IEz*JEz*3) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_urHx, sizeof(float) * IHx*JHx) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_urHy, sizeof(float) * IHy*JHy) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_erEz, sizeof(float) * IEz*JEz) );
 	
-	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_ScmHx, sizeof(float) * IHx*JHx*3) );
-	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_ScmHy, sizeof(float) * IHy*JHy*3) );
-	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_Sc, sizeof(float) * IEz*JEz*3) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_smHx, sizeof(float) * IHx*JHx) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_smHy, sizeof(float) * IHy*JHy) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_sEz, sizeof(float) * IEz*JEz) );
+
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_Sc, sizeof(float) * IEz*JEz) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_ScmHx, sizeof(float) * IHx*JHx) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_ScmHy, sizeof(float) * IHy*JHy) );
 	
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_Scsx, sizeof(float) * IEz*JEz) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_Scsy, sizeof(float) * IEz*JEz) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_ScmsmxHy, sizeof(float) * IHx*JHx) );
+	CUDA_SAFE_CALL( cudaMalloc( (void **)&d_ScmsmyHx, sizeof(float) * IHy*JHy) );
+		
 	// Device data initialization.
 	CUDA_SAFE_CALL( cudaMemcpy(d_Hx, Hx, sizeof(float) * IHx*JHx*3, cudaMemcpyHostToDevice) );
 	CUDA_SAFE_CALL( cudaMemcpy(d_Bx, Bx, sizeof(float) * IHx*JHx*3, cudaMemcpyHostToDevice) );
@@ -235,14 +242,25 @@ int CFDTD2D::initializeFDTD2DKernel ()
 	CUDA_SAFE_CALL( cudaMemcpy(d_By, By, sizeof(float) * IHy*JHy*3, cudaMemcpyHostToDevice) );
 	CUDA_SAFE_CALL( cudaMemcpy(d_Ez, Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyHostToDevice) );
 	CUDA_SAFE_CALL( cudaMemcpy(d_Dz, Dz, sizeof(float) * IEz*JEz*3, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_Dzx, Dzx, sizeof(float) * IEz*JEz*3, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_Dzy, Dzy, sizeof(float) * IEz*JEz*3, cudaMemcpyHostToDevice) );
 	
-	CUDA_SAFE_CALL( cudaMemcpy(d_urHx, urHx, sizeof(float) * IHx*JHx*3, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_urHy, urHy, sizeof(float) * IHy*JHy*3, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_erEz, erEz, sizeof(float) * IEz*JEz*3, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_urHx, urHx, sizeof(float) * IHx*JHx, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_urHy, urHy, sizeof(float) * IHy*JHy, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_erEz, erEz, sizeof(float) * IEz*JEz, cudaMemcpyHostToDevice) );
 	
-	CUDA_SAFE_CALL( cudaMemcpy(d_ScmHx, ScmHx, sizeof(float) * IHx*JHx*3, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_ScmHy, ScmHy, sizeof(float) * IHy*JHy*3, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_Sc, Sc, sizeof(float) * IEz*JEz*3, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_smHx, smHx, sizeof(float) * IHx*JHx, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_smHy, smHy, sizeof(float) * IHy*JHy, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_sEz, sEz, sizeof(float) * IEz*JEz, cudaMemcpyHostToDevice) );
+
+	CUDA_SAFE_CALL( cudaMemcpy(d_ScmHx, ScmHx, sizeof(float) * IHx*JHx, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_ScmHy, ScmHy, sizeof(float) * IHy*JHy, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_Sc, Sc, sizeof(float) * IEz*JEz, cudaMemcpyHostToDevice) );
+
+	CUDA_SAFE_CALL( cudaMemcpy(d_Scsx, Scsx, sizeof(float) * IEz*JEz, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_Scsy, Scsy, sizeof(float) * IEz*JEz, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_ScmsmxHy, ScmsmxHy, sizeof(float) * IHx*JHx, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_ScmsmyHx, ScmsmyHx, sizeof(float) * IHy*JHy, cudaMemcpyHostToDevice) );
 
 	return 0;
 }
@@ -264,7 +282,7 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 	// Total blocks in simulation grid. Can be thought of as no. of blocks in grid.
 	// Obviously, I and J should be divisible by block dimensions.
 	unsigned int BlocksX = I/ThreadsX;
-	unsigned int BlocksY = J/ThreadsY;
+	unsigned int BlocksY = (J+2*PMLw)/ThreadsY;
 
 	// Kernel parameters.
 	dim3 Blocks(BlocksX, BlocksY);
@@ -313,10 +331,9 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 
 	for (n = 1; n < NMax; n++)
 	{
-
+		CUT_SAFE_CALL( cutStartTimer(hTimer) );
 		for ( unsigned int step=0; step < 2; step++)
 		{
-			CUT_SAFE_CALL( cutStartTimer(hTimer) );
 			// Kernel call. 14 data pointers. 23 non-pointer arguments.
 			FDTD2DKernel <16, 16> <<<Blocks, Threads>>>(
 												d_Hx,
@@ -333,6 +350,10 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 												d_ScmHx,
 												d_ScmHy,
 												d_Sc,
+												d_Scsx,
+												d_Scsy,
+												d_ScmsmxHy,
+												d_ScmsmyHx,
 												delta,
 												dtscalar,
 												dt,
@@ -357,16 +378,17 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 
 
 			CUT_CHECK_ERROR("FDTD2DKernel() execution failed\n");
-			CUDA_SAFE_CALL( cudaThreadSynchronize() );
-			CUT_SAFE_CALL( cutStopTimer(hTimer) );
+			//CUDA_SAFE_CALL( cudaThreadSynchronize() );
 			flagHalf = !flagHalf;
 		}
-		// Copy the data back to the host
-		CUDA_SAFE_CALL( cudaMemcpy(Ez, d_Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyDeviceToHost) );
-
+		CUT_SAFE_CALL( cutStopTimer(hTimer) );
+		
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
+			// Copy the data back to the host
+			CUDA_SAFE_CALL( cudaMemcpy(Ez, d_Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyDeviceToHost) );
+		
 			framestream.str(std::string());			// Clearing stringstream contents.
 			framestream << frame;
 			filename = basename + framestream.str() + ".fdt";
@@ -482,9 +504,9 @@ int CFDTD2D::RunSimulationCPU (bool SaveFields)
 
 void CFDTD2D::DisplaySimulationParameters ()
 {
-	std::cout << "======= Simulation Parameters =======" << std::endl;
+  	std::cout << "======= Simulation Parameters =======" << std::endl;
 	std::cout << "I = " << I << std::endl;
-	std::cout << "J = " << I << std::endl;
+	std::cout << "J = " << J << std::endl;
 	std::cout << "NMax = " << NMax << std::endl;
 	std::cout << "f = " << f << std::endl;
 	std::cout << "delta = " << delta << std::endl;
@@ -515,6 +537,15 @@ int CFDTD2D::Cleanup ()
 	CUDA_SAFE_CALL( cudaFree(d_ScmHy) );
 	CUDA_SAFE_CALL( cudaFree(d_Sc) );
 
+	CUDA_SAFE_CALL( cudaFree(d_smHx) );
+	CUDA_SAFE_CALL( cudaFree(d_smHy) );
+	CUDA_SAFE_CALL( cudaFree(d_sEz) );
+	
+	CUDA_SAFE_CALL( cudaFree(d_Scsx) );
+	CUDA_SAFE_CALL( cudaFree(d_Scsy) );
+	CUDA_SAFE_CALL( cudaFree(d_ScmsmxHy) );
+	CUDA_SAFE_CALL( cudaFree(d_ScmsmyHx) );
+	
 	return 0;
 }
 
@@ -546,5 +577,4 @@ CFDTD2D::~CFDTD2D ()
 	if (Scsy != NULL) delete[] Scsy;
 	if (ScmsmxHy != NULL) delete[] ScmsmxHy;
 	if (ScmsmyHx != NULL) delete[] ScmsmyHx;
-	//if (devices != NULL) { delete[] devices; devices = NULL; }
 }
