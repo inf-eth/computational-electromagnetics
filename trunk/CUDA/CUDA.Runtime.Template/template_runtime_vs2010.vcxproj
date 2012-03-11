@@ -50,7 +50,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.0.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.1.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
@@ -95,7 +95,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\C\common\lib\$(PlatformName);C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\shared\lib\$(PlatformName)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);D:\Programs\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.1\C\common\lib\$(PlatformName);D:\Programs\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.1\shared\lib\$(PlatformName)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)/template_runtime.exe</OutputFile>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
@@ -105,7 +105,7 @@
     </PostBuildEvent>
     <CudaCompile>
       <CodeGeneration>compute_10,sm_10;compute_20,sm_20</CodeGeneration>
-      <Include>./;C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\C\common\inc;C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\shared\inc</Include>
+      <Include>./;D:\Programs\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.1\C\common\inc;D:\Programs\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.1\shared\inc</Include>
       <Runtime>MTd</Runtime>
     </CudaCompile>
   </ItemDefinitionGroup>
@@ -193,7 +193,7 @@
   <ItemGroup>
     <CudaCompile Include="template_runtime.cu">
       <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">./;../../common/inc;../../../shared/inc</Include>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./;C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\C\common\inc;C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.0\shared\inc</Include>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./;D:\Programs\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.1\C\common\inc;D:\Programs\NVIDIA Corporation\NVIDIA GPU Computing SDK 4.1\shared\inc</Include>
       <Include Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">./;../../common/inc;../../../shared/inc</Include>
       <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">./;../../common/inc;../../../shared/inc</Include>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_10,sm_10;compute_20,sm_20</CodeGeneration>
@@ -206,6 +206,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.0.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.1.targets" />
   </ImportGroup>
 </Project>
