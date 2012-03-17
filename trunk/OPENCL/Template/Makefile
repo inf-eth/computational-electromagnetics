@@ -1,6 +1,6 @@
-DEPTH = ../../../../..
+DEPTH = .
 
-include $(DEPTH)/make/openclsdkdefs.mk 
+include openclsdkdefs.mk 
 
 ####
 #
@@ -22,5 +22,5 @@ EXE_TARGET_INSTALL   	= Template
 FILES 	= Template
 CLFILES	= Template_Kernels.cl
 
-include $(DEPTH)/make/openclsdkrules.mk 
+include openclsdkrules.mk 
 
