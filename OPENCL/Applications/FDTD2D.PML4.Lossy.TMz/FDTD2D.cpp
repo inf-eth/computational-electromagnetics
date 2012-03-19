@@ -756,39 +756,38 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 
 			flagHalf = !flagHalf;
 		}
-		/* Enqueue readBuffer*/
-		status = clEnqueueReadBuffer(
-			commandQueue,
-			inputBufferEz,
-			CL_TRUE,
-			0,
-			sizeof(cl_double) * IEz*JEz*3,
-			Ez,
-			0,
-			NULL,
-			&events[1]);
-
-		if(status != CL_SUCCESS) 
-		{ 
-			std::cout << 
-				"Error: clEnqueueReadBuffer failed. \
-				(clEnqueueReadBuffer)\n";
-
-			return 1;
-		}
-		// Wait for the read buffer to finish execution
-		status = clWaitForEvents(1, &events[1]);
-		if(status != CL_SUCCESS) 
-		{ 
-			std::cout<<
-				"Error: Waiting for read buffer call to finish. \
-				(clWaitForEvents)\n";
-			return 1;
-		}
-
+		
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
+			/* Enqueue readBuffer*/
+			status = clEnqueueReadBuffer(
+				commandQueue,
+				inputBufferEz,
+				CL_TRUE,
+				0,
+				sizeof(cl_double) * IEz*JEz*3,
+				Ez,
+				0,
+				NULL,
+				&events[1]);
+
+			if(status != CL_SUCCESS)
+			{
+				std::cout << "Error: clEnqueueReadBuffer failed. \
+					(clEnqueueReadBuffer)\n";
+
+				return 1;
+			}
+			// Wait for the read buffer to finish execution
+			status = clWaitForEvents(1, &events[1]);
+			if(status != CL_SUCCESS)
+			{
+				std::cout << "Error: Waiting for read buffer call to finish. \
+					(clWaitForEvents)\n";
+				return 1;
+			}
+
 			framestream.str(std::string());			// Clearing stringstream contents.
 			framestream << frame;
 			filename = basename + framestream.str() + ".fdt";
@@ -825,13 +824,16 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 	/*
 	*/
 
-	status = clReleaseEvent(events[1]);
-	if(status != CL_SUCCESS) 
-	{ 
-		std::cout<<
-			"Error: Release event object. \
-			(clReleaseEvent)\n";
-		return 1;
+	if (SaveFields == true)
+	{
+		status = clReleaseEvent(events[1]);
+		if(status != CL_SUCCESS)
+		{
+			std::cout<<
+				"Error: Release event object. \
+				(clReleaseEvent)\n";
+			return 1;
+		}
 	}
 	return 0;
 }
