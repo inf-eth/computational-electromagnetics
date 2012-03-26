@@ -378,7 +378,7 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 
 
 			CUT_CHECK_ERROR("FDTD2DKernel() execution failed\n");
-			//CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
 			flagHalf = !flagHalf;
 		}
 		CUT_SAFE_CALL( cutStopTimer(hTimer) );

@@ -492,3 +492,5 @@ clobber : clean
 	$(VERBOSE)rm -rf $(COMMONDIR)/obj
 	$(VERBOSE)rm -rf $(SHAREDDIR)/obj
 
+run: $(TARGET)
+	./$(TARGET) $(ARG)
