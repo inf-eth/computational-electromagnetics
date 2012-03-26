@@ -1,8 +1,11 @@
 #ifndef FDTD2D_H_
 #define FDTD2D_H_
 
-#ifndef WIN32
+#if defined __linux__ || defined __CYGWIN__
 #include <fcntl.h>
+#include <sys/time.h>
+#else
+#include <timer.h>
 #endif
 
 #include <iostream>
@@ -10,7 +13,6 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
-#include <ctime>
 #include <cstring>
 #include <cstdlib>
 #include <string>
@@ -108,9 +110,11 @@ private:
 	float *ScmsmyHx;
 
 	// Timing.
-	clock_t tStart;
-	clock_t tEnd;
-	clock_t tElapsed;
+	#if defined __linux__ || defined __CYGWIN__
+	struct timeval tStart, tEnd;
+	#else
+	__int64 tStart, tEnd;
+	#endif
 
 	// === Device arrays ===
 	// Fields
@@ -156,9 +160,32 @@ public:
 	void DisplaySimulationParameters ();
 
 	// Timing.
-	inline void StartClock () { tStart = clock(); }
-	inline void StopClock () { tEnd = clock(); }
-	inline float GetElapsedTime () { return (float)(tEnd-tStart)/CLOCKS_PER_SEC; }
+	inline void StartClock ()
+	{
+		#if defined __linux__ || defined __CYGWIN__
+		gettimeofday(&tStart, NULL);
+		#else
+		tStart = GetTimeus64();
+		#endif
+	}
+	
+	inline void StopClock ()
+	{
+		#if defined __linux__ || defined __CYGWIN__
+		gettimeofday(&tEnd, NULL);
+		#else
+		tEnd = GetTimeus64();
+		#endif
+	}
+	inline float GetElapsedTime ()
+	{
+		#if defined __linux__ || defined __CYGWIN__
+		return (float)(tEnd.tv_sec-tStart.tv_sec) + (float)(tEnd.tv_usec-tStart.tv_usec)/(1000000.);
+		#else
+		return ((float)(tEnd-tStart))/(1000000.);
+		#endif
+		
+	}
 
 	int Cleanup ();
 	~CFDTD2D ();
