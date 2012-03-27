@@ -1,7 +1,7 @@
 #include "FDTD2D.h"
 CFDTD2D::CFDTD2D () : 
-						I(128),
-						J(128),
+						I(256),
+						J(256),
 						c(299792458.),
 						delta(2.5e-3),
 						dx(delta),
