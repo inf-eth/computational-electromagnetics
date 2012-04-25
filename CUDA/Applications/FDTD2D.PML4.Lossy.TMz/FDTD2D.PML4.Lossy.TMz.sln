@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TemplateCutil", "ProjectFilesVS2010\ProjectFilesVS2010.vcxproj", "{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Debug|Win32.Build.0 = Debug|Win32
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Debug|x64.ActiveCfg = Debug|x64
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Debug|x64.Build.0 = Debug|x64
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Release|Win32.ActiveCfg = Release|Win32
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Release|Win32.Build.0 = Release|Win32
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Release|x64.ActiveCfg = Release|x64
+		{5CB3581E-B1BE-4FB6-B1CA-FE5E3A245352}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
