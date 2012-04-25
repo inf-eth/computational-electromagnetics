@@ -44,7 +44,7 @@ CU_DEPS		:= include/FDTD2D_Kernels.cu\
 # Additional include directories.
 INCLUDES    += -Iinclude/
 # C/C++ source files (compiled with gcc / c++)
-CCFILES		:= \
+CCFILES		:= src/Timer.cpp
 
 # Omit CUTIL and SHRUTIL? (0 to include, 1 to omit)
 OMIT_CUTIL_LIB   := 0

@@ -21,6 +21,7 @@
 
 #if defined __linux__ || defined __CYGWIN__
 #define __int64 long long
+#include <cstdlib>
 #include <sys/time.h>
 #else
 #include <Windows.h>
