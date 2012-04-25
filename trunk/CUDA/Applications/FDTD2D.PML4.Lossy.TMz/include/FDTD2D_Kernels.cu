@@ -1,3 +1,5 @@
+#define uint unsigned int
+
 template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel(
 							float *Hx,
 							float *Bx,
