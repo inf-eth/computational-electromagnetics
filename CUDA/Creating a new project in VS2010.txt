@@ -1,0 +1,35 @@
+hey CUDA programmers, here a few steps to make a new CUDA project on visual studio 2010 to run the same as we do in visual studio 2008.
+
+I tried it and worked, assuming of course you're already running CUDA, and you have SDK and tools installed...
+
+first you must do this once:
+copy files "Cuda.props, Cuda.targets, and Cuda.xml" to:
+C:\Program Files\Microsoft Visual Studio 10.0\VC\VCProjectDefaults
+special thanks to Ade Miller for the files
+
+
+then:
+1- create a New Project -> C++ Win32 Console Application -> Empty Project
+
+2- mark the project in the Solution Explorer, then select Project menu -> Build Customizations... CUDA 3.2 or whatever version you're using
+
+3- right click the project in the Solution Explorer and select Properties
+
+4- select General and set the Platform Toolset to v90
+
+5- select VC++ Directories and add to Include Directories:
+C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 3.2\C\common\inc
+
+6- select Linker -> General and add to Additional Library Directories:
+$(CUDA_PATH)/lib/$(PlatformName);../../common/lib
+and
+C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 3.2\C\common\lib
+
+7- select Linker -> Input and add to Additional Dependencies:
+cudart.lib
+
+
+8- select Custom Build Step -> General and add to Additional Dependencies:
+C:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK 3.2\C\common\inc
+
+9- now add your .cu file
