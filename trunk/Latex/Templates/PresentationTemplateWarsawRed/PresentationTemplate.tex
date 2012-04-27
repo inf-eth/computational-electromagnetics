@@ -1,0 +1,136 @@
+\documentclass{beamer}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usetheme{Warsaw}
+
+\usepackage{graphicx}
+% ########## Theme modifications ######################################
+\usecolortheme{beaver}
+
+% Title background
+\setbeamercolor{titlelike}{parent=structure,bg=bg=gray!5!white}
+
+% Top-right palette containing sub-sections list
+\setbeamercolor*{palette primary}{fg=darkred!60!black,bg=gray!30!white}
+% Top-left palette containing sections list
+\setbeamercolor*{palette quaternary}{fg=white,bg=black!15!darkred}
+
+% Bullets and enumeration style/colour
+\setbeamertemplate{itemize items}[default]
+\setbeamertemplate{itemize subsitem}[default]
+\setbeamertemplate{enumerate items}[default]
+\setbeamertemplate{enumerate subitems}[default]
+\setbeamercolor{itemize item}{fg=darkred}
+\setbeamercolor{itemize subitem}{fg=darkred}
+\setbeamercolor{enumerate item}{fg=darkred}
+\setbeamercolor{enumerate subitem}{fg=darkred}
+% #####################################################################
+
+\title{Title line 1\\Title line 2}
+\author{Author 1 \and Author 2}
+\institute{Institution, City/Country}
+\date{\today}
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+%\tableofcontents
+
+% Introductory slide or table of contents.
+\section{Contents}
+\begin{frame}{Contents}
+	\begin{itemize}
+	\item Section 1
+	\item Section 2: Subsections
+		\begin{itemize}
+		\item Subsection 2.1
+		\item Subsection 2.2
+		\item Subsection 2.3
+		\end{itemize}
+	\item Section 3: Figure
+	\item Section 4: References
+	\end{itemize}
+\end{frame}
+
+% First slide in Section 1.
+\section{Section 1}
+\begin{frame}{Section 1}
+	\begin{itemize}
+	\item<1->What \emph{is}?
+	\item<2->How?
+	\item<3->When?
+		\begin{itemize}
+		\item Sub-item 1
+		\item Sub-item 2
+		\item Sub-item 3
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+% Section 2
+\section{Section 2: Subsections}
+\begin{frame}{Section 2: Subsections}
+	\begin{itemize}
+	\item Item 1
+	\item Item 2
+	\item Item 3
+	\item Item 4
+		\begin{enumerate}
+		\item Sub-item 4.1
+		\item Sub-item 4.2
+		\item Sub-item 4.3
+		\end{enumerate}
+	\end{itemize}
+\end{frame}
+
+\subsection{Subsection 2.1}
+\begin{frame}{Subsection 2.1}
+	\begin{itemize}
+	\item Item 1
+		\begin{itemize}
+		\item Sub-item 1.1
+		\item Sub-item 1.2
+		\item Sub-item 1.3
+		\item Sub-item 1.4
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\subsection{Subsection 2.2}
+\begin{frame}{Subsection 2.2}
+	\begin{itemize}
+	\item Item 1
+		\begin{enumerate}
+		\item Sub-item 1.1
+		\item Sub-item 1.2
+		\item Sub-item 1.3
+		\item Sub-item 1.4
+		\end{enumerate}
+	\end{itemize}
+\end{frame}
+
+\subsection{Subsection 2.3}
+\begin{frame}{Subsection 2.3}
+	\begin{itemize}
+	\item Item 1
+		\begin{itemize}
+		\item Sub-item 1.1
+		\item Sub-item 1.2
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\section{Section 3: Figure}
+\begin{frame}{Section 3: Figure}
+%\includegraphics{Avatar.pdf}
+\end{frame}
+
+\section{Section 4: References}
+\begin{frame}{Section 4: References}
+	\nocite{*}
+	\bibliographystyle{ieeetr} %plain, ieeetr
+	\bibliography{SampleBibliography}
+\end{frame}
+\end{document}
