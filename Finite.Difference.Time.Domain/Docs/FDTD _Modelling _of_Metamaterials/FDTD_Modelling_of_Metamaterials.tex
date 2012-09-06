@@ -46,48 +46,16 @@ Using Drude model values of plasma frequencies for regions corresponding to give
 \begin{figure}[here]
 \centering
 \includegraphics[width=\textwidth]{Algorithm.png}
-\caption{The Yee algorithm}
+\caption{The Yee algorithm. Figure taken from~\cite{JBSchneiderUFDTD}}
 \label{Algorithm}
 \end{figure}
 
 \chapter{Solution Approach}
 
-\section{Packet Capturing}
-On Linux we used the \texttt{libpcap} and for Windows we used the \texttt{winpcap} packet capturing libraries. These libraries are open source projects freely available online.
-
-A filter string needs to be passed as an input argument to the software. This filter string specifies the network traffic to capture. For example, using a filter string ``ip'' will capture all IP packets, similarly a filter string ``TCP\textbar\textbar UDP'' will capture any TCP or UDP packets.
-
-\section{Key Generation}
-
-\section{Content Prevalence and Address Dispersion Tables}
-The Content Prevalence Table is a hash map of entries with following structure:
-\begin{verbatim}
-struct ContentPrevalenceEntry
-{
-    int Count;
-    __int64 InsertionTime;
-};
-map<vector<unsigned char>, ContentPrevalenceEntry> ContentPrevalenceTable;
-\end{verbatim}
-
-Similarly the Content Prevalence Table is a hash map of entries with following structure:
-\begin{verbatim}
-struct AddressDispersionEntry
-{
-    vector<in_addr> SrcIPs;
-    vector<unsigned short> SrcPorts;
-    vector<in_addr> DstIPs;
-    vector<unsigned short> DstPorts;
-    int AlarmCount;
-};
-map<vector<unsigned char>, AddressDispersionEntry> AddressDispersionTable;
-\end{verbatim}
 
 
 \section{Implementation Details}
-Garbage collection is extremely important to efficient functioning of this software. Every time keys are generated, they are searched in the content prevalence and address dispersion tables. Size of content prevalence table is important because larger tables will result in longer search times.
 
-It is observed that most of the keys in the content prevalence table never occur more than once. Therefore, keys with prevalence count of 1 are deleted after a set time-out interval. If prevalence count is incremented the time-out interval is also reset in order to ensure that prevalent content isn't garbage collected. A garbage collector thread is invoked after a set interval. This interval can be adjusted by user.
 
 \nocite{*}
 \bibliographystyle{ieeetr} %plain, ieeetr
