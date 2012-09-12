@@ -32,13 +32,22 @@
 \begin{document}
 
 % Title Page.
-\input{FDTD_Title.tex}
+\input{FDTD_Title}
+
+\begin{center}
+\copyright Copyright\\[0.2in]
+by\\[0.2in]
+Attique Dawood\\[0.2in]
+2012
+\end{center}
+
+\include{FDTD_Certification}
 
 \tableofcontents
 \listoffigures
 
 \begin{abstract}
-The Finite Difference Time-Domain method is a differential numerical technique for solving electromagnetic wave scattering problems. In order to model metamaterials with negative refractive index the standard algorithm is modified as implementation of the Drude dispersion model. Suitable values of $\omega_p$  are chosen to model the metamaterial cloaking structure following the treatment of~\cite{Radial-Zhao}. The lossless case of electromagnetic cloak is implemented using a graphics processing unit (GPU).
+The Finite Difference Time-Domain method is a differential numerical technique for solving electromagnetic wave scattering problems. In order to model metamaterials with negative refractive index the standard algorithm is modified as implementation of the Drude dispersion model. Suitable values of $\omega_p$  are chosen to model the metamaterial cloaking structure following the treatment of~\cite{Radial-Zhao}. The lossless case of electromagnetic cloak is implemented using a graphics processing unit (GPU). Simulation performance on Matlab, C++ and GPU is compared.
 \end{abstract}
 
 \chapter{Introduction}
