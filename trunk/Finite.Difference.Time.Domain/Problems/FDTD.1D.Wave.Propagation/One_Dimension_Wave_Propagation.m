@@ -23,7 +23,7 @@ for q = 2:MaxTime
 end
 
 % Simulation animation.
-for i=1:NNMax
+for i=1:MaxTime
     figure (2)
     plot ( Ez(:,i) )
 end
