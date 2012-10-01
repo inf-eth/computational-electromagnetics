@@ -1,7 +1,7 @@
 % Simulation parameters.
 SIZE = 512; % No. of spatial steps
 MaxTime = 512; % No. of time steps
-PulseWidth = 512; % Width of Gaussian Pulse
+PulseWidth = 128; % Width of Gaussian Pulse
 imp0 = 377.0; % Impedence of free space
 
 % Constants.
@@ -24,13 +24,13 @@ tic
 for q = 2:MaxTime
     % Calculation of Hy using update difference equation for Hy. This is time step q.
     Hy(1:SIZE-1,q) = Hy(1:SIZE-1,q-1) + ( ( Ex(1:SIZE-1,q-1) - Ex(2:SIZE,q-1) ) * dt/(u0*dz) );
-    % CBC for H at SIZE.
-    Hy(SIZE,q) = Hy(SIZE,q-1) + ( ( Ex(SIZE,q-1) - Ex(1,q-1) ) * dt/(u0*dz) );
+    % ABC for H at SIZE.
+    Hy(SIZE,q) = Hy(SIZE-1,q-1) + (Sc-1)/(Sc+1)*(Hy(SIZE-1,q) - Hy(SIZE,q-1) );
     
     % Calculation of Ez using updated difference equation for Ez. This is time step q+1/2.
     Ex(2:SIZE,q) = Ex(2:SIZE, q-1) + ( dt/(e0*dz)*(Hy(1:SIZE-1, q) - Hy(2:SIZE, q)) );
-    % CBC for E at 1.
-    Ex(1,q) = Ex(1,q-1) + ( dt/(e0*dz)*(Hy(SIZE, q) - Hy(1, q)) );
+    % ABC for E at 1.
+    Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(2,q-1));
     
     % Activating a plane-wave source.
     Ex(100,q) = Ex(100,q) + exp( -1*(q-PulseWidth)^2/PulseWidth ) * Sc;
