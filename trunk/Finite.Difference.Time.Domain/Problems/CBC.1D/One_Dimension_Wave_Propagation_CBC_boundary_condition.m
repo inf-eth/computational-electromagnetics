@@ -22,17 +22,17 @@ PLOT1(1) = 0; % Data for plotting.
 tic
 for q = 2:MaxTime
     % Calculation of Hy using update difference equation for Hy. This is time step q.
-    Hy(1:SIZE-1,q) = Hy(1:SIZE-1,q-1) + ( ( Ez(2:SIZE,q-1) - Ez(1:SIZE-1,q-1) ) * Sc/imp0 );
+    Hy(1:SIZE-1,q) = Hy(1:SIZE-1,q-1) + ( ( Ez(2:SIZE,q-1) - Ez(1:SIZE-1,q-1) ) * dt/(u0*dx) );
     % CBC for H at SIZE.
-    Hy(SIZE,q) = Hy(SIZE,q-1) + ( ( Ez(1,q-1) - Ez(SIZE,q-1) ) * Sc/imp0 );
+    Hy(SIZE,q) = Hy(SIZE,q-1) + ( ( Ez(1,q-1) - Ez(SIZE,q-1) ) * dt/(u0*dx) );
     
     % Calculation of Ez using updated difference equation for Ez. This is time step q+1/2.
-    Ez(2:SIZE,q) = Ez(2:SIZE, q-1) + ( Sc*imp0*(Hy(2:SIZE, q) - Hy(1:SIZE-1, q)) );
+    Ez(2:SIZE,q) = Ez(2:SIZE, q-1) + ( dt/(e0*dx)*(Hy(2:SIZE, q) - Hy(1:SIZE-1, q)) );
     % CBC for E at 1.
-    Ez(1,q) = Ez(1,q-1) + ( Sc*imp0*(Hy(1, q) - Hy(SIZE, q)) );
+    Ez(1,q) = Ez(1,q-1) + ( dt/(e0*dx)*(Hy(1, q) - Hy(SIZE, q)) );
     
     % Activating a plane-wave source.
-    Ez(100,q) = Ez(100,q) + exp( -1*((q-256)^2)/1000 );
+    Ez(100,q) = Ez(100,q) + exp( -1*((q-256)^2)/1000 ) * Sc;
 end
 toc
 % Simulation animation.
