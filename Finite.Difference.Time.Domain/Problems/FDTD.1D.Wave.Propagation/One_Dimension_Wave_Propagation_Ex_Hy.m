@@ -1,9 +1,10 @@
 % Simulation parameters.
-SIZE = 128; % No. of spatial steps
-MaxTime = 128; % No. of time steps
-PulseWidth = 32; % Width of Gaussian Pulse
+SIZE = 64; % No. of spatial steps
+MaxTime = 64; % No. of time steps
+PulseWidth = 20; % Controls width of Gaussian Pulse
+td = PulseWidth; % Temporal delay in pulse.
 imp0 = 377.0; % Impedence of free space
-source = 2; % Location of source
+source = 10; % Location of source
 
 % Constants.
 c = 3e8;
@@ -11,7 +12,7 @@ pi = 3.141592654;
 e0 = (1e-9)/(36*pi);
 u0 = (1e-7)*4*pi;
 
-dt = 1.0e-12;
+dt = 1e-12;
 dz = 3e-4;
 Sc = c * dt/dz
 
@@ -34,14 +35,14 @@ for q = 2:MaxTime
     Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(2,q-1));
     
     % Activating a plane-wave source.
-    Ex(source,q) = Ex(source,q) + exp( -1*((q-PulseWidth)^2)/PulseWidth ) * Sc;
+    Ex(source,q) = Ex(source,q) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
 end
 toc
 % Simulation animation.
 for i=1:MaxTime
     figure (2)
     plot ( Ex(:,i) )
-    axis([0 SIZE -0.2 1])
+    axis([0 SIZE -0.6 0.6])
     xlabel('Spatial step (k)')
     ylabel('Electric field (Ex)')
 end
