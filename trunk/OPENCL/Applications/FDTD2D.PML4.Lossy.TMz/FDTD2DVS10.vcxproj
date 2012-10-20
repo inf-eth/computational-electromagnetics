@@ -69,16 +69,20 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>debug\x86\</OutDir>
+    <OutDir>$(Configuration)\$(PlatformName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(Configuration)\$(PlatformName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(Configuration)\$(PlatformName)\</OutDir>
+    <IntDir>$(Configuration)\$(PlatformName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(Configuration)\$(PlatformName)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,7 +92,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>false</TreatWarningAsError>
-      <AdditionalIncludeDirectories>..\include;..\SDKUtil\include;..\..\include;..\..\SDKUtil\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(AMDAPPSDKROOT)\include;$(AMDAPPSDKROOT)\samples\opencl\SDKUtil\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
