@@ -21,7 +21,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\common\openclsdk_no_sdkutils_debug.vsprops"
+			InheritedPropertySheets="$(AMDAPPSDKSAMPLESROOT)\samples\opencl\common\openclsdk_no_sdkutils_debug.vsprops"
 			CharacterSet="2"
 			EnableManagedIncrementalBuild="0"
 			>
@@ -84,7 +84,7 @@
 		<Configuration
 			Name="Debug|x64"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\common\openclsdk_no_sdkutils_debug_x64.vsprops"
+			InheritedPropertySheets="$(AMDAPPSDKSAMPLESROOT)\samples\opencl\common\openclsdk_no_sdkutils_debug_x64.vsprops"
 			CharacterSet="2"
 			>
 			<Tool
@@ -147,7 +147,7 @@
 		<Configuration
 			Name="Release|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\common\openclsdk_no_sdkutils_release.vsprops"
+			InheritedPropertySheets="$(AMDAPPSDKSAMPLESROOT)\samples\opencl\common\openclsdk_no_sdkutils_release.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
@@ -210,7 +210,7 @@
 		<Configuration
 			Name="Release|x64"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\common\openclsdk_no_sdkutils_release_x64.vsprops"
+			InheritedPropertySheets="$(AMDAPPSDKSAMPLESROOT)\samples\opencl\common\openclsdk_no_sdkutils_release_x64.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
