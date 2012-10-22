@@ -1,6 +1,8 @@
 #include <VLI.hpp>
 #include <string>
+#include <sstream>
 using std::string;
+using std::stringstream;
 
 CVLI::CVLI (): Sign(0)
 {
@@ -9,6 +11,13 @@ CVLI::CVLI (): Sign(0)
 CVLI::CVLI (bool pSign, vector<short> &pNumber): Sign(pSign), Number(pNumber)
 {
 	Format ();
+}
+
+CVLI::CVLI (const unsigned int x)
+{
+	stringstream VLIstream;
+	VLIstream << x;
+	VLIstream >> (*this);
 }
 
 void CVLI::Format ()

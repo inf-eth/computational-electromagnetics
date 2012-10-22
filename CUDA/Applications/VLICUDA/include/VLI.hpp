@@ -21,6 +21,8 @@ class CVLI
 	public:
 	CVLI ();
 	CVLI (bool, vector<short> &);		// VLI from sign and number.
+	// VCLI from unsigned int.
+	CVLI (const unsigned int);
 
 	// Check for primality.
 	bool CheckPrime (bool=false);
