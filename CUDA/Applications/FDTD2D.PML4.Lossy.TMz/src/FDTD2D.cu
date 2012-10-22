@@ -74,7 +74,7 @@ CFDTD2D::CFDTD2D () :
 	// Writing simulation parameters for plotting.
 	#ifdef WIN32
 	std::fstream parametersfile;
-	parametersfile.open ("./FieldData/Parameters.smp", std::ios::out|std::ios::binary);
+	parametersfile.open ("../FieldData/Parameters.smp", std::ios::out|std::ios::binary);
 	parametersfile.write ((char*)&I, sizeof(unsigned int));
 	parametersfile.write ((char*)&J, sizeof(unsigned int));
 	parametersfile.write ((char*)&tResolution, sizeof(unsigned int));
@@ -315,7 +315,7 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 		
 	// File handling from chapter 3 of Understanding FDTD. J. B. Schneider
 	std::stringstream framestream;
-	std::string basename = "./FieldData/Ez";
+	std::string basename = "../FieldData/Ez";
 	std::string filename;
 	unsigned int frame = 1;
 
@@ -425,7 +425,7 @@ int CFDTD2D::RunSimulationCPU (bool SaveFields)
 
 	// File Handling.
 	std::stringstream framestream;
-	std::string basename = "../../FieldData/Ez";
+	std::string basename = "../FieldData/Ez";
 	std::string filename;
 	unsigned int frame = 1;
 

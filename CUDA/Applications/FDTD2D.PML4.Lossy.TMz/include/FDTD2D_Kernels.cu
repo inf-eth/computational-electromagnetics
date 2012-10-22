@@ -1,4 +1,12 @@
 #define uint unsigned int
+#define HX(i,j,n) Hx[i+IHx*j+IHx*JHx*n]
+#define BX(i,j,n) Bx[i+IHx*j+IHx*JHx*n]
+#define HY(i,j,n) Hy[i+IHy*j+IHy*JHy*n]
+#define BY(i,j,n) By[i+IHy*j+IHy*JHy*n]
+#define EZ(i,j,n) Ez[i+IEz*j+IEz*JEz*n]
+#define DZ(i,j,n) Dz[i+IEz*j+IEz*JEz*n]
+#define DZX(i,j,n) Dzx[i+IEz*j+IEz*JEz*n]
+#define DZY(i,j,n) Dzy[i+IEz*j+IEz*JEz*n]
 
 template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel(
 							float *Hx,
@@ -52,29 +60,29 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel
 			// Normal space.
 			if (j >= PMLw && j < JHx-PMLw)
 			{
-				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmHx[i+IHx*j])/(1+ScmHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
+				BX(i,j,n2) = (1-ScmHx[i+IHx*j])/(1+ScmHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
+				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
 
-				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmHy[(i+1)+IHy*(j+1)])/(1+ScmHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);
+				BY(i+1,j+1,n2) = (1-ScmHy[(i+1)+IHy*(j+1)])/(1+ScmHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
+				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);
 			}
 			// Lower PML region.
 			if (j < PMLw)
 			{			
-				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
+				BX(i,j,n2) = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
+				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
 
-				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);			
+				BY(i+1,j+1,n2) = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
+				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);			
 			}
 			// Upper PML region.
 			if (j >= JHx-PMLw && j < JHx)
 			{
-				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
+				BX(i,j,n2) = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
+				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
 
-				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);			
+				BY(i+1,j+1,n2) = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
+				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);			
 			}
 		}
 	}
@@ -85,30 +93,30 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel
 		{
 			if (j != 0 && j < JEz-1 )
 			{
-				Dz[i+IEz*j+IEz*JEz*n2] = (1-Sc[i+IEz*j])/(1+Sc[i+IEz*j]) * Dz[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Sc[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2] - Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
-				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
+				DZ(i,j,n2) = (1-Sc[i+IEz*j])/(1+Sc[i+IEz*j]) * DZ(i,j,n1) + ( (dt/delta)/(1+Sc[i+IEz*j]) * ( HY(i+1,j,n2) - HY(i,j,n2) - HX(i,j,n2) + HX(i,j-1,n2)) );
+				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
 			}
 			// Source.
 			if (j == Js && n < NHW)
 			{
-				Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + 1 * sin (Two_pi_f_deltat * n) / dtscalar;
-				Dz[i+IEz*j+IEz*JEz*n2] = e0 * Ez[i+IEz*j+IEz*JEz*n2];
+				EZ(i,j,n2) = EZ(i,j,n2) + 1 * sin (Two_pi_f_deltat * n) / dtscalar;
+				DZ(i,j,n2) = e0 * EZ(i,j,n2);
 			}
 			// Lower PML region.
 			if (j > 0 && j < PMLw+1)
 			{
-				Dzx[i+IEz*j+IEz*JEz*n2] = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * Dzx[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2]) );
-				Dzy[i+IEz*j+IEz*JEz*n2] = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * Dzy[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
-				Dz[i+IEz*j+IEz*JEz*n2] = Dzx[i+IEz*j+IEz*JEz*n2] + Dzy[i+IEz*j+IEz*JEz*n2];
-				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
+				DZX(i,j,n2) = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * DZX(i,j,n1) + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( HY(i+1,j,n2) - HY(i,j,n2)) );
+				DZY(i,j,n2) = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * DZY(i,j,n1) + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- HX(i,j,n2) + HX(i,j-1,n2)) );
+				DZ(i,j,n2) = DZX(i,j,n2) + DZY(i,j,n2);
+				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
 			}
 			// Upper PML region.
 			if (j >= JEz-PMLw-1 && j < JEz-1)
 			{
-				Dzx[i+IEz*j+IEz*JEz*n2] = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * Dzx[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2]) );
-				Dzy[i+IEz*j+IEz*JEz*n2] = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * Dzy[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
-				Dz[i+IEz*j+IEz*JEz*n2] = Dzx[i+IEz*j+IEz*JEz*n2] + Dzy[i+IEz*j+IEz*JEz*n2];
-				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
+				DZX(i,j,n2) = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * DZX(i,j,n1) + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( HY(i+1,j,n2) - HY(i,j,n2)) );
+				DZY(i,j,n2) = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * DZY(i,j,n1) + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- HX(i,j,n2) + HX(i,j-1,n2)) );
+				DZ(i,j,n2) = DZX(i,j,n2) + DZY(i,j,n2);
+				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
 			}
 					
 		}
