@@ -1,12 +1,12 @@
 #define uint unsigned int
-#define HX(i,j,n) Hx[i+IHx*j+IHx*JHx*n]
-#define BX(i,j,n) Bx[i+IHx*j+IHx*JHx*n]
-#define HY(i,j,n) Hy[i+IHy*j+IHy*JHy*n]
-#define BY(i,j,n) By[i+IHy*j+IHy*JHy*n]
-#define EZ(i,j,n) Ez[i+IEz*j+IEz*JEz*n]
-#define DZ(i,j,n) Dz[i+IEz*j+IEz*JEz*n]
-#define DZX(i,j,n) Dzx[i+IEz*j+IEz*JEz*n]
-#define DZY(i,j,n) Dzy[i+IEz*j+IEz*JEz*n]
+#define HX(i,j,n) Hx[i+IHx*(j)+IHx*JHx*n]
+#define BX(i,j,n) Bx[i+IHx*(j)+IHx*JHx*n]
+#define HY(i,j,n) Hy[i+IHy*(j)+IHy*JHy*n]
+#define BY(i,j,n) By[i+IHy*(j)+IHy*JHy*n]
+#define EZ(i,j,n) Ez[i+IEz*(j)+IEz*JEz*n]
+#define DZ(i,j,n) Dz[i+IEz*(j)+IEz*JEz*n]
+#define DZX(i,j,n) Dzx[i+IEz*(j)+IEz*JEz*n]
+#define DZY(i,j,n) Dzy[i+IEz*(j)+IEz*JEz*n]
 
 template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel(
 							float *Hx,
@@ -49,7 +49,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel
 							const uint n2,
 							const uint flag)
 {
-    uint i = BlockX*blockIdx.x+threadIdx.x;
+	uint i = BlockX*blockIdx.x+threadIdx.x;
 	uint j = BlockY*blockIdx.y+threadIdx.y;
 
 	// Half time step flag is either 0 or 1 indicating whether magnetic field or electric field is to be calculated, respectively.
@@ -68,12 +68,12 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel
 			}
 			// Lower PML region.
 			if (j < PMLw)
-			{			
+			{
 				BX(i,j,n2) = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
 				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
 
 				BY(i+1,j+1,n2) = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
-				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);			
+				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);
 			}
 			// Upper PML region.
 			if (j >= JHx-PMLw && j < JHx)
@@ -82,7 +82,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel
 				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
 
 				BY(i+1,j+1,n2) = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
-				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);			
+				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);
 			}
 		}
 	}
@@ -118,7 +118,6 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DKernel
 				DZ(i,j,n2) = DZX(i,j,n2) + DZY(i,j,n2);
 				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
 			}
-					
 		}
 	}
 }
