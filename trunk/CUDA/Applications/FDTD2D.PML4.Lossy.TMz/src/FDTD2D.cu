@@ -1,6 +1,6 @@
 #include <FDTD2D.hpp>
 
-CFDTD2D::CFDTD2D () : 
+CFDTD2D::CFDTD2D () :
 						I(256),
 						J(256),
 						c(299792458.),
@@ -382,13 +382,13 @@ int CFDTD2D::runFDTD2DKernels (bool SaveFields)
 			flagHalf = !flagHalf;
 		}
 		CUT_SAFE_CALL( cutStopTimer(hTimer) );
-		
+
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
 			// Copy the data back to the host
 			CUDA_SAFE_CALL( cudaMemcpy(Ez, d_Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyDeviceToHost) );
-		
+
 			framestream.str(std::string());			// Clearing stringstream contents.
 			framestream << frame;
 			filename = basename + framestream.str() + ".fdt";
@@ -504,7 +504,7 @@ int CFDTD2D::RunSimulationCPU (bool SaveFields)
 
 void CFDTD2D::DisplaySimulationParameters ()
 {
-  	std::cout << "======= Simulation Parameters =======" << std::endl;
+	std::cout << "======= Simulation Parameters =======" << std::endl;
 	std::cout << "I = " << I << std::endl;
 	std::cout << "J = " << J << std::endl;
 	std::cout << "NMax = " << NMax << std::endl;
