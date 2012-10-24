@@ -3,8 +3,10 @@ clear all
 
 % Simulation parameters.
 SIZE = 64; % No. of spatial steps
-MaxTime = 64; % No. of time steps
-PulseWidth = 20; % Controls width of Gaussian Pulse
+SlabLeft = round(SIZE/3); % Location of left end of Slab.
+SlabRight = round(2*SIZE/3); % Location of right end of Slab
+MaxTime = SIZE; % No. of time steps
+PulseWidth = round(SIZE/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 source = 10; % Location of source
 
@@ -18,11 +20,21 @@ dt = 1e-12;
 dz = 3e-4;
 Sc = c * dt/dz
 
+l = PulseWidth*dz;
+f = l/c;
+w = 2*pi*f;
+
 % Initialization.
 Ex = zeros(SIZE, 3); % x-component of E-field
 Dx = zeros(SIZE, 3); % x-component of D
 Hy = zeros(SIZE, 3); % y-component of H-field
 By = zeros(SIZE, 3); % y-component of B
+
+wpsq = zeros(1,SIZE);
+wpsq(SlabLeft:SlabRight) = 2*w^2;
+wpmsq = zeros(1,SIZE);
+wpmsq(SlabLeft:SlabRight) = 2*w^2;
+size(wpsq)
 
 ExSnapshots = zeros(SIZE, MaxTime); % Data for plotting.
 frame = 1;
