@@ -34,23 +34,28 @@ tic
 for q = 2:MaxTime
     
     % Storing past fields.
-    Ex(:,3) = Ex(:,n1);
-    Dx(:,3) = Dx(:,n1);
-    Hy(:,3) = Hy(:,n1);
-    By(:,3) = By(:,n1);
+    Ex(:,3) = Ex(:,n2);
+    Dx(:,3) = Dx(:,n2);
+    Hy(:,3) = Hy(:,n2);
+    By(:,3) = By(:,n2);
     
     % Calculation of Hy using update difference equation for Hy. This is time step q.
-    Hy(1:SIZE-1,n2) = Hy(1:SIZE-1,n1) + ( ( Ex(1:SIZE-1,n1) - Ex(2:SIZE,n1) ) * dt/(u0*dz) );
+    By(1:SIZE-1,n2) = By(1:SIZE-1,n1) + ( ( Ex(1:SIZE-1,n1) - Ex(2:SIZE,n1) ) * dt/(dz) );
+    Hy(:,n2) = (1/u0)*By(:,n2);
     % ABC for H at SIZE.
     Hy(SIZE,n2) = Hy(SIZE-1,n1) + (Sc-1)/(Sc+1)*(Hy(SIZE-1,n2) - Hy(SIZE,n1) );
-    
+    By(SIZE,n2) = u0*Hy(SIZE,n2);
+
     % Calculation of Ex using updated difference equation for Ex. This is time step q+1/2.
-    Ex(2:SIZE,n2) = Ex(2:SIZE, n1) + ( dt/(e0*dz)*(Hy(1:SIZE-1, n2) - Hy(2:SIZE, n2)) );
+    Dx(2:SIZE,n2) = Dx(2:SIZE, n1) + ( dt/(dz)*(Hy(1:SIZE-1, n2) - Hy(2:SIZE, n2)) );
+    Ex(:,n2) = (1/e0)*Dx(:,n2);
     % ABC for E at 1.
     Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
+    Dx(1,n2) = e0*Ex(1,n2);
     
     % Activating a plane-wave source.
     Ex(source,n2) = Ex(source,n2) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
+    Dx(source,n2) = e0*Ex(source,n2);
 
     ExSnapshots(:,frame) = Ex(:,n2);
     frame=frame+1;
