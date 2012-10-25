@@ -2,10 +2,10 @@ clc
 clear all
 
 % Simulation parameters.
-SIZE = 128; % No. of spatial steps
+SIZE = 1024; % No. of spatial steps
 SlabLeft = round(SIZE/3); % Location of left end of Slab.
 SlabRight = round(2*SIZE/3); % Location of right end of Slab
-MaxTime = SIZE; % No. of time steps
+MaxTime = 2*SIZE; % No. of time steps
 PulseWidth = round(SIZE/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 source = 10; % Location of source
@@ -16,13 +16,13 @@ pi = 3.141592654;
 e0 = (1e-9)/(36*pi);
 u0 = (1e-7)*4*pi;
 
-dt = 1e-11;
+dt = 0.5e-11;
 dz = 3e-3;
 Sc = c * dt/dz
 
 l = PulseWidth*dz;
-f = l/c;
-w = 1e19*2*pi*f;
+f = c/l;
+w = 2*pi*f;
 
 % Initialization.
 Ex = zeros(SIZE, 3); % x-component of E-field
@@ -75,6 +75,7 @@ for q = 2:MaxTime
     
     % Activating a plane-wave source.
     Ex(source,n2) = Ex(source,n2) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
+    %Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q-2)*dt) * Sc;
     Dx(source,n2) = e0*Ex(source,n2);
 
     ExSnapshots(:,frame) = Ex(:,n2);
