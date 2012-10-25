@@ -16,13 +16,13 @@ pi = 3.141592654;
 e0 = (1e-9)/(36*pi);
 u0 = (1e-7)*4*pi;
 
-dt = 1e-12;
-dz = 3e-4;
+dt = 1e-11;
+dz = 3e-3;
 Sc = c * dt/dz
 
 l = PulseWidth*dz;
 f = l/c;
-w = 2*pi*f;
+w = 1e19*2*pi*f;
 
 % Initialization.
 Ex = zeros(SIZE, 3); % x-component of E-field
