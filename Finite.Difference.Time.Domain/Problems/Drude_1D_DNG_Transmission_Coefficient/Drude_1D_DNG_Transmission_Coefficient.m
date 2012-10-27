@@ -2,7 +2,7 @@ clc
 clear all
 
 % Simulation parameters.
-SIZE = 1024; % No. of spatial steps
+SIZE = 2024; % No. of spatial steps
 SlabLeft = round(SIZE/3); % Location of left end of Slab.
 SlabRight = round(2*SIZE/3); % Location of right end of Slab
 MaxTime = 2*SIZE; % No. of time steps
@@ -23,6 +23,11 @@ Sc = c * dt/dz
 l = PulseWidth*dz;
 f = c/l
 w = 2*pi*f;
+k0 = w/c; % Free space wave number.
+
+% Choice of source.
+% 1. Gaussian 2. Sine wave.
+SourceChoice = 1;
 
 % Initialization.
 Ex = zeros(SIZE, 3); % x-component of E-field
@@ -35,14 +40,22 @@ Exi = zeros(MaxTime);
 Ext = zeros(MaxTime);
 x1 = SlabLeft+1; % Position of observation.
 
+% Refractive Index calculations.
+Z1 = SlabLeft + 50;
+z1 = Z1*dz;
+Z2 = SlabLeft + 60;
+z2 = Z2*dz;
+Exz1 = zeros(MaxTime);
+Exz2 = zeros(MaxTime);
+
 einf = ones(SIZE,1);
-einf(SlabLeft:SlabRight) = 16; % einf(Drude) or er in slab.
+einf(SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SIZE,1);
 uinf(SlabLeft:SlabRight) = 1; % uinf(Drude) or ur in slab.
 wpsq = zeros(SIZE,1);
-%wpsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared.
+wpsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared.
 wpmsq = zeros(SIZE,1);
-%wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared.
+wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared.
 
 a = 4./(e0*(4*einf+wpsq*dt^2));
 b = -1*e0*a.*einf;
@@ -73,9 +86,12 @@ for q = 0:MaxTime
     % ABC for E at 1.
     Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
     
-    % Activating a plane-wave source.
+    % Source.
+    if SourceChoice == 1
     Ex(source,n2) = Ex(source,n2) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
-    %Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q)*dt) * Sc;
+    elseif SourceChoice == 2
+    Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q)*dt) * Sc;
+    end
     
     Exi(q+1) = Ex(x1,n2); % Incident field is left of slab.
     
@@ -111,15 +127,22 @@ for q = 0:MaxTime
     Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
     Dx(1,n2) = e0*Ex(1,n2);
     
-    % Activating a plane-wave source.
+    % Source.
+    if SourceChoice == 1
     Ex(source,n2) = Ex(source,n2) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
-    %Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q)*dt) * Sc;
+    elseif SourceChoice == 2
+    Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q)*dt) * Sc;
+    end
     Dx(source,n2) = e0*Ex(source,n2);
 
     ExSnapshots(:,frame) = Ex(:,n2);
     frame=frame+1;
     
     Ext(q+1) = Ex(x1,n2);
+    
+    % Fields for calculation of refractive index.
+    Exz1(q+1) = Ex(Z1, n2);
+    Exz2(q+1) = Ex(Z2, n2);
     
     temp = n1;
     n1 = n2;
@@ -146,6 +169,8 @@ xlabel('time')
 NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
 EXI = fft(Exi,NFFT)/L;
 EXT = fft(Ext,NFFT)/L;
+EXZ1 = fft(Exz1,NFFT)/L;
+EXZ2 = fft(Exz2,NFFT)/L;
 f = Fs/2*linspace(0,1,NFFT/2+1);
 
 % Plot single-sided amplitude spectrum.
@@ -166,15 +191,39 @@ ylabel('|EXT(f)|')
 
 % Transmission Coefficient.
 figure(3)
+subplot(211)
 TAU = abs(EXT(1:NFFT/2+1)./EXI(1:NFFT/2+1));
-plot(f(1:100),TAU(1:100))
-title('Single-Sided Amplitude Spectrum of Tau(f)')
+plot(f(1:50),TAU(1:50))
+title('Transmission Coefficient')
 xlabel('Frequency (Hz)')
 ylabel('|EXT(f)/EXI(f)|')
+axis([-1 1 -2 2])
+axis 'auto x'
+subplot(212)
+plot(f(1:50),1-TAU(1:50))
+title('Reflection Coefficient')
+xlabel('Frequency (Hz)')
+ylabel('1-|EXT(f)/EXI(f)|')
+axis([-1 1 -2 2])
+axis 'auto x'
+
+% Refractive Index calculations.
+nFDTD = (1/(1i*k0*(z1-z2))).*log(EXZ2(1:NFFT/2+1)./EXZ1(1:NFFT/2+1));
+figure(4)
+subplot(211)
+plot(f(1:50),real(nFDTD(1:50)));
+title('Refractive index re(n)')
+xlabel('Frequency (Hz)')
+ylabel('re(n)')
+subplot(212)
+plot(f(1:50),imag(nFDTD(1:50)));
+title('Refractive index im(n)')
+xlabel('Frequency (Hz)')
+ylabel('im(n)')
 
 % Simulation animation.
 for i=1:frame-1
-    figure (4)
+    figure (5)
     plot ( ExSnapshots(:,i) )
     axis([0 SIZE -0.6 0.6])
     xlabel('Spatial step (k)')
