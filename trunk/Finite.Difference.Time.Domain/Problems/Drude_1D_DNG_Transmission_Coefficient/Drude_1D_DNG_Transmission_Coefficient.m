@@ -2,7 +2,7 @@ clc
 clear all
 
 % Simulation parameters.
-SIZE = 2024; % No. of spatial steps
+SIZE = 2048; % No. of spatial steps
 SlabLeft = round(SIZE/3); % Location of left end of Slab.
 SlabRight = round(2*SIZE/3); % Location of right end of Slab
 MaxTime = 2*SIZE; % No. of time steps
@@ -22,12 +22,17 @@ Sc = c * dt/dz
 
 l = PulseWidth*dz;
 f = c/l
+fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
 
 % Choice of source.
-% 1. Gaussian 2. Sine wave.
+% 1. Gaussian 2. Sine wave 3. Ricker wavelet
 SourceChoice = 1;
+if SourceChoice == 3
+    fp = f; % Peak frequency
+    dr = PulseWidth*dt*2; % Delay
+end
 
 % Initialization.
 Ex = zeros(SIZE, 3); % x-component of E-field
@@ -91,6 +96,8 @@ for q = 0:MaxTime
     Ex(source,n2) = Ex(source,n2) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
     elseif SourceChoice == 2
     Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q)*dt) * Sc;
+    elseif SourceChoice == 3
+    Ex(source,n2) = Ex(source,n2) + (1-2*(pi*fp*(q*dt-dr))^2)*exp(-1*(pi*fp*(q*dt-dr))^2) * Sc;
     end
     
     Exi(q+1) = Ex(x1,n2); % Incident field is left of slab.
@@ -132,6 +139,8 @@ for q = 0:MaxTime
     Ex(source,n2) = Ex(source,n2) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
     elseif SourceChoice == 2
     Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(q)*dt) * Sc;
+    elseif SourceChoice == 3
+    Ex(source,n2) = Ex(source,n2) + (1-2*(pi*fp*(q*dt-dr))^2)*exp(-1*(pi*fp*(q*dt-dr))^2) * Sc;
     end
     Dx(source,n2) = e0*Ex(source,n2);
 
@@ -157,14 +166,18 @@ t = (0:L-1)*T;                % Time vector
 
 figure(1)
 subplot(211)
-plot(Fs*t,Exi)
-title('Incident Field')
-xlabel('time')
+plot(Fs*t, Exi, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Incident Field', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 figure(2)
 subplot(211)
-plot(Fs*t,Ext)
-title('Transmitted Field')
-xlabel('time')
+plot(Fs*t, Ext, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 
 NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
 EXI = fft(Exi,NFFT)/L;
@@ -177,55 +190,78 @@ f = Fs/2*linspace(0,1,NFFT/2+1);
 figure(1)
 subplot(212)
 EXIp = 2*abs(EXI(1:NFFT/2+1));
-plot(f(1:50),EXIp(1:50)) 
-title('Single-Sided Amplitude Spectrum of Exi(t)')
-xlabel('Frequency (Hz)')
-ylabel('|EXI(f)|')
+plot(f(1:50), EXIp(1:50), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Exi(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EXI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 figure(2)
 subplot(212)
 EXTp = 2*abs(EXT(1:NFFT/2+1));
-plot(f(1:50),EXTp(1:50)) 
-title('Single-Sided Amplitude Spectrum of Ext(t)')
-xlabel('Frequency (Hz)')
-ylabel('|EXT(f)|')
+plot(f(1:50), EXTp(1:50), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Ext(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EXT(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 
 % Transmission Coefficient.
 figure(3)
 subplot(211)
 TAU = abs(EXT(1:NFFT/2+1)./EXI(1:NFFT/2+1));
-plot(f(1:50),TAU(1:50))
-title('Transmission Coefficient')
-xlabel('Frequency (Hz)')
-ylabel('|EXT(f)/EXI(f)|')
+plot(f(1:50), TAU(1:50), 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EXT(f)/EXI(f)|', 'FontSize', 11, 'FontWeight', 'b')
 axis([-1 1 -2 2])
 axis 'auto x'
+grid on
 subplot(212)
-plot(f(1:50),1-TAU(1:50))
-title('Reflection Coefficient')
-xlabel('Frequency (Hz)')
-ylabel('1-|EXT(f)/EXI(f)|')
+plot(f(1:50), 1-TAU(1:50), 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('1-|EXT(f)/EXI(f)|', 'FontSize', 11, 'FontWeight', 'b')
 axis([-1 1 -2 2])
 axis 'auto x'
+grid on
 
 % Refractive Index calculations.
 nFDTD = (1/(1i*k0*(z1-z2))).*log(EXZ2(1:NFFT/2+1)./EXZ1(1:NFFT/2+1));
 figure(4)
 subplot(211)
-plot(f(1:50),real(nFDTD(1:50)));
-title('Refractive index re(n)')
-xlabel('Frequency (Hz)')
-ylabel('re(n)')
+plot(f(1:50), real(nFDTD(1:50)), 'LineWidth', 2.0, 'Color', 'b');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Refractive index re(n)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11)
+ylabel('re(n)', 'FontSize', 11)
+grid on
 subplot(212)
-plot(f(1:50),imag(nFDTD(1:50)));
-title('Refractive index im(n)')
-xlabel('Frequency (Hz)')
-ylabel('im(n)')
+plot(f(1:50), imag(nFDTD(1:50)), 'LineWidth', 2.0, 'Color', 'r');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+
+% Power calculations
+% TODO
 
 % Simulation animation.
 for i=1:frame-1
     figure (5)
-    plot ( ExSnapshots(:,i) )
-    axis([0 SIZE -0.6 0.6])
-    xlabel('Spatial step (k)')
-    ylabel('Electric field (Ex)')
+    % Scatterer boundaries.
+    hold off
+    plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
+    hold on
+    plot([SlabRight SlabRight], [-1 1], 'Color', 'r');
+    plot(ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
+    set(gca, 'FontSize', 10, 'FontWeight', 'b')
+    axis([0 SIZE -1 1])
+    title('Time Domain Simulation', 'FontSize', 12, 'FontWeight', 'b')
+    xlabel('Spatial step (k)', 'FontSize', 11, 'FontWeight', 'b')
+    ylabel('Electric field (Ex)', 'FontSize', 11, 'FontWeight', 'b')
+    grid on
 end
