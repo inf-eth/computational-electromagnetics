@@ -1,8 +1,9 @@
 clc
 clear all
+close all
 
 % Simulation parameters.
-SIZE = 2048; % No. of spatial steps
+SIZE = 4*1024; % No. of spatial steps
 SlabLeft = round(SIZE/3); % Location of left end of Slab.
 SlabRight = round(2*SIZE/3); % Location of right end of Slab
 MaxTime = 4*SIZE; % No. of time steps
@@ -44,6 +45,7 @@ By = zeros(SIZE, 3); % y-component of B
 % Incident and Transmitted Fields.
 Exi = zeros(MaxTime, 1);
 Ext = zeros(MaxTime, 1);
+Extt = zeros(MaxTime, 1);
 x1 = SlabLeft+1; % Position of observation.
 
 % Refractive Index calculations.
@@ -157,6 +159,7 @@ for q = 0:MaxTime
     end
     
     Ext(q+1) = Ex(x1,n2);
+    Extt(q+1) = Ex(SlabRight+10,n2);
     
     % Fields for calculation of refractive index.
     Exz1(q+1) = Ex(Z1, n2);
@@ -172,6 +175,7 @@ Fs = 1/dt;                    % Sampling frequency
 T = dt;                       % Sample time
 L = length(Exi);              % Length of signal
 t = (0:L-1)*T;                % Time vector
+fspan = 100;                  % Points to plot in frequency domain
 
 figure(1)
 subplot(211)
@@ -187,10 +191,18 @@ set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
 grid on
+figure(3)
+subplot(211)
+plot(Fs*t, Extt, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted Field Beyond Slab', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 
 NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
 EXI = fft(Exi,NFFT)/L;
 EXT = fft(Ext,NFFT)/L;
+EXTT = fft(Extt,NFFT)/L;
 EXZ1 = fft(Exz1,NFFT)/L;
 EXZ2 = fft(Exz2,NFFT)/L;
 f = Fs/2*linspace(0,1,NFFT/2+1);
@@ -199,7 +211,7 @@ f = Fs/2*linspace(0,1,NFFT/2+1);
 figure(1)
 subplot(212)
 EXIp = 2*abs(EXI(1:NFFT/2+1));
-plot(f(1:50), EXIp(1:50), 'LineWidth', 2.0, 'Color', 'r')
+plot(f(1:fspan), EXIp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Single-Sided Amplitude Spectrum of Exi(t)', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
@@ -208,18 +220,27 @@ grid on
 figure(2)
 subplot(212)
 EXTp = 2*abs(EXT(1:NFFT/2+1));
-plot(f(1:50), EXTp(1:50), 'LineWidth', 2.0, 'Color', 'r')
+plot(f(1:fspan), EXTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Single-Sided Amplitude Spectrum of Ext(t)', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('|EXT(f)|', 'FontSize', 11, 'FontWeight', 'b')
 grid on
+figure(3)
+subplot(212)
+EXTTp = 2*abs(EXTT(1:NFFT/2+1));
+plot(f(1:fspan), EXTTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Extt(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EXT(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 
 % Transmission Coefficient.
-figure(3)
+figure(4)
 subplot(211)
 TAU = abs(EXT(1:NFFT/2+1)./EXI(1:NFFT/2+1));
-plot(f(1:50), TAU(1:50), 'LineWidth', 2.0, 'Color', 'b')
+plot(f(1:fspan), TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
@@ -228,7 +249,7 @@ axis([-1 1 -2 2])
 axis 'auto x'
 grid on
 subplot(212)
-plot(f(1:50), 1-TAU(1:50), 'LineWidth', 2.0, 'Color', 'b')
+plot(f(1:fspan), 1-TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
@@ -239,16 +260,16 @@ grid on
 
 % Refractive Index calculations.
 nFDTD = (1/(1i*k0*(z1-z2))).*log(EXZ2(1:NFFT/2+1)./EXZ1(1:NFFT/2+1));
-figure(4)
+figure(5)
 subplot(211)
-plot(f(1:50), real(nFDTD(1:50)), 'LineWidth', 2.0, 'Color', 'b');
+plot(f(1:fspan), real(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'b');
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Refractive index re(n)', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frequency (Hz)', 'FontSize', 11)
 ylabel('re(n)', 'FontSize', 11)
 grid on
 subplot(212)
-plot(f(1:50), imag(nFDTD(1:50)), 'LineWidth', 2.0, 'Color', 'r');
+plot(f(1:fspan), imag(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'r');
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
@@ -260,7 +281,7 @@ grid on
 
 % Simulation animation.
 for i=1:frame-1
-    figure (5)
+    figure (7)
     % Scatterer boundaries.
     hold off
     plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
