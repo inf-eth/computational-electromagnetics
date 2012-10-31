@@ -5,10 +5,11 @@ clear all
 SIZE = 2048; % No. of spatial steps
 SlabLeft = round(SIZE/3); % Location of left end of Slab.
 SlabRight = round(2*SIZE/3); % Location of right end of Slab
-MaxTime = 2*SIZE; % No. of time steps
+MaxTime = 4*SIZE; % No. of time steps
 PulseWidth = round(SIZE/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 source = 10; % Location of source
+SnapshotInterval = 16; % Amount of time delay between snaps.
 
 % Constants.
 c = 3e8;
@@ -41,8 +42,8 @@ Hy = zeros(SIZE, 3); % y-component of H-field
 By = zeros(SIZE, 3); % y-component of B
 
 % Incident and Transmitted Fields.
-Exi = zeros(MaxTime);
-Ext = zeros(MaxTime);
+Exi = zeros(MaxTime, 1);
+Ext = zeros(MaxTime, 1);
 x1 = SlabLeft+1; % Position of observation.
 
 % Refractive Index calculations.
@@ -50,17 +51,23 @@ Z1 = SlabLeft + 50;
 z1 = Z1*dz;
 Z2 = SlabLeft + 60;
 z2 = Z2*dz;
-Exz1 = zeros(MaxTime);
-Exz2 = zeros(MaxTime);
+Exz1 = zeros(MaxTime, 1);
+Exz2 = zeros(MaxTime, 1);
+
+% Power calculations.
+Exip = zeros(MaxTime, 1);
+Hyip = zeros(MaxTime, 1);
+Extp = zeros(MaxTime, 1);
+Hytp = zeros(MaxTime, 1);
 
 einf = ones(SIZE,1);
 einf(SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SIZE,1);
 uinf(SlabLeft:SlabRight) = 1; % uinf(Drude) or ur in slab.
 wpsq = zeros(SIZE,1);
-wpsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared.
+wpsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared in slab.
 wpmsq = zeros(SIZE,1);
-wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared.
+wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared in slab.
 
 a = 4./(e0*(4*einf+wpsq*dt^2));
 b = -1*e0*a.*einf;
@@ -69,7 +76,7 @@ am = 4./(u0*(4*uinf+wpmsq*dt^2));
 bm = -1*u0*am.*uinf;
 cm = -1*(wpmsq*dt^2)./(4*uinf+(wpmsq*dt^2));
 
-ExSnapshots = zeros(SIZE, MaxTime); % Data for plotting.
+ExSnapshots = zeros(SIZE, MaxTime/SnapshotInterval); % Data for plotting.
 frame = 1;
 
 n1 = 1;
@@ -144,8 +151,10 @@ for q = 0:MaxTime
     end
     Dx(source,n2) = e0*Ex(source,n2);
 
-    ExSnapshots(:,frame) = Ex(:,n2);
-    frame=frame+1;
+    if mod(q,SnapshotInterval) == 0
+        ExSnapshots(:,frame) = Ex(:,n2);
+        frame=frame+1;
+    end
     
     Ext(q+1) = Ex(x1,n2);
     
