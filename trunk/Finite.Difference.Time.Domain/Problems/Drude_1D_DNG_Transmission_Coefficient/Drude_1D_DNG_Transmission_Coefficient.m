@@ -66,17 +66,27 @@ einf = ones(SIZE,1);
 einf(SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SIZE,1);
 uinf(SlabLeft:SlabRight) = 1; % uinf(Drude) or ur in slab.
-wpsq = zeros(SIZE,1);
-wpsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared in slab.
+wpesq = zeros(SIZE,1);
+wpesq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared in slab.
 wpmsq = zeros(SIZE,1);
 wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared in slab.
+ge = zeros(SIZE,1);
+ge(SlabLeft:SlabRight) = 0.01; % Electric collision frequency in slab.
+gm = zeros(SIZE,1);
+gm(SlabLeft:SlabRight) = 0.01; % Magnetic collision frequency in slab.
 
-a = 4./(e0*(4*einf+wpsq*dt^2));
-b = -1*e0*a.*einf;
-c = -1*(wpsq*dt^2)./(4*einf+(wpsq*dt^2));
-am = 4./(u0*(4*uinf+wpmsq*dt^2));
-bm = -1*u0*am.*uinf;
-cm = -1*(wpmsq*dt^2)./(4*uinf+(wpmsq*dt^2));
+a0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesq+2*dt*einf.*ge));
+a = (1/dt^2)*a0;
+b = (1/(2*dt))*ge.*a0;
+c = (e0/dt^2)*einf.*a0;
+d = (-1*e0/4).*wpesq.*a0;
+e = (1/(2*dt))*e0*einf.*ge.*a0;
+am0 = (4*dt^2)./(u0*(4*uinf+dt^2*wpmsq+2*dt*uinf.*gm));
+am = (1/dt^2)*am0;
+bm = (1/(2*dt))*gm.*am0;
+cm = (u0/dt^2)*uinf.*am0;
+dm = (-1*u0/4).*wpmsq.*am0;
+em = (1/(2*dt))*u0*uinf.*gm.*am0;
 
 ExSnapshots = zeros(SIZE, MaxTime/SnapshotInterval); % Data for plotting.
 frame = 1;
@@ -129,7 +139,7 @@ for q = 0:MaxTime
     
     % Calculation of Hy using update difference equation for Hy. This is time step q.
     By(1:SIZE-1,n2) = By(1:SIZE-1,n1) + ( ( Ex(1:SIZE-1,n1) - Ex(2:SIZE,n1) ) * dt/(dz) );
-    Hy(:,n2) = am.*(By(:,n2)-2*By(:,n1)+By(:,3))+bm.*(-2*Hy(:,n1)+Hy(:,3))+cm.*(2*Hy(:,n1)+Hy(:,3));
+    Hy(:,n2) = am.*(By(:,n2)-2*By(:,n1)+By(:,3))+bm.*(By(:,n2)-By(:,3))+cm.*(2*Hy(:,n1)-Hy(:,3))+dm.*(2*Hy(:,n1)+Hy(:,3))+em.*(Hy(:,3));
     
     % ABC for H at SIZE.
     Hy(SIZE,n2) = Hy(SIZE-1,n1) + (Sc-1)/(Sc+1)*(Hy(SIZE-1,n2) - Hy(SIZE,n1) );
@@ -137,7 +147,7 @@ for q = 0:MaxTime
 
     % Calculation of Ex using updated difference equation for Ex. This is time step q+1/2.
     Dx(2:SIZE,n2) = Dx(2:SIZE, n1) + ( dt/(dz)*(Hy(1:SIZE-1, n2) - Hy(2:SIZE, n2)) );
-    Ex(:,n2) = a.*(Dx(:,n2)-2*Dx(:,n1)+Dx(:,3))+b.*(-2*Ex(:,n1)+Ex(:,3))+c.*(2*Ex(:,n1)+Ex(:,3));
+    Ex(:,n2) = a.*(Dx(:,n2)-2*Dx(:,n1)+Dx(:,3))+b.*(Dx(:,n2)-Dx(:,3))+c.*(2*Ex(:,n1)-Ex(:,3))+d.*(2*Ex(:,n1)+Ex(:,3))+e.*(Ex(:,3));
     
     % ABC for E at 1.
     Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
@@ -164,6 +174,11 @@ for q = 0:MaxTime
     % Fields for calculation of refractive index.
     Exz1(q+1) = Ex(Z1, n2);
     Exz2(q+1) = Ex(Z2, n2);
+    % Fields for power calculations.
+    Exip(q+1) = Ex(SlabLeft-1, n2);
+    Hyip(q+1) = Hy(SlabLeft-1, n2);
+    Extp(q+1) = Ex(SlabLeft+1, n2);
+    Hytp(q+1) = Hy(SlabLeft+1, n2);
     
     temp = n1;
     n1 = n2;
@@ -200,11 +215,22 @@ xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
 grid on
 
 NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
+% Incident and Transmitted fields.
 EXI = fft(Exi,NFFT)/L;
 EXT = fft(Ext,NFFT)/L;
 EXTT = fft(Extt,NFFT)/L;
+% Refractive index calculations.
 EXZ1 = fft(Exz1,NFFT)/L;
 EXZ2 = fft(Exz2,NFFT)/L;
+% Fields for power calculations.
+EXIP = fft(Exip,NFFT)/L;
+HYIP = fft(Hyip,NFFT)/L;
+EXTP = fft(Extp,NFFT)/L;
+HYTP = fft(Hytp,NFFT)/L;
+SI = EXIP.*conj(HYIP);
+ST = EXTP.*conj(HYTP);
+SIave = 0.5*real(SI);
+STave = 0.5*real(ST);
 f = Fs/2*linspace(0,1,NFFT/2+1);
 
 % Plot single-sided amplitude spectrum.
@@ -277,7 +303,21 @@ ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
 grid on
 
 % Power calculations
-% TODO
+figure(6)
+subplot(211)
+plot(f(1:fspan), SIave(1:fspan), 'LineWidth', 2.0, 'Color', 'b');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Incident average power', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11)
+ylabel('Power', 'FontSize', 11)
+grid on
+subplot(212)
+plot(f(1:fspan), STave(1:fspan), 'LineWidth', 2.0, 'Color', 'r');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted average power', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('Power', 'FontSize', 11, 'FontWeight', 'b')
+grid on
 
 % Simulation animation.
 for i=1:frame-1
