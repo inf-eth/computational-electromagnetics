@@ -67,13 +67,13 @@ einf(SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SIZE,1);
 uinf(SlabLeft:SlabRight) = 1; % uinf(Drude) or ur in slab.
 wpesq = zeros(SIZE,1);
-wpesq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wp squared in slab.
+wpesq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpe squared in slab.
 wpmsq = zeros(SIZE,1);
 wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared in slab.
 ge = zeros(SIZE,1);
-ge(SlabLeft:SlabRight) = 0.01; % Electric collision frequency in slab.
+ge(SlabLeft:SlabRight) = w/16; % Electric collision frequency in slab.
 gm = zeros(SIZE,1);
-gm(SlabLeft:SlabRight) = 0.01; % Magnetic collision frequency in slab.
+gm(SlabLeft:SlabRight) = w/16; % Magnetic collision frequency in slab.
 
 a0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesq+2*dt*einf.*ge));
 a = (1/dt^2)*a0;
