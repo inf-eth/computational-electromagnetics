@@ -1,6 +1,5 @@
 clc
 clear all
-close all
 
 % Simulation parameters.
 SIZE = 4*1024; % No. of spatial steps
@@ -10,7 +9,7 @@ MaxTime = 4*SIZE; % No. of time steps
 PulseWidth = round(SIZE/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 source = 10; % Location of source
-SnapshotInterval = 16; % Amount of time delay between snaps.
+SnapshotInterval = 32; % Amount of time delay between snaps.
 
 % Constants.
 c = 3e8;
@@ -56,12 +55,6 @@ z2 = Z2*dz;
 Exz1 = zeros(MaxTime, 1);
 Exz2 = zeros(MaxTime, 1);
 
-% Power calculations.
-Exip = zeros(MaxTime, 1);
-Hyip = zeros(MaxTime, 1);
-Extp = zeros(MaxTime, 1);
-Hytp = zeros(MaxTime, 1);
-
 einf = ones(SIZE,1);
 einf(SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SIZE,1);
@@ -71,9 +64,9 @@ wpesq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpe squared in slab.
 wpmsq = zeros(SIZE,1);
 wpmsq(SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared in slab.
 ge = zeros(SIZE,1);
-ge(SlabLeft:SlabRight) = w/16; % Electric collision frequency in slab.
+ge(SlabLeft:SlabRight) = w/32; % Electric collision frequency in slab.
 gm = zeros(SIZE,1);
-gm(SlabLeft:SlabRight) = w/16; % Magnetic collision frequency in slab.
+gm(SlabLeft:SlabRight) = w/32; % Magnetic collision frequency in slab.
 
 a0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesq+2*dt*einf.*ge));
 a = (1/dt^2)*a0;
@@ -174,11 +167,6 @@ for q = 0:MaxTime
     % Fields for calculation of refractive index.
     Exz1(q+1) = Ex(Z1, n2);
     Exz2(q+1) = Ex(Z2, n2);
-    % Fields for power calculations.
-    Exip(q+1) = Ex(SlabLeft-1, n2);
-    Hyip(q+1) = Hy(SlabLeft-1, n2);
-    Extp(q+1) = Ex(SlabLeft+1, n2);
-    Hytp(q+1) = Hy(SlabLeft+1, n2);
     
     temp = n1;
     n1 = n2;
@@ -222,15 +210,6 @@ EXTT = fft(Extt,NFFT)/L;
 % Refractive index calculations.
 EXZ1 = fft(Exz1,NFFT)/L;
 EXZ2 = fft(Exz2,NFFT)/L;
-% Fields for power calculations.
-EXIP = fft(Exip,NFFT)/L;
-HYIP = fft(Hyip,NFFT)/L;
-EXTP = fft(Extp,NFFT)/L;
-HYTP = fft(Hytp,NFFT)/L;
-SI = EXIP.*conj(HYIP);
-ST = EXTP.*conj(HYTP);
-SIave = 0.5*real(SI);
-STave = 0.5*real(ST);
 f = Fs/2*linspace(0,1,NFFT/2+1);
 
 % Plot single-sided amplitude spectrum.
@@ -302,26 +281,9 @@ xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
 grid on
 
-% Power calculations
-figure(6)
-subplot(211)
-plot(f(1:fspan), SIave(1:fspan), 'LineWidth', 2.0, 'Color', 'b');
-set(gca, 'FontSize', 10, 'FontWeight', 'b')
-title('Incident average power', 'FontSize', 12, 'FontWeight', 'b')
-xlabel('Frequency (Hz)', 'FontSize', 11)
-ylabel('Power', 'FontSize', 11)
-grid on
-subplot(212)
-plot(f(1:fspan), STave(1:fspan), 'LineWidth', 2.0, 'Color', 'r');
-set(gca, 'FontSize', 10, 'FontWeight', 'b')
-title('Transmitted average power', 'FontSize', 12, 'FontWeight', 'b')
-xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-ylabel('Power', 'FontSize', 11, 'FontWeight', 'b')
-grid on
-
 % Simulation animation.
 for i=1:frame-1
-    figure (7)
+    figure (6)
     % Scatterer boundaries.
     hold off
     plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
