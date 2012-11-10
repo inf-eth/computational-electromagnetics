@@ -80,6 +80,7 @@ public:
 	void AllocateMemoryCPU();
 	void InitialiseCPU();
 	int DryRunCPU();
+	void InitialiseExHyCPU();
 	int RunSimulationCPU();
 	// Timing.
 	void StartTimer();
