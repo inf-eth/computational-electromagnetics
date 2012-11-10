@@ -4,16 +4,16 @@
 using namespace std;
 CFDTD1DDNG::CFDTD1DDNG():
 							// Simulation parameters.
-							Size(1024),
-							MaxTime(1024),
+							Size(32*1024),
+							MaxTime(32*1024),
 							PulseWidth(Size/8),
 							td(PulseWidth),
 							SourceLocation(10),
 							SlabLeft(Size/3),
 							SlabRight(2*Size/3),
 							SnapshotInterval(16),
-							e0((1e-9)/(36*pi)),
-							u0((1e-7)*4*pi),
+							e0((1e-9)/(36*PI)),
+							u0((1e-7)*4*PI),
 							dt(0.5e-11),
 							dz(3e-3),
 							Sc(c0*dt/dz),
@@ -21,7 +21,7 @@ CFDTD1DDNG::CFDTD1DDNG():
 							l(PulseWidth*dz),
 							f(c0/l),
 							fmax(1/(2*dt)),
-							w(2*pi*f),
+							w(2*PI*f),
 							k0(w/c0),
 							// Source choice.
 							SourceChoice(1),
@@ -46,7 +46,9 @@ CFDTD1DDNG::CFDTD1DDNG():
 							ae0(NULL), ae(NULL), be(NULL), ce(NULL), de(NULL), ee(NULL),
 							am0(NULL), am(NULL), bm(NULL), cm(NULL), dm(NULL), em(NULL),
 							// Time indices.
-							n0(0), n1(1)
+							n0(0), n1(1),
+							// Timer variables.
+							tStart(0LL), tEnd(0LL)
 {
 }
 unsigned long CFDTD1DDNG::SimSize()
@@ -90,7 +92,7 @@ void CFDTD1DDNG::AllocateMemory()
 }
 void CFDTD1DDNG::Initialise()
 {
-	for (int i=0; i<Size*3; i++)
+	for (unsigned int i=0; i<Size*3; i++)
 	{
 		Ex[i] = 0.;
 		Dx[i] = 0.;
@@ -137,7 +139,7 @@ void CFDTD1DDNG::Initialise()
 			em[i] = (1./(2.*dt))*u0*uinf[i]*gm[i]*am0[i];
 		}
 	}
-	for (int i=0; i<MaxTime; i++)
+	for (unsigned int i=0; i<MaxTime; i++)
 	{
 		Exi[i] = 0.;
 		Ext[i] = 0.;
@@ -148,6 +150,17 @@ void CFDTD1DDNG::Initialise()
 }
 int CFDTD1DDNG::RunSimulationCPU()
 {
+	return 0;
+}
+// Timing.
+void CFDTD1DDNG::StartTimer()
+{
+	tStart = GetTimeus64();
+}
+void CFDTD1DDNG::StopTimer()
+{
+	tEnd = GetTimeus64();
+	cout << "Time taken = " << ((double)(tEnd-tStart))/(1000000.) << " seconds." << endl;
 }
 CFDTD1DDNG::~CFDTD1DDNG()
 {

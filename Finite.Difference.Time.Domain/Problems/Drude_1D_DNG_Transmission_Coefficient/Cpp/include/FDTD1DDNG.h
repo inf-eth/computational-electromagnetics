@@ -1,6 +1,7 @@
+#include "Timer.h"
 // Constants.
 #define c0	299792458.
-#define pi	3.14159265358979323846
+#define PI	3.14159265358979323846
 
 class CFDTD1DDNG
 {
@@ -66,14 +67,21 @@ private:
 	double *ae0, *ae, *be, *ce, *de, *ee;
 	double *am0, *am, *bm, *cm, *dm, *em;
 
-	// Time indices;
+	// Time indices.
 	unsigned int n0, n1;
+
+	// Timer variables.
+	__int64 tStart;
+	__int64 tEnd;
 
 public:
 	CFDTD1DDNG();
 	unsigned long SimSize();
 	void AllocateMemory();
 	void Initialise();
-	int RunSimulationCPU();	
+	int RunSimulationCPU();
+	// Timing.
+	void StartTimer();
+	void StopTimer();
 	~CFDTD1DDNG();
 };

@@ -148,10 +148,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\FDTD1DDNG.h" />
+    <ClInclude Include="..\include\Timer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\FDTD1DDNG.cpp" />
     <ClCompile Include="..\src\FDTD1DDNGMain.cpp" />
+    <ClCompile Include="..\src\Timer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
