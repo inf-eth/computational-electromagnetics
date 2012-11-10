@@ -68,7 +68,7 @@ private:
 	double *am0, *am, *bm, *cm, *dm, *em;
 
 	// Time indices.
-	unsigned int n0, n1;
+	unsigned int nf, n0, np;
 
 	// Timer variables.
 	__int64 tStart;
@@ -77,8 +77,9 @@ private:
 public:
 	CFDTD1DDNG();
 	unsigned long SimSize();
-	void AllocateMemory();
-	void Initialise();
+	void AllocateMemoryCPU();
+	void InitialiseCPU();
+	int DryRunCPU();
 	int RunSimulationCPU();
 	// Timing.
 	void StartTimer();
