@@ -38,7 +38,6 @@ private:
 	double *Dx;
 	double *Hy;
 	double *By;
-	double *ExSnapshots;
 	unsigned int frame;
 
 	// Incident and transmitted fields.
@@ -72,5 +71,9 @@ private:
 
 public:
 	CFDTD1DDNG();
+	unsigned long SimSize();
+	void AllocateMemory();
+	void Initialise();
+	int RunSimulationCPU();	
 	~CFDTD1DDNG();
 };

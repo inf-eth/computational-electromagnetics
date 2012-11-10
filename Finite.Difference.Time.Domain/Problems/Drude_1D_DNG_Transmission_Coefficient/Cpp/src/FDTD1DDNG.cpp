@@ -1,4 +1,5 @@
 #include "FDTD1DDNG.h"
+#include <cmath>
 #include <iostream>
 using namespace std;
 CFDTD1DDNG::CFDTD1DDNG():
@@ -10,7 +11,7 @@ CFDTD1DDNG::CFDTD1DDNG():
 							SourceLocation(10),
 							SlabLeft(Size/3),
 							SlabRight(2*Size/3),
-							SnapshotInterval(32),
+							SnapshotInterval(16),
 							e0((1e-9)/(36*pi)),
 							u0((1e-7)*4*pi),
 							dt(0.5e-11),
@@ -28,7 +29,6 @@ CFDTD1DDNG::CFDTD1DDNG():
 							dr(PulseWidth*dt*2),
 							// Data arrays.
 							Ex(NULL), Dx(NULL), Hy(NULL), By(NULL),
-							ExSnapshots(NULL),
 							frame(0),
 							// Incident and transmitted fields.
 							Exi(NULL), Ext(NULL), Extt(NULL),
@@ -49,6 +49,138 @@ CFDTD1DDNG::CFDTD1DDNG():
 							n0(0), n1(1)
 {
 }
+unsigned long CFDTD1DDNG::SimSize()
+{
+	return sizeof(*this)+8*(30*Size+5*MaxTime);
+}
+void CFDTD1DDNG::AllocateMemory()
+{
+	// Field arrays.
+	Ex = new double[Size*3];
+	Dx = new double[Size*3];
+	Hy = new double[Size*3];
+	By = new double[Size*3];
+	// Incident and transmitted fields.
+	Exi = new double[MaxTime];
+	Ext = new double[MaxTime];
+	Extt = new double[MaxTime];
+	// Refractive index.
+	Exz1 = new double[MaxTime];
+	Exz2 = new double[MaxTime];
+	// Drude parameter arrays.
+	einf = new double[Size];
+	uinf = new double[Size];
+	wpesq = new double[Size];
+	wpmsq = new double[Size];
+	ge = new double[Size];
+	gm = new double[Size];
+	// Auxiliary field scalars.
+	ae0 = new double[Size];
+	ae = new double[Size];
+	be = new double[Size];
+	ce = new double[Size];
+	de = new double[Size];
+	ee = new double[Size];
+	am0 = new double[Size];
+	am = new double[Size];
+	bm = new double[Size];
+	cm = new double[Size];
+	dm = new double[Size];
+	em = new double[Size];
+}
+void CFDTD1DDNG::Initialise()
+{
+	for (int i=0; i<Size*3; i++)
+	{
+		Ex[i] = 0.;
+		Dx[i] = 0.;
+		Hy[i] = 0.;
+		By[i] = 0.;
+
+		// Parameteric and auxiliary arrays.
+		if (i<Size)
+		{
+			// Outside Slab.
+			if (i<SlabLeft || i>SlabRight)
+			{
+				// Drude parameters.
+				einf[i] = 1.;
+				uinf[i] = 1.;
+				wpesq[i] = 0.;
+				wpmsq[i] = 0.;
+				ge[i] = 0.;
+				gm[i] = 0.;
+			}
+			// Inside Slab.
+			else
+			{
+				// Drude parameters.
+				einf[i] = 1.;
+				uinf[i] = 1.;
+				wpesq[i] = 2*pow(w, 2);
+				wpmsq[i] = 2*pow(w, 2);
+				ge[i] = w/32.;
+				gm[i] = w/32.;
+			}
+			// Auxiliary scalars.
+			ae0[i] = (4.*pow(dt,2))/(e0*(4.*einf[i]+pow(dt,2)*wpesq[i]+2.*dt*einf[i]*ge[i]));
+			ae[i] = (1./pow(dt,2))*ae0[i];
+			be[i] = (1./(2.*dt))*ge[i]*ae0[i];
+			ce[i] = (e0/pow(dt,2))*einf[i]*ae0[i];
+			de[i] = (-1.*e0/4.)*wpesq[i]*ae0[i];
+			ee[i] = (1./(2.*dt))*e0*einf[i]*ge[i]*ae0[i];
+			am0[i] = (4.*pow(dt,2))/(u0*(4.*uinf[i]+pow(dt,2)*wpmsq[i]+2.*dt*uinf[i]*gm[i]));;
+			am[i] = (1./pow(dt,2))*am0[i];
+			bm[i] = (1./(2.*dt))*gm[i]*am0[i];
+			cm[i] = (u0/pow(dt,2))*uinf[i]*am0[i];
+			dm[i] = (-1.*u0/4.)*wpmsq[i]*am0[i];
+			em[i] = (1./(2.*dt))*u0*uinf[i]*gm[i]*am0[i];
+		}
+	}
+	for (int i=0; i<MaxTime; i++)
+	{
+		Exi[i] = 0.;
+		Ext[i] = 0.;
+		Extt[i] = 0.;
+		Exz1[i] = 0.;
+		Exz2[i] = 0.;
+	}
+}
+int CFDTD1DDNG::RunSimulationCPU()
+{
+}
 CFDTD1DDNG::~CFDTD1DDNG()
 {
+	// Field arrays.
+	if (Ex != NULL) delete Ex;
+	if (Dx != NULL) delete Dx;
+	if (Hy != NULL) delete Hy;
+	if (By != NULL) delete By;
+	// Incident and transmitted fields.
+	if (Exi != NULL) delete Exi;
+	if (Ext != NULL) delete Ext;
+	if (Extt != NULL) delete Extt;
+	// Refractive index.
+	if (Exz1 != NULL) delete Exz1;
+	if (Exz2 != NULL) delete Exz2;
+	// Drude parameter arrays.
+	if (einf != NULL) delete einf;
+	if (uinf != NULL) delete uinf;
+	if (wpesq != NULL) delete wpesq;
+	if (wpmsq != NULL) delete wpmsq;
+	if (ge != NULL) delete ge;
+	if (gm != NULL) delete gm;
+	// Auxiliary field scalars.
+	if (ae0 != NULL) delete ae0;
+	if (ae != NULL) delete ae;
+	if (be != NULL) delete be;
+	if (ce != NULL) delete ce;
+	if (de != NULL) delete de;
+	if (ee != NULL) delete ee;
+	if (am0 != NULL) delete am0;
+	if (am != NULL) delete am;
+	if (bm != NULL) delete bm;
+	if (cm != NULL) delete cm;
+	if (dm != NULL) delete dm;
+	if (em != NULL) delete em;
 }
