@@ -86,11 +86,11 @@ frame = 1;
 
 n1 = 1;
 n2 = 2;
+linecount = 0;
 % Outer loop for time-stepping.
 tic
 % Test loop for incident field in free space.
 for q = 0:MaxTime
-   
     % Calculation of Hy using update difference equation for Hy. This is time step q.
     Hy(1:SIZE-1,n2) = Hy(1:SIZE-1,n1) + ( ( Ex(1:SIZE-1,n1) - Ex(2:SIZE,n1) ) * dt/(u0*dz) );
         
@@ -122,7 +122,12 @@ end
 Ex = zeros(SIZE, 3); % x-component of E-field
 Hy = zeros(SIZE, 3); % y-component of H-field
 % Actual simulation with scatterer.
+fprintf ( 1, 'Simulation started... \n');
 for q = 0:MaxTime
+    
+    % Progress indicator.
+    fprintf(1, repmat('\b',1,linecount));
+    linecount = fprintf(1, '%g %%', (q*100)/MaxTime );
     
     % Storing past fields.
     Ex(:,3) = Ex(:,n2);
@@ -172,6 +177,7 @@ for q = 0:MaxTime
     n1 = n2;
     n2 = temp;
 end
+fprintf ( 1, '\nSimulation complete! \n');
 toc
 % Postprocessing.
 Fs = 1/dt;                    % Sampling frequency
