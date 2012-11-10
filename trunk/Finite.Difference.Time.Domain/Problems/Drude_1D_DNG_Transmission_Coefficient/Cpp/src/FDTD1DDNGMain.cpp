@@ -11,6 +11,8 @@ int main()
 	TestSim.AllocateMemoryCPU();
 	TestSim.InitialiseCPU();
 	TestSim.DryRunCPU();
+	TestSim.InitialiseExHyCPU();
+	TestSim.RunSimulationCPU();
 	TestSim.StopTimer();
 	cout << "Exiting..." << endl;
 

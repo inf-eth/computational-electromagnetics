@@ -92,7 +92,7 @@ void CFDTD1DDNG::AllocateMemoryCPU()
 }
 void CFDTD1DDNG::InitialiseCPU()
 {
-	for (unsigned int i=0; i<Size*3; i++)
+	for (unsigned int i=0; i<3*Size; i++)
 	{
 		Ex[i] = 0.;
 		Dx[i] = 0.;
@@ -157,8 +157,10 @@ void CFDTD1DDNG::InitialiseCPU()
 
 int CFDTD1DDNG::DryRunCPU()
 {
+	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
+		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%%";
 		// Calculation of Hy using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
@@ -195,10 +197,73 @@ int CFDTD1DDNG::DryRunCPU()
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
+	cout << endl << "Dry run (CPU) completed!" << endl;
 	return 0;
+}
+void CFDTD1DDNG::InitialiseExHyCPU()
+{
+	for (unsigned int i=0; i<3*Size; i++)
+	{
+		Ex[i] = 0.;
+		Hy[i] = 0.;
+	}
 }
 int CFDTD1DDNG::RunSimulationCPU()
 {
+	cout << "Simulation (CPU) started..." << endl;
+	for (unsigned int n=0; n<MaxTime; n++)
+	{
+		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%%";
+		// Calculation of By using update difference equation for Hy. This is time step n.
+		for (unsigned int i=0; i<Size-1; i++)
+		{
+			By(i,nf) = By(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/dz;
+			Hy(i,nf) = am[i]*(By(i,nf)-2*By(i,n0)+By(i,np)) + bm[i]*(By(i,nf)-By(i,np)) + cm[i]*(2*Hy(i,n0)-Hy(i,np)) + dm[i]*(2*Hy(i,n0)+Hy(i,np)) + em[i]*(Hy(i,np));
+		}
+		// ABC for Hy at i=Size-1.
+		Hy(Size-1,nf) = Hy(Size-2,n0) + (Sc-1)/(Sc+1)*(Hy(Size-2,nf)-Hy(Size-1,n0));
+		By(Size-1,nf) = u0*Hy(Size-1,nf);
+
+		// Calculation of Ex using update difference equation for Ex. This is time step n+1/2.
+		for (unsigned int i=1; i<Size; i++)
+		{
+			Dx(i,nf) = Dx(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/dz;
+			Ex(i,nf) = ae[i]*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be[i]*(Dx(i,nf)-Dx(i,np)) + ce[i]*(2*Ex(i,n0)-Ex(i,np)) + de[i]*(2*Ex(i,n0)+Ex(i,np)) + ee[i]*(Ex(i,np));
+		}
+		// ABC for Ex at i=0;
+		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(1,n0));
+		Dx(0,nf) = e0*Ex(0,nf);
+
+		// Source.
+		if (SourceChoice == 1)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow((n-td)/(PulseWidth/4.),2)) * Sc;
+		}
+		else if (SourceChoice == 2)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*n*dt) * Sc;
+		}
+		else if (SourceChoice == 3)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*(n*dt-dr),2))*exp(-1.*pow(PI*fp*(n*dt-dr),2)) * Sc;
+		}
+		// Recording transmitted fields.
+		Ext[n] = Ex(x1,nf);
+		Extt[n] = Ex(SlabRight+10,nf);
+		// Fields for refractive index.
+		Exz1[n] = Ex(Z1, nf);
+		Exz2[n] = Ex(Z2, nf);
+		// Saving electric field snapshot.
+		if (n%SnapshotInterval == 0)
+		{
+			// Write E-field to file.
+		}
+
+		np = (np+1)%3;
+		n0 = (n0+1)%3;
+		nf = (nf+1)%3;
+	}
+	cout << endl << "Simulation (CPU) completed!" << endl;
 	return 0;
 }
 // Timing.
