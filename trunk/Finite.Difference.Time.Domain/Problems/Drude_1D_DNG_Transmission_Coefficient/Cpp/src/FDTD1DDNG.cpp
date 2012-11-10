@@ -4,8 +4,8 @@
 using namespace std;
 CFDTD1DDNG::CFDTD1DDNG():
 							// Simulation parameters.
-							Size(32*1024),
-							MaxTime(32*1024),
+							Size(4*1024),
+							MaxTime(4*1024),
 							PulseWidth(Size/8),
 							td(PulseWidth),
 							SourceLocation(10),
@@ -46,7 +46,7 @@ CFDTD1DDNG::CFDTD1DDNG():
 							ae0(NULL), ae(NULL), be(NULL), ce(NULL), de(NULL), ee(NULL),
 							am0(NULL), am(NULL), bm(NULL), cm(NULL), dm(NULL), em(NULL),
 							// Time indices.
-							n0(0), n1(1),
+							nf(2), n0(1), np(0),
 							// Timer variables.
 							tStart(0LL), tEnd(0LL)
 {
@@ -55,7 +55,7 @@ unsigned long CFDTD1DDNG::SimSize()
 {
 	return sizeof(*this)+8*(30*Size+5*MaxTime);
 }
-void CFDTD1DDNG::AllocateMemory()
+void CFDTD1DDNG::AllocateMemoryCPU()
 {
 	// Field arrays.
 	Ex = new double[Size*3];
@@ -90,7 +90,7 @@ void CFDTD1DDNG::AllocateMemory()
 	dm = new double[Size];
 	em = new double[Size];
 }
-void CFDTD1DDNG::Initialise()
+void CFDTD1DDNG::InitialiseCPU()
 {
 	for (unsigned int i=0; i<Size*3; i++)
 	{
@@ -147,6 +147,55 @@ void CFDTD1DDNG::Initialise()
 		Exz1[i] = 0.;
 		Exz2[i] = 0.;
 	}
+}
+
+// Useful for indexing arrays.
+#define Ex(i,n) Ex[(i)+Size*(n)]
+#define Dx(i,n) Dx[(i)+Size*(n)]
+#define Hy(i,n) Hy[(i)+Size*(n)]
+#define By(i,n) By[(i)+Size*(n)]
+
+int CFDTD1DDNG::DryRunCPU()
+{
+	for (unsigned int n=0; n<MaxTime; n++)
+	{
+		// Calculation of Hy using update difference equation for Hy. This is time step n.
+		for (unsigned int i=0; i<Size-1; i++)
+		{
+			Hy(i,nf) = Hy(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/(u0*dz);
+		}
+		// ABC for Hy at i=Size-1.
+		Hy(Size-1,nf) = Hy(Size-2,n0) + (Sc-1)/(Sc+1)*(Hy(Size-2,nf)-Hy(Size-1,n0));
+
+		// Calculation of Ex using update difference equation for Ex. This is time step n+1/2.
+		for (unsigned int i=1; i<Size; i++)
+		{
+			Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
+		}
+		// ABC for Ex at i=0;
+		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(1,n0));
+
+		// Source.
+		if (SourceChoice == 1)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow((n-td)/(PulseWidth/4.),2)) * Sc;
+		}
+		else if (SourceChoice == 2)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*n*dt) * Sc;
+		}
+		else if (SourceChoice == 3)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*(n*dt-dr),2))*exp(-1.*pow(PI*fp*(n*dt-dr),2)) * Sc;
+		}
+		// Recording incident field.
+		Exi[n] = Ex(x1,nf);
+
+		np = (np+1)%3;
+		n0 = (n0+1)%3;
+		nf = (nf+1)%3;
+	}
+	return 0;
 }
 int CFDTD1DDNG::RunSimulationCPU()
 {
