@@ -1,19 +1,30 @@
 #include "FDTD1DDNG.h"
 #include <cmath>
 #include <iostream>
+#include <string>
+#include <cstdlib>
+#include <fstream>
+#include <sstream>
+
+#if defined __linux__ || defined __CYGWIN__
+
+#else
+
+#endif
 using namespace std;
+
 CFDTD1DDNG::CFDTD1DDNG():
 							// Simulation parameters.
-							Size(4*1024),
-							MaxTime(4*1024),
+							Size(1024),
+							MaxTime(8*1024),
 							PulseWidth(Size/8),
 							td(PulseWidth),
-							SourceLocation(10),
+							SourceLocation(20),
 							SlabLeft(Size/3),
 							SlabRight(2*Size/3),
 							SnapshotInterval(16),
-							e0((1e-9)/(36*PI)),
-							u0((1e-7)*4*PI),
+							e0((1e-9)/(36.*PI)),
+							u0((1e-7)*4.*PI),
 							dt(0.5e-11),
 							dz(3e-3),
 							Sc(c0*dt/dz),
@@ -24,7 +35,7 @@ CFDTD1DDNG::CFDTD1DDNG():
 							w(2*PI*f),
 							k0(w/c0),
 							// Source choice.
-							SourceChoice(1),
+							SourceChoice(2),
 							fp(f),
 							dr(PulseWidth*dt*2),
 							// Data arrays.
@@ -50,6 +61,35 @@ CFDTD1DDNG::CFDTD1DDNG():
 							// Timer variables.
 							tStart(0LL), tEnd(0LL)
 {
+	// Creating directory and writing simulation parameters.
+#if defined __linux__ || defined __CYGWIN__
+	system("if test -d FieldData; then rm -rf FieldData; fi");
+	system("mkdir -p FieldData");
+#else
+	system("IF exist FieldData (rd FieldData /s /q)");
+	system("mkdir FieldData");
+#endif
+	fstream parametersfile;
+	parametersfile.open("FieldData/Parameters.smp", std::ios::out|std::ios::binary);
+	parametersfile.write((char*)&dt, sizeof(double));
+	parametersfile.write((char*)&k0, sizeof(double));
+	parametersfile.write((char*)&z1, sizeof(double));
+	parametersfile.write((char*)&z2, sizeof(double));
+	parametersfile.write((char*)&Size, sizeof(unsigned int));
+	parametersfile.write((char*)&MaxTime, sizeof(unsigned int));
+	parametersfile.write((char*)&SnapshotInterval, sizeof(unsigned int));
+	parametersfile.write((char*)&SlabLeft, sizeof(unsigned int));
+	parametersfile.write((char*)&SlabRight, sizeof(unsigned int));
+	parametersfile.close();
+
+	// Printing simulation parameters.
+	cout << "Size =      " << Size << endl;
+	cout << "MaxTime =   " << MaxTime << endl;
+	cout << "frequency = " << f << " Hz (" << f/1e9 << " GHz)" << endl;
+	cout << "fmax =      " << fmax << " Hz (" << fmax/1e9 << " GHz)" << endl;
+	cout << "Sc =        " << Sc << endl;
+	cout << "Slab left = " << SlabLeft << endl;
+	cout << "Slab right= " << SlabRight << endl;
 }
 unsigned long CFDTD1DDNG::SimSize()
 {
@@ -119,8 +159,8 @@ void CFDTD1DDNG::InitialiseCPU()
 				// Drude parameters.
 				einf[i] = 1.;
 				uinf[i] = 1.;
-				wpesq[i] = 2*pow(w, 2);
-				wpmsq[i] = 2*pow(w, 2);
+				wpesq[i] = 2.*pow(w, 2);
+				wpmsq[i] = 2.*pow(w, 2);
 				ge[i] = w/32.;
 				gm[i] = w/32.;
 			}
@@ -192,7 +232,7 @@ int CFDTD1DDNG::DryRunCPU()
 		}
 		// Recording incident field.
 		Exi[n] = Ex(x1,nf);
-
+		//cout << "np = " << np << ", n0 = " << n0 << ", nf = " << nf << endl;
 		np = (np+1)%3;
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
@@ -208,8 +248,13 @@ void CFDTD1DDNG::InitialiseExHyCPU()
 		Hy[i] = 0.;
 	}
 }
-int CFDTD1DDNG::RunSimulationCPU()
+int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 {
+	stringstream framestream;
+	string basename = "FieldData/Ex";
+	string filename;
+	fstream snapshot;
+
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
@@ -247,21 +292,52 @@ int CFDTD1DDNG::RunSimulationCPU()
 		{
 			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*(n*dt-dr),2))*exp(-1.*pow(PI*fp*(n*dt-dr),2)) * Sc;
 		}
+
 		// Recording transmitted fields.
 		Ext[n] = Ex(x1,nf);
 		Extt[n] = Ex(SlabRight+10,nf);
 		// Fields for refractive index.
 		Exz1[n] = Ex(Z1, nf);
 		Exz2[n] = Ex(Z2, nf);
+
 		// Saving electric field snapshot.
-		if (n%SnapshotInterval == 0)
+		if (n%SnapshotInterval == 0 && SaveFields == true)
 		{
 			// Write E-field to file.
+			framestream.str(std::string());			// Clearing stringstream contents.
+			framestream << ++frame;
+			filename = basename + framestream.str() + ".fdt";
+			snapshot.open(filename.c_str(), std::ios::out|std::ios::binary);
+			snapshot.write((char*)&(Ex(0,nf)), sizeof(double)*Size);
+			snapshot.close();
 		}
-
 		np = (np+1)%3;
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
+	}
+	// Saving electric field snapshot.
+	if (SaveFields == true)
+	{
+		fstream parametersfile;
+		parametersfile.open("FieldData/Parameters.smp", std::ios::out|std::ios::binary|std::ios::app);
+		parametersfile.write((char*)&(frame), sizeof(unsigned int));
+		parametersfile.close();
+		// Write saved fields to files.
+		snapshot.open("FieldData/Exi.fdt", std::ios::out|std::ios::binary);
+		snapshot.write((char*)Exi, sizeof(double)*MaxTime);
+		snapshot.close();
+		snapshot.open("FieldData/Ext.fdt", std::ios::out|std::ios::binary);
+		snapshot.write((char*)Ext, sizeof(double)*MaxTime);
+		snapshot.close();
+		snapshot.open("FieldData/Extt.fdt", std::ios::out|std::ios::binary);
+		snapshot.write((char*)Extt, sizeof(double)*MaxTime);
+		snapshot.close();
+		snapshot.open("FieldData/Exz1.fdt", std::ios::out|std::ios::binary);
+		snapshot.write((char*)Exz1, sizeof(double)*MaxTime);
+		snapshot.close();
+		snapshot.open("FieldData/Exz2.fdt", std::ios::out|std::ios::binary);
+		snapshot.write((char*)Exz2, sizeof(double)*MaxTime);
+		snapshot.close();
 	}
 	cout << endl << "Simulation (CPU) completed!" << endl;
 	return 0;

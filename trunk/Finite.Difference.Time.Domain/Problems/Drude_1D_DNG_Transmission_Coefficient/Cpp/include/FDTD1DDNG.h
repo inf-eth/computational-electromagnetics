@@ -1,6 +1,6 @@
 #include "Timer.h"
 // Constants.
-#define c0	299792458.
+#define c0	3e8
 #define PI	3.14159265358979323846
 
 class CFDTD1DDNG
@@ -81,7 +81,7 @@ public:
 	void InitialiseCPU();
 	int DryRunCPU();
 	void InitialiseExHyCPU();
-	int RunSimulationCPU();
+	int RunSimulationCPU(bool=true);
 	// Timing.
 	void StartTimer();
 	void StopTimer();
