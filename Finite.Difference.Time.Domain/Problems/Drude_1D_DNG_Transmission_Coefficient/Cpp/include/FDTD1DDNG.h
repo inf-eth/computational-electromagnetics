@@ -1,6 +1,6 @@
 #include "Timer.h"
 // Constants.
-#define c0	3e8
+#define c0	299792458.
 #define PI	3.14159265358979323846
 
 class CFDTD1DDNG
@@ -15,6 +15,11 @@ private:
 	const unsigned int SlabLeft;
 	const unsigned int SlabRight;
 	const unsigned int SnapshotInterval;
+
+	// Choice of source.
+	// 1. Gaussian pulse 2. Sine wave 3. Ricker wavelet
+	const unsigned int SourceChoice;
+
 	const double e0;
 	const double u0;
 	const double dt;
@@ -27,10 +32,6 @@ private:
 	const double fmax;
 	const double w;
 	const double k0;
-
-	// Choice of source.
-	// 1. Gaussian pulse 2. Sine wave 3. Ricker wavelet
-	const unsigned int SourceChoice;
 	const double fp; // Ricker wavelet peak frequency.
 	const double dr; // Ricker wavelet delay.
 

@@ -12,7 +12,7 @@ int main()
 	TestSim.InitialiseCPU();
 	TestSim.DryRunCPU();
 	TestSim.InitialiseExHyCPU();
-	TestSim.RunSimulationCPU();
+	TestSim.RunSimulationCPU(true);
 	TestSim.StopTimer();
 	cout << "Exiting..." << endl;
 

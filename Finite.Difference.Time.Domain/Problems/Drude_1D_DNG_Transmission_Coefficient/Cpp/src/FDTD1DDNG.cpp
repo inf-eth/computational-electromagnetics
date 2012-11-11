@@ -15,14 +15,16 @@ using namespace std;
 
 CFDTD1DDNG::CFDTD1DDNG():
 							// Simulation parameters.
-							Size(1024),
-							MaxTime(8*1024),
+							Size(4*1024),
+							MaxTime(4*Size),
 							PulseWidth(Size/8),
 							td(PulseWidth),
-							SourceLocation(20),
+							SourceLocation(10),
 							SlabLeft(Size/3),
 							SlabRight(2*Size/3),
 							SnapshotInterval(16),
+							// Source choice.
+							SourceChoice(1),
 							e0((1e-9)/(36.*PI)),
 							u0((1e-7)*4.*PI),
 							dt(0.5e-11),
@@ -34,8 +36,6 @@ CFDTD1DDNG::CFDTD1DDNG():
 							fmax(1/(2*dt)),
 							w(2*PI*f),
 							k0(w/c0),
-							// Source choice.
-							SourceChoice(2),
 							fp(f),
 							dr(PulseWidth*dt*2),
 							// Data arrays.
@@ -46,9 +46,9 @@ CFDTD1DDNG::CFDTD1DDNG():
 							x1(SlabLeft+1),
 							// Refractive index.
 							Z1(SlabLeft+50),
-							z1(Z1*dz),
+							z1((double)Z1*dz),
 							Z2(SlabLeft+60),
-							z2(Z2*dz),
+							z2((double)Z2*dz),
 							Exz1(NULL),
 							Exz2(NULL),
 							// Drude material parameters.
@@ -200,7 +200,7 @@ int CFDTD1DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%%";
+		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// Calculation of Hy using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
@@ -220,19 +220,19 @@ int CFDTD1DDNG::DryRunCPU()
 		// Source.
 		if (SourceChoice == 1)
 		{
-			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow((n-td)/(PulseWidth/4.),2)) * Sc;
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow(((double)n-(double)td)/((double)PulseWidth/4.),2)) * Sc;
 		}
 		else if (SourceChoice == 2)
 		{
-			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*n*dt) * Sc;
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*(double)n*dt) * Sc;
 		}
 		else if (SourceChoice == 3)
 		{
-			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*(n*dt-dr),2))*exp(-1.*pow(PI*fp*(n*dt-dr),2)) * Sc;
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*((double)n*dt-dr),2))*exp(-1.*pow(PI*fp*((double)n*dt-dr),2)) * Sc;
 		}
 		// Recording incident field.
 		Exi[n] = Ex(x1,nf);
-		//cout << "np = " << np << ", n0 = " << n0 << ", nf = " << nf << endl;
+
 		np = (np+1)%3;
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
@@ -282,17 +282,17 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 		// Source.
 		if (SourceChoice == 1)
 		{
-			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow((n-td)/(PulseWidth/4.),2)) * Sc;
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow(((double)n-(double)td)/((double)PulseWidth/4.),2)) * Sc;
 		}
 		else if (SourceChoice == 2)
 		{
-			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*n*dt) * Sc;
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*(double)n*dt) * Sc;
 		}
 		else if (SourceChoice == 3)
 		{
-			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*(n*dt-dr),2))*exp(-1.*pow(PI*fp*(n*dt-dr),2)) * Sc;
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*((double)n*dt-dr),2))*exp(-1.*pow(PI*fp*((double)n*dt-dr),2)) * Sc;
 		}
-
+		Dx(SourceLocation,nf) = e0*Ex(SourceLocation,nf);
 		// Recording transmitted fields.
 		Ext[n] = Ex(x1,nf);
 		Extt[n] = Ex(SlabRight+10,nf);
