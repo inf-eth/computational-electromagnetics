@@ -11,6 +11,10 @@ td = PulseWidth; % Temporal delay in pulse.
 source = 10; % Location of source
 SnapshotInterval = 32; % Amount of time delay between snaps.
 
+% Choice of source.
+% 1. Gaussian 2. Sine wave 3. Ricker wavelet
+SourceChoice = 1;
+
 % Constants.
 c = 3e8;
 pi = 3.141592654;
@@ -26,10 +30,7 @@ f = c/l
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
-
-% Choice of source.
-% 1. Gaussian 2. Sine wave 3. Ricker wavelet
-SourceChoice = 1;
+% Ricker wavelet parameters.
 if SourceChoice == 3
     fp = f; % Peak frequency
     dr = PulseWidth*dt*2; % Delay
