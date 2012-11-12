@@ -82,11 +82,11 @@ CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigne
 	parametersfile.close();
 
 	// Printing simulation parameters.
-	cout << "Size =      " << Size << endl;
-	cout << "MaxTime =   " << MaxTime << endl;
+	cout << "Size      = " << Size << endl;
+	cout << "MaxTime   = " << MaxTime << endl;
 	cout << "frequency = " << f << " Hz (" << f/1e9 << " GHz)" << endl;
-	cout << "fmax =      " << fmax << " Hz (" << fmax/1e9 << " GHz)" << endl;
-	cout << "Sc =        " << Sc << endl;
+	cout << "fmax      = " << fmax << " Hz (" << fmax/1e9 << " GHz)" << endl;
+	cout << "Sc        = " << Sc << endl;
 	cout << "Slab left = " << SlabLeft << endl;
 	cout << "Slab right= " << SlabRight << endl;
 }
@@ -254,7 +254,7 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%%";
+		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// Calculation of By using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
@@ -346,7 +346,10 @@ void CFDTD1DDNG::StartTimer()
 void CFDTD1DDNG::StopTimer()
 {
 	tEnd = GetTimeus64();
-	cout << "Time taken = " << ((double)(tEnd-tStart))/(1000000.) << " seconds." << endl;
+}
+double CFDTD1DDNG::GetElapsedTime()
+{
+	return ((double)(tEnd-tStart))/(1000000.);
 }
 CFDTD1DDNG::~CFDTD1DDNG()
 {

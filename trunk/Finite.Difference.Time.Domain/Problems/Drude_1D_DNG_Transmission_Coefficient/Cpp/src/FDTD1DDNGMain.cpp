@@ -14,6 +14,7 @@ int main()
 	TestSim.InitialiseExHyCPU();
 	TestSim.RunSimulationCPU(true);
 	TestSim.StopTimer();
+	cout << "Time taken = " << TestSim.GetElapsedTime() << " seconds." << endl;
 	cout << "Exiting..." << endl;
 
 	return 0;

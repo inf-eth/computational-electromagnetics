@@ -88,5 +88,6 @@ public:
 	// Timing.
 	void StartTimer();
 	void StopTimer();
+	double GetElapsedTime();
 	~CFDTD1DDNG();
 };
