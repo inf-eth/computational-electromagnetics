@@ -21,7 +21,7 @@ endif
 # 'make m64bit=1' will target x64 binary.
 ifdef m64bit
 CFGLAGS+=-m64
-PLATFORM:=x64
+PLATFORM:=x86_64
 else
 PLATFORM:=x86
 endif
@@ -56,4 +56,4 @@ run: $(BINDIR)/$(TARGET)
 .PHONY: clean
 
 clean:
-	rm -rf obj $(BINDEPTH)/bin/debug/x64/$(TARGET) $(BINDEPTH)/bin/debug/x86/$(TARGET) $(BINDEPTH)/bin/release/x64/$(TARGET) $(BINDEPTH)/bin/release/x86/$(TARGET)
+	rm -rf obj $(BINDEPTH)/bin/debug/x86_64/$(TARGET) $(BINDEPTH)/bin/debug/x86/$(TARGET) $(BINDEPTH)/bin/release/x86_64/$(TARGET) $(BINDEPTH)/bin/release/x86/$(TARGET)
