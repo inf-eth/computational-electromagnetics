@@ -1,123 +1,172 @@
-#define uint unsigned int
-#define HX(i,j,n) Hx[i+IHx*(j)+IHx*JHx*n]
-#define BX(i,j,n) Bx[i+IHx*(j)+IHx*JHx*n]
-#define HY(i,j,n) Hy[i+IHy*(j)+IHy*JHy*n]
-#define BY(i,j,n) By[i+IHy*(j)+IHy*JHy*n]
-#define EZ(i,j,n) Ez[i+IEz*(j)+IEz*JEz*n]
-#define DZ(i,j,n) Dz[i+IEz*(j)+IEz*JEz*n]
-#define DZX(i,j,n) Dzx[i+IEz*(j)+IEz*JEz*n]
-#define DZY(i,j,n) Dzy[i+IEz*(j)+IEz*JEz*n]
+// Macros for indexing data arrays.
+#define Ex(i,n) Ex_[(i)+Size*(n)]
+#define Dx(i,n) Dx_[(i)+Size*(n)]
+#define Hy(i,n) Hy_[(i)+Size*(n)]
+#define By(i,n) By_[(i)+Size*(n)]
 
-template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel(
-							float *Hx,
-							float *Bx,
-							float *Hy,
-							float *By,
-							float *Ez,
-							float *Dz,
-							float *Dzx,
-							float *Dzy,
-							float *urHx,
-							float *urHy,
-							float *erEz,
-							float *ScmHx,
-							float *ScmHy,
-							float *Sc,
-							float *Scsx,
-							float *Scsy,
-							float *ScmsmxHy,
-							float *ScmsmyHx,
-							const float delta,
-							const float dtscalar,
-							const float dt,
-							const uint PMLw,
-							const float e0,
-							const float u0,
-							const float Two_pi_f_deltat,
-							const uint NHW,
-							const uint Is,
-							const uint Js,
-							const uint IHx,
-							const uint JHx,
-							const uint IHy,
-							const uint JHy,
-							const uint IEz,
-							const uint JEz,
-							const uint n,
-							const uint n0,
-							const uint n1,
-							const uint n2,
-							const uint flag)
+#include <FDTD1DDNG.hpp>
+
+// Dry run kernel.
+template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_DryRun(
+							const unsigned int Size,
+							const unsigned int PulseWidth,
+							const unsigned int td,
+							const unsigned int SourceLocation,
+							const unsigned int SourceChoice,
+							const PRECISION e0,
+							const PRECISION u0,
+							const PRECISION dt,
+							const PRECISION dz,
+							const PRECISION Sc,
+							// Frequency, wavelength, wave number.
+							const PRECISION f,
+							const PRECISION fp,
+							const PRECISION dr,
+							// Data arrays.
+							PRECISION *Ex_, PRECISION *Hy_,
+							// Incident field.
+							PRECISION *Exi,
+							const unsigned int x1,
+							// Time indices.
+							const unsigned int n,
+							const unsigned int np,
+							const unsigned int n0,
+							const unsigned int nf)
 {
-	uint i = BlockX*blockIdx.x+threadIdx.x;
-	uint j = BlockY*blockIdx.y+threadIdx.y;
+	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
 
-	// Half time step flag is either 0 or 1 indicating whether magnetic field or electric field is to be calculated, respectively.
-	if (flag == 0)
+	if (i != Size-1) // Normal update equation.
 	{
-		if (i < IHx)
+		Hy(i,nf) = Hy(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/(u0*dz);
+	}
+	else // ABC
+	{
+		__syncthreads();
+		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
+	}
+
+	__syncthreads();
+
+	if (i != 0)
+	{
+		Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
+	}
+	else // ABC
+	{
+		__syncthreads();
+		Ex(i,nf) = Ex(i+1,n0) + (Sc-1)/(Sc+1)*(Ex(i+1,nf)-Ex(i,n0));
+	}
+
+	// Source.
+	if (i == SourceLocation)
+	{
+		if (SourceChoice == 1)
 		{
-			// Normal space.
-			if (j >= PMLw && j < JHx-PMLw)
-			{
-				BX(i,j,n2) = (1-ScmHx[i+IHx*j])/(1+ScmHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
-				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
-
-				BY(i+1,j+1,n2) = (1-ScmHy[(i+1)+IHy*(j+1)])/(1+ScmHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
-				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);
-			}
-			// Lower PML region.
-			if (j < PMLw)
-			{
-				BX(i,j,n2) = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
-				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
-
-				BY(i+1,j+1,n2) = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
-				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);
-			}
-			// Upper PML region.
-			if (j >= JHx-PMLw && j < JHx)
-			{
-				BX(i,j,n2) = (1-ScmsmyHx[i+IHx*j])/(1+ScmsmyHx[i+IHx*j]) * BX(i,j,n1) + ( (dt/delta)/(1+ScmsmyHx[i+IHx*j]) * (EZ(i,j,n1)-EZ(i,j+1,n1)) );
-				HX(i,j,n2) = BX(i,j,n2)/(u0*urHx[i+IHx*j]);
-
-				BY(i+1,j+1,n2) = (1-ScmsmxHy[(i+1)+IHy*(j+1)])/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * BY(i+1,j+1,n1) + ( (dt/delta)/(1+ScmsmxHy[(i+1)+IHy*(j+1)]) * (EZ(i+1,j+1,n1)-EZ(i,j+1,n1)) );
-				HY(i+1,j+1,n2) = BY(i+1,j+1,n2)/(u0*urHy[(i+1)+IHy*(j+1)]);
-			}
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow(((PRECISION)n-(PRECISION)td)/((PRECISION)PulseWidth/4.),2)) * Sc;
+		}
+		else if (SourceChoice == 2)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*(PRECISION)n*dt) * Sc;
+		}
+		else if (SourceChoice == 3)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*((PRECISION)n*dt-dr),2))*exp(-1.*pow(PI*fp*((PRECISION)n*dt-dr),2)) * Sc;
 		}
 	}
-	else
+	// Recording incident Field.
+	if (i == x1)
+		Exi[n] = Ex(i,nf);
+}
 
+// Simulation kernel.
+template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_Simulation(
+							const unsigned int Size,
+							const unsigned int PulseWidth,
+							const unsigned int td,
+							const unsigned int SourceLocation,
+							const unsigned int SourceChoice,
+							const PRECISION e0,
+							const PRECISION u0,
+							const PRECISION dt,
+							const PRECISION dz,
+							const PRECISION Sc,
+							// Frequency, wavelength, wave number.
+							const PRECISION f,
+							const PRECISION fp,
+							const PRECISION dr,
+							// Data arrays.
+							PRECISION *Ex_, PRECISION *Dx_, PRECISION *Hy_, PRECISION *By_,
+							// Drude material parameters.
+							PRECISION *einf, PRECISION *uinf, PRECISION *wpesq, PRECISION *wpmsq, PRECISION *ge, PRECISION *gm,
+							// Drude scalars.
+							PRECISION *ae0, PRECISION *ae, PRECISION *be, PRECISION *ce, PRECISION *de, PRECISION *ee,
+							PRECISION *am0, PRECISION *am, PRECISION *bm, PRECISION *cm, PRECISION *dm, PRECISION *em,
+							// Incident field.
+							PRECISION *Ext,
+							PRECISION *Extt,
+							PRECISION *Exz1,
+							PRECISION *Exz2,
+							const unsigned int x1,
+							const unsigned int Z1,
+							const unsigned int Z2,
+							// Time indices.
+							const unsigned int n,
+							const unsigned int np,
+							const unsigned int n0,
+							const unsigned int nf)
+{
+	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
+
+	if (i != Size-1) // Normal update equation.
 	{
-		if (i < IEz)
-		{
-			if (j != 0 && j < JEz-1 )
-			{
-				DZ(i,j,n2) = (1-Sc[i+IEz*j])/(1+Sc[i+IEz*j]) * DZ(i,j,n1) + ( (dt/delta)/(1+Sc[i+IEz*j]) * ( HY(i+1,j,n2) - HY(i,j,n2) - HX(i,j,n2) + HX(i,j-1,n2)) );
-				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
-			}
-			// Source.
-			if (j == Js && n < NHW)
-			{
-				EZ(i,j,n2) = EZ(i,j,n2) + 1 * sin (Two_pi_f_deltat * n) / dtscalar;
-				DZ(i,j,n2) = e0 * EZ(i,j,n2);
-			}
-			// Lower PML region.
-			if (j > 0 && j < PMLw+1)
-			{
-				DZX(i,j,n2) = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * DZX(i,j,n1) + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( HY(i+1,j,n2) - HY(i,j,n2)) );
-				DZY(i,j,n2) = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * DZY(i,j,n1) + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- HX(i,j,n2) + HX(i,j-1,n2)) );
-				DZ(i,j,n2) = DZX(i,j,n2) + DZY(i,j,n2);
-				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
-			}
-			// Upper PML region.
-			if (j >= JEz-PMLw-1 && j < JEz-1)
-			{
-				DZX(i,j,n2) = (1-Scsx[i+IEz*j])/(1+Scsx[i+IEz*j]) * DZX(i,j,n1) + ( (dt/delta)/(1+Scsx[i+IEz*j]) * ( HY(i+1,j,n2) - HY(i,j,n2)) );
-				DZY(i,j,n2) = (1-Scsy[i+IEz*j])/(1+Scsy[i+IEz*j]) * DZY(i,j,n1) + ( (dt/delta)/(1+Scsy[i+IEz*j]) * (- HX(i,j,n2) + HX(i,j-1,n2)) );
-				DZ(i,j,n2) = DZX(i,j,n2) + DZY(i,j,n2);
-				EZ(i,j,n2) = DZ(i,j,n2)/(e0*erEz[i+IEz*j]);
-			}
-		}
+		By(i,nf) = By(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/dz;
+		Hy(i,nf) = am[i]*(By(i,nf)-2*By(i,n0)+By(i,np)) + bm[i]*(By(i,nf)-By(i,np)) + cm[i]*(2*Hy(i,n0)-Hy(i,np)) + dm[i]*(2*Hy(i,n0)+Hy(i,np)) + em[i]*(Hy(i,np));
 	}
+	else // ABC
+	{
+		__syncthreads();
+		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
+		By(i,nf) = u0*Hy(i,nf);
+	}
+
+	__syncthreads();
+
+	if (i != 0)
+	{
+		Dx(i,nf) = Dx(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/dz;
+		Ex(i,nf) = ae[i]*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be[i]*(Dx(i,nf)-Dx(i,np)) + ce[i]*(2*Ex(i,n0)-Ex(i,np)) + de[i]*(2*Ex(i,n0)+Ex(i,np)) + ee[i]*(Ex(i,np));
+	}
+	else // ABC
+	{
+		__syncthreads();
+		Ex(i,nf) = Ex(i+1,n0) + (Sc-1)/(Sc+1)*(Ex(i+1,nf)-Ex(i,n0));
+		Dx(i,nf) = e0*Ex(i,nf);
+	}
+
+	// Source.
+	if (i == SourceLocation)
+	{
+		if (SourceChoice == 1)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + exp(-1.*pow(((PRECISION)n-(PRECISION)td)/((PRECISION)PulseWidth/4.),2)) * Sc;
+		}
+		else if (SourceChoice == 2)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + sin(2.*PI*f*(PRECISION)n*dt) * Sc;
+		}
+		else if (SourceChoice == 3)
+		{
+			Ex(SourceLocation,nf) = Ex(SourceLocation,nf) + (1.-2.*pow(PI*fp*((PRECISION)n*dt-dr),2))*exp(-1.*pow(PI*fp*((PRECISION)n*dt-dr),2)) * Sc;
+		}
+		Dx(SourceLocation,nf) = e0*Ex(SourceLocation,nf);
+	}
+	// Recording transmitted Fields.
+	if (i == x1)
+		Ext[n] = Ex(i,nf);
+	if (i == (Size-(2*Size/3))+10)
+		Extt[n] = Ex(i,nf);
+	if (i == Z1)
+		Exz1[n] = Ex(i,nf);
+	if (i == Z2)
+		Exz2[n] = Ex(i,nf);
 }

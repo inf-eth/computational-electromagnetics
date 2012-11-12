@@ -1,193 +1,137 @@
 #ifndef FDTD1DDNG_H_
 #define FDTD1DDNG_H_
 
-#if defined __linux__ || defined __CYGWIN__
-#include <fcntl.h>
-#include <sys/time.h>
-#else
-#include <timer.h>
-#endif
+// Constants.
+#define c0	299792458.
+#define PI	3.14159265358979323846
+#define PRECISION float
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <cmath>
-#include <cstring>
-#include <cstdlib>
-#include <string>
-
-#include <FDTD1DDNG_Kernels.cu>
-#include <cutil.h>
+#include <Timer.h>
 
 class CFDTD1DDNG
 {
 private:
+	// Simulation parameters.
+	const unsigned int Size;
+	const unsigned int MaxTime;
+	const unsigned int PulseWidth;
+	const unsigned int td;
+	const unsigned int SourceLocation;
+	const unsigned int SlabLeft;
+	const unsigned int SlabRight;
+	const unsigned int SnapshotInterval;
 
-	// Generic simulation parameters.
-	const unsigned int I;				// Width.
-	const unsigned int J;				// Height.
-	const float c;				// Speed of light.
-	const float delta;			// dx and dy.
-	const float dx;			// dx if being used.
-	const float dy;			// dy if being used.
-	const float dtscalar;		// dt scale factor. dt will be divided by this factor.
-	const float dt;			// dt.
-	const unsigned int PMLw;			// Width of PML layer.
+	// Choice of source.
+	// 1. Gaussian pulse 2. Sine wave 3. Ricker wavelet
+	const unsigned int SourceChoice;
 
-	const unsigned int NMax;			// Maximum n
+	const PRECISION e0;
+	const PRECISION u0;
+	const PRECISION dt;
+	const PRECISION dz;
+	const PRECISION Sc;
 
-	// Constants.
-	const float f;				// frequency
-	const float pi;			// pi
-	const float e0;			// epsilon nought
-	const float u0;			// mu nought
+	// Frequency, wavelength, wave number.
+	const PRECISION l;
+	const PRECISION f;
+	const PRECISION fmax;
+	const PRECISION w;
+	const PRECISION k0;
+	const PRECISION fp; // Ricker wavelet peak frequency.
+	const PRECISION dr; // Ricker wavelet delay.
 
-	// miscellenaeous
-	const float Two_pi_f_deltat;
-	const unsigned int NHW;			// Half wave cycle.
-	const unsigned int Js;				// J position of plane wave front.
-	const unsigned int Is;				// I position of plane wave front.
-	unsigned int n, n0, n1, n2;			// past/present/future time indices.
-	const unsigned int tResolution;		// Snapshots will be saved after this much time.
-	const unsigned int xResolution;		// Resolution of plotted field will be divided by this factor.
-	const unsigned int yResolution;
+	// Data arrays.
+	PRECISION *Ex_;
+	PRECISION *Dx_;
+	PRECISION *Hy_;
+	PRECISION *By_;
+	unsigned int frame;
 
-	// TMz parameters.
-	const unsigned int IHx;
-	const unsigned int JHx;
-	const unsigned int IHy;
-	const unsigned int JHy;
-	const unsigned int IEz;
-	const unsigned int JEz;
+	// Incident and transmitted fields.
+	PRECISION *Exi;
+	PRECISION *Ext;
+	PRECISION *Extt;
+	const unsigned int x1;
 
-	// Geometry parameters.
-	const unsigned int XCenter;
-	const unsigned int YCenter;
-	const float ra;
-	const float rb;
-	const float imp0;			// Impedence of free space
+	// Refractive index.
+	const unsigned int Z1;
+	const PRECISION z1;
+	const unsigned int Z2;
+	const PRECISION z2;
+	PRECISION *Exz1;
+	PRECISION *Exz2;
 
-	// =========== Data Arrays ==========
-	float *Hx;					// Hx, magnetic field.
-	float *Bx;
-	float *Hy;					// Hy, magnetic field.
-	float *By;
+	// Drude material parameters.
+	PRECISION *einf;
+	PRECISION *uinf;
+	PRECISION *wpesq;
+	PRECISION *wpmsq;
+	PRECISION *ge;
+	PRECISION *gm;
 
-	float *Ez;					// Ez, electric field.
-	float *Dz;
+	// Auxiliary field scalars.
+	PRECISION *ae0, *ae, *be, *ce, *de, *ee;
+	PRECISION *am0, *am, *bm, *cm, *dm, *em;
 
-	float *Dzx;
-	float *Dzy;
-	float *EzSnapshots;		// For storing Ez snapshots.
+	// Time indices.
+	unsigned int nf, n0, np;
 
-	// ========= Field specific arrays =======
+	// Timer variables.
+	__int64 tStart;
+	__int64 tEnd;
 
-	// Permeability and permittivity.
-	float *urHx;
-	float *urHy;
-	float *erEz;
-
-	// Magnetic and electric conductances.
-	float *smHx;
-	float *smHy;
-	float *sEz;
-
-	// s*dt/(2*er) and sm*dt/(2*ur)
-	float *Sc;
-	float *ScmHx;
-	float *ScmHy;
-
-	// PML conductance arrays.
-	float *sex;	// sigma ex
-	float *sey;	// sigma ey
-	float *smx;	// sigma mx
-	float *smy;	// sigma my
-
-	float *Scsx;
-	float *Scsy;
-	float *ScmsmxHy;
-	float *ScmsmyHx;
-
-	// Timing.
-	#if defined __linux__ || defined __CYGWIN__
-	struct timeval tStart, tEnd;
-	#else
-	__int64 tStart, tEnd;
-	#endif
-
-	// === Device arrays ===
-	// Fields
-	float* d_Hx;
-	float* d_Bx;
-	float* d_Hy;
-	float* d_By;
-	float* d_Ez;
-	float* d_Dz;
-	float* d_Dzx;
-	float* d_Dzy;
-
-	// Permeability, permittivity and conductance.
-	float* d_urHx;
-	float* d_urHy;
-	float* d_erEz;
-
-	float* d_smHx;
-	float* d_smHy;
-	float* d_sEz;
-	
-	float* d_ScmHx;
-	float* d_ScmHy;
-	float* d_Sc;
-	
-	// PML conductance arrays.
-	float* d_Scsx;
-	float* d_Scsy;
-	float* d_ScmsmxHy;
-	float* d_ScmsmyHx;
-	// =============================
-
-	bool cpu;		// Should simulation run on CPU or GPU?
-	unsigned int flagHalf;
+	// ====================== Device arrays ======================
+	// Data arrays.
+	PRECISION *d_Ex_;
+	PRECISION *d_Dx_;
+	PRECISION *d_Hy_;
+	PRECISION *d_By_;
+	// Incident and transmitted fields.
+	PRECISION *d_Exi;
+	PRECISION *d_Ext;
+	PRECISION *d_Extt;
+	// Refractive Index.
+	PRECISION *d_Exz1;
+	PRECISION *d_Exz2;
+	// Drude material parameters.
+	PRECISION *d_einf;
+	PRECISION *d_uinf;
+	PRECISION *d_wpesq;
+	PRECISION *d_wpmsq;
+	PRECISION *d_ge;
+	PRECISION *d_gm;
+	// Auxiliary field scalars.
+	PRECISION *d_ae0, *d_ae, *d_be, *d_ce, *d_de, *d_ee;
+	PRECISION *d_am0, *d_am, *d_bm, *d_cm, *d_dm, *d_em;
+	// ===========================================================
 
 public:
-	CFDTD1DDNG ();
-	int Initialize ();						// Initialize with default parameters.
-	int initializeFDTD1DDNGKernel ();
-	int runFDTD1DDNGKernels (bool=true);
-	int RunSimulationCPU (bool=true);		// Run simulation on CPU single-threaded.
+	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
 
-	void DisplaySimulationParameters ();
+	// Space calculations.
+	unsigned long SimSize();
+	unsigned long HDDSpace();
+
+	// Memory allocation and initialisation.
+	void AllocateMemoryCPU();
+	void InitialiseCPU();
+	void InitialiseExHyCPU();
+	int AllocateMemoryGPU();//int initializeFDTD1DDNGKernel();
+	int CopyDataCPUtoGPU();
+	int CopyExHyCPUtoGPU();
+
+	// Simulations.
+	int DryRunCPU();
+	int RunSimulationCPU(bool=true);
+	int DryRunGPU();
+	int RunSimulationGPU(bool=true);//int runFDTD1DDNGKernels(bool=true);
 
 	// Timing.
-	inline void StartClock ()
-	{
-		#if defined __linux__ || defined __CYGWIN__
-		gettimeofday(&tStart, NULL);
-		#else
-		tStart = GetTimeus64();
-		#endif
-	}
-	
-	inline void StopClock ()
-	{
-		#if defined __linux__ || defined __CYGWIN__
-		gettimeofday(&tEnd, NULL);
-		#else
-		tEnd = GetTimeus64();
-		#endif
-	}
-	inline float GetElapsedTime ()
-	{
-		#if defined __linux__ || defined __CYGWIN__
-		return (float)(tEnd.tv_sec-tStart.tv_sec) + (float)(tEnd.tv_usec-tStart.tv_usec)/(1000000.);
-		#else
-		return ((float)(tEnd-tStart))/(1000000.);
-		#endif
-		
-	}
+	void StartTimer();
+	void StopTimer();
+	PRECISION GetElapsedTime();
 
-	int Cleanup ();
-	~CFDTD1DDNG ();
+	int CleanupGPU();
+	~CFDTD1DDNG();
 };
 #endif  /* #ifndef FDTD1DDNG_H_ */

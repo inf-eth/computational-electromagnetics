@@ -4,7 +4,7 @@
 #define Hy(i,n) Hy_[(i)+Size*(n)]
 #define By(i,n) By_[(i)+Size*(n)]
 
-#include "FDTD1DDNG.h"
+#include <FDTD1DDNG.h>
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -191,6 +191,14 @@ void CFDTD1DDNG::InitialiseCPU()
 		Exz2[i] = 0.;
 	}
 }
+void CFDTD1DDNG::InitialiseExHyCPU()
+{
+	for (unsigned int i=0; i<3*Size; i++)
+	{
+		Ex_[i] = 0.;
+		Hy_[i] = 0.;
+	}
+}
 int CFDTD1DDNG::DryRunCPU()
 {
 	cout << "Dry run (CPU) started..." << endl;
@@ -211,7 +219,7 @@ int CFDTD1DDNG::DryRunCPU()
 			Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
 		}
 		// ABC for Ex at i=0;
-		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(1,n0));
+		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(0,n0));
 
 		// Source.
 		if (SourceChoice == 1)
@@ -235,14 +243,6 @@ int CFDTD1DDNG::DryRunCPU()
 	}
 	cout << endl << "Dry run (CPU) completed!" << endl;
 	return 0;
-}
-void CFDTD1DDNG::InitialiseExHyCPU()
-{
-	for (unsigned int i=0; i<3*Size; i++)
-	{
-		Ex_[i] = 0.;
-		Hy_[i] = 0.;
-	}
 }
 int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 {
@@ -272,7 +272,7 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 			Ex(i,nf) = ae[i]*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be[i]*(Dx(i,nf)-Dx(i,np)) + ce[i]*(2*Ex(i,n0)-Ex(i,np)) + de[i]*(2*Ex(i,n0)+Ex(i,np)) + ee[i]*(Ex(i,np));
 		}
 		// ABC for Ex at i=0;
-		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(1,n0));
+		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(0,n0));
 		Dx(0,nf) = e0*Ex(0,nf);
 
 		// Source.
@@ -354,35 +354,35 @@ double CFDTD1DDNG::GetElapsedTime()
 CFDTD1DDNG::~CFDTD1DDNG()
 {
 	// Field arrays.
-	if (Ex_ != NULL) delete Ex_;
-	if (Dx_ != NULL) delete Dx_;
-	if (Hy_ != NULL) delete Hy_;
-	if (By_ != NULL) delete By_;
+	if (Ex_ != NULL) delete[] Ex_;
+	if (Dx_ != NULL) delete[] Dx_;
+	if (Hy_ != NULL) delete[] Hy_;
+	if (By_ != NULL) delete[] By_;
 	// Incident and transmitted fields.
-	if (Exi != NULL) delete Exi;
-	if (Ext != NULL) delete Ext;
-	if (Extt != NULL) delete Extt;
+	if (Exi != NULL) delete[] Exi;
+	if (Ext != NULL) delete[] Ext;
+	if (Extt != NULL) delete[] Extt;
 	// Refractive index.
-	if (Exz1 != NULL) delete Exz1;
-	if (Exz2 != NULL) delete Exz2;
+	if (Exz1 != NULL) delete[] Exz1;
+	if (Exz2 != NULL) delete[] Exz2;
 	// Drude parameter arrays.
-	if (einf != NULL) delete einf;
-	if (uinf != NULL) delete uinf;
-	if (wpesq != NULL) delete wpesq;
-	if (wpmsq != NULL) delete wpmsq;
-	if (ge != NULL) delete ge;
-	if (gm != NULL) delete gm;
+	if (einf != NULL) delete[] einf;
+	if (uinf != NULL) delete[] uinf;
+	if (wpesq != NULL) delete[] wpesq;
+	if (wpmsq != NULL) delete[] wpmsq;
+	if (ge != NULL) delete[] ge;
+	if (gm != NULL) delete[] gm;
 	// Auxiliary field scalars.
-	if (ae0 != NULL) delete ae0;
-	if (ae != NULL) delete ae;
-	if (be != NULL) delete be;
-	if (ce != NULL) delete ce;
-	if (de != NULL) delete de;
-	if (ee != NULL) delete ee;
-	if (am0 != NULL) delete am0;
-	if (am != NULL) delete am;
-	if (bm != NULL) delete bm;
-	if (cm != NULL) delete cm;
-	if (dm != NULL) delete dm;
-	if (em != NULL) delete em;
+	if (ae0 != NULL) delete[] ae0;
+	if (ae != NULL) delete[] ae;
+	if (be != NULL) delete[] be;
+	if (ce != NULL) delete[] ce;
+	if (de != NULL) delete[] de;
+	if (ee != NULL) delete[] ee;
+	if (am0 != NULL) delete[] am0;
+	if (am != NULL) delete[] am;
+	if (bm != NULL) delete[] bm;
+	if (cm != NULL) delete[] cm;
+	if (dm != NULL) delete[] dm;
+	if (em != NULL) delete[] em;
 }

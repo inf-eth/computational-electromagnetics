@@ -1,39 +1,42 @@
 #include <FDTD1DDNG.hpp>
+#include <cutil.h>
+#include <iostream>
+using namespace std;
 
 int main(int argc, char * argv[])
 {
-	CFDTD1DDNG FDTD1DDNGSim;
-	
+	CFDTD1DDNG FDTD1DDNGSim(/*Size=*/4U*1024U, /*SourceLocation=*/10U, /*SnapshotInterval=*/16U, /*SourceChoice=*/1U);
+	/*
 	// =================== Initialization ===================
-	FDTD1DDNGSim.StartClock ();	
-	if (FDTD1DDNGSim.Initialize () == 1)
+	FDTD1DDNGSim.StartTimer();
+	if (FDTD1DDNGSim.Initialize() == 1)
 		return 1;
-		
+
 	CUT_DEVICE_INIT(argc, argv);
 	
-	if (FDTD1DDNGSim.initializeFDTD1DDNGKernel () == 1)
+	if (FDTD1DDNGSim.initializeFDTD1DDNGKernel() == 1)
 		return 1;
-	
-	FDTD1DDNGSim.DisplaySimulationParameters ();
 
-	FDTD1DDNGSim.StopClock ();
-	std::cout << "Initialization elapsed time (sec): " << FDTD1DDNGSim.GetElapsedTime () << std::endl;
+	FDTD1DDNGSim.DisplaySimulationParameters();
+
+	FDTD1DDNGSim.StopTimer();
+	std::cout << "Initialization elapsed time (sec): " << FDTD1DDNGSim.GetElapsedTime() << std::endl;
 
 	// ================== Simulation ========================
-	FDTD1DDNGSim.StartClock ();
-	if (FDTD1DDNGSim.runFDTD1DDNGKernels (true) == 1)
+	FDTD1DDNGSim.StartTimer();
+	if (FDTD1DDNGSim.runFDTD1DDNGKernels(true) == 1)
 		return 1;
-	FDTD1DDNGSim.StopClock ();
-	std::cout << "Simulation total elapsed time (sec): " << FDTD1DDNGSim.GetElapsedTime () << std::endl;
+	FDTD1DDNGSim.StopTimer();
+	std::cout << "Simulation total elapsed time (sec): " << FDTD1DDNGSim.GetElapsedTime() << std::endl;
 
 	// ================== Clean up ======================
-	FDTD1DDNGSim.StartClock ();
-	if (FDTD1DDNGSim.Cleanup () == 1)
+	FDTD1DDNGSim.StartTimer();
+	if (FDTD1DDNGSim.CleanupGPU() == 1)
 		return 1;
 	
-	FDTD1DDNGSim.StopClock ();
-	std::cout << "Cleanup total elapsed time (sec): " << FDTD1DDNGSim.GetElapsedTime () << std::endl;
-		
+	FDTD1DDNGSim.StopTimer();
+	std::cout << "Cleanup total elapsed time (sec): " << FDTD1DDNGSim.GetElapsedTime() << std::endl;
+	*/
 	/*// ================== CPU Simulation ================
 	FDTD1DDNGSim.StartClock ();
 	if (FDTD1DDNGSim.RunSimulationCPU (false) == 1)
@@ -41,6 +44,26 @@ int main(int argc, char * argv[])
 	FDTD1DDNGSim.StopClock ();
 	std::cout << "CPU Simulation time (sec): " << FDTD1DDNGSim.GetElapsedTime () << std::endl;
 	*/
+	FDTD1DDNGSim.StartTimer();
+	FDTD1DDNGSim.AllocateMemoryCPU();
+	FDTD1DDNGSim.InitialiseCPU();
+
+	// ==== GPU Simulation ====
+	FDTD1DDNGSim.AllocateMemoryGPU();
+	FDTD1DDNGSim.CopyDataCPUtoGPU();
+	FDTD1DDNGSim.DryRunGPU();
+	FDTD1DDNGSim.InitialiseExHyCPU();
+	FDTD1DDNGSim.CopyExHyCPUtoGPU();
+	FDTD1DDNGSim.RunSimulationGPU();
+
+	// ==== CPU Simulation ====
+	/*FDTD1DDNGSim.DryRunCPU();
+	FDTD1DDNGSim.InitialiseExHyCPU();
+	FDTD1DDNGSim.RunSimulationCPU();*/
+
+	FDTD1DDNGSim.StopTimer();
+	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;
+
 	CUT_EXIT(argc, argv);
 	return 0;
 }
