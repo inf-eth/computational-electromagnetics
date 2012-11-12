@@ -1,3 +1,9 @@
+// Useful for indexing arrays.
+#define Ex(i,n) Ex_[(i)+Size*(n)]
+#define Dx(i,n) Dx_[(i)+Size*(n)]
+#define Hy(i,n) Hy_[(i)+Size*(n)]
+#define By(i,n) By_[(i)+Size*(n)]
+
 #include "FDTD1DDNG.h"
 #include <cmath>
 #include <iostream>
@@ -5,26 +11,19 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
-
-#if defined __linux__ || defined __CYGWIN__
-
-#else
-
-#endif
 using namespace std;
 
-CFDTD1DDNG::CFDTD1DDNG():
+CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
 							// Simulation parameters.
-							Size(4*1024),
+							Size(pSize),
 							MaxTime(4*Size),
 							PulseWidth(Size/8),
 							td(PulseWidth),
-							SourceLocation(10),
+							SourceLocation(pSourceLocation),
 							SlabLeft(Size/3),
 							SlabRight(2*Size/3),
-							SnapshotInterval(16),
-							// Source choice.
-							SourceChoice(1),
+							SnapshotInterval(pSnapshotInterval),
+							SourceChoice(pSourceChoice),
 							e0((1e-9)/(36.*PI)),
 							u0((1e-7)*4.*PI),
 							dt(0.5e-11),
@@ -39,7 +38,7 @@ CFDTD1DDNG::CFDTD1DDNG():
 							fp(f),
 							dr(PulseWidth*dt*2),
 							// Data arrays.
-							Ex(NULL), Dx(NULL), Hy(NULL), By(NULL),
+							Ex_(NULL), Dx_(NULL), Hy_(NULL), By_(NULL),
 							frame(0),
 							// Incident and transmitted fields.
 							Exi(NULL), Ext(NULL), Extt(NULL),
@@ -93,15 +92,19 @@ CFDTD1DDNG::CFDTD1DDNG():
 }
 unsigned long CFDTD1DDNG::SimSize()
 {
-	return sizeof(*this)+8*(30*Size+5*MaxTime);
+	return (unsigned long)sizeof(*this)+8UL*(30UL*(unsigned long)Size+5UL*(unsigned long)MaxTime);
+}
+unsigned long CFDTD1DDNG::HDDSpace()
+{
+	return 8UL*(5UL*(unsigned long)MaxTime+(unsigned long)Size*((unsigned long)MaxTime/(unsigned long)SnapshotInterval+1UL));
 }
 void CFDTD1DDNG::AllocateMemoryCPU()
 {
 	// Field arrays.
-	Ex = new double[Size*3];
-	Dx = new double[Size*3];
-	Hy = new double[Size*3];
-	By = new double[Size*3];
+	Ex_ = new double[Size*3];
+	Dx_ = new double[Size*3];
+	Hy_ = new double[Size*3];
+	By_ = new double[Size*3];
 	// Incident and transmitted fields.
 	Exi = new double[MaxTime];
 	Ext = new double[MaxTime];
@@ -134,10 +137,10 @@ void CFDTD1DDNG::InitialiseCPU()
 {
 	for (unsigned int i=0; i<3*Size; i++)
 	{
-		Ex[i] = 0.;
-		Dx[i] = 0.;
-		Hy[i] = 0.;
-		By[i] = 0.;
+		Ex_[i] = 0.;
+		Dx_[i] = 0.;
+		Hy_[i] = 0.;
+		By_[i] = 0.;
 
 		// Parameteric and auxiliary arrays.
 		if (i<Size)
@@ -188,13 +191,6 @@ void CFDTD1DDNG::InitialiseCPU()
 		Exz2[i] = 0.;
 	}
 }
-
-// Useful for indexing arrays.
-#define Ex(i,n) Ex[(i)+Size*(n)]
-#define Dx(i,n) Dx[(i)+Size*(n)]
-#define Hy(i,n) Hy[(i)+Size*(n)]
-#define By(i,n) By[(i)+Size*(n)]
-
 int CFDTD1DDNG::DryRunCPU()
 {
 	cout << "Dry run (CPU) started..." << endl;
@@ -244,8 +240,8 @@ void CFDTD1DDNG::InitialiseExHyCPU()
 {
 	for (unsigned int i=0; i<3*Size; i++)
 	{
-		Ex[i] = 0.;
-		Hy[i] = 0.;
+		Ex_[i] = 0.;
+		Hy_[i] = 0.;
 	}
 }
 int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
@@ -355,10 +351,10 @@ void CFDTD1DDNG::StopTimer()
 CFDTD1DDNG::~CFDTD1DDNG()
 {
 	// Field arrays.
-	if (Ex != NULL) delete Ex;
-	if (Dx != NULL) delete Dx;
-	if (Hy != NULL) delete Hy;
-	if (By != NULL) delete By;
+	if (Ex_ != NULL) delete Ex_;
+	if (Dx_ != NULL) delete Dx_;
+	if (Hy_ != NULL) delete Hy_;
+	if (By_ != NULL) delete By_;
 	// Incident and transmitted fields.
 	if (Exi != NULL) delete Exi;
 	if (Ext != NULL) delete Ext;

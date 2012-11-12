@@ -1,7 +1,8 @@
-#include "Timer.h"
 // Constants.
 #define c0	299792458.
 #define PI	3.14159265358979323846
+
+#include "Timer.h"
 
 class CFDTD1DDNG
 {
@@ -36,10 +37,10 @@ private:
 	const double dr; // Ricker wavelet delay.
 
 	// Data arrays.
-	double *Ex;
-	double *Dx;
-	double *Hy;
-	double *By;
+	double *Ex_;
+	double *Dx_;
+	double *Hy_;
+	double *By_;
 	unsigned int frame;
 
 	// Incident and transmitted fields.
@@ -76,8 +77,9 @@ private:
 	__int64 tEnd;
 
 public:
-	CFDTD1DDNG();
+	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
 	unsigned long SimSize();
+	unsigned long HDDSpace();
 	void AllocateMemoryCPU();
 	void InitialiseCPU();
 	int DryRunCPU();
