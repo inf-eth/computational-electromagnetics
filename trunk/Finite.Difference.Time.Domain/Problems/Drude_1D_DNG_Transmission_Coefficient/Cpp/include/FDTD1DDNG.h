@@ -2,7 +2,7 @@
 #define c0	299792458.
 #define PI	3.14159265358979323846
 
-#include "Timer.h"
+#include <Timer.h>
 
 class CFDTD1DDNG
 {
@@ -78,16 +78,24 @@ private:
 
 public:
 	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
+
+	// Space calculations.
 	unsigned long SimSize();
 	unsigned long HDDSpace();
+
+	// Initialisation and memory allocation.
 	void AllocateMemoryCPU();
 	void InitialiseCPU();
-	int DryRunCPU();
 	void InitialiseExHyCPU();
+
+	// Simulations.
+	int DryRunCPU();
 	int RunSimulationCPU(bool=true);
+
 	// Timing.
 	void StartTimer();
 	void StopTimer();
 	double GetElapsedTime();
+
 	~CFDTD1DDNG();
 };

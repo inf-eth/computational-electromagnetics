@@ -1,4 +1,4 @@
-#include "FDTD1DDNG.h"
+#include <FDTD1DDNG.h>
 #include <iostream>
 using namespace std;
 
