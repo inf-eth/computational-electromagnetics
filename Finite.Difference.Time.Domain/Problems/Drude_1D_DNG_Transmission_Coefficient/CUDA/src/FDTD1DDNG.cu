@@ -491,7 +491,7 @@ int CFDTD1DDNG::DryRunGPU()
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
-	cout << "Dry run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
+	cout << endl << "Dry run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
 	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
 
 	return 0;
@@ -548,8 +548,8 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 											dr,
 											d_Ex_, d_Dx_, d_Hy_, d_By_,
 											d_einf, d_uinf, d_wpesq, d_wpmsq, d_ge, d_gm,
-											d_ae0, d_ae, d_be, d_ce, d_de, d_ee,
-											d_am0, d_am, d_bm, d_cm, d_dm, d_em,
+											d_ae0, //d_ae, d_be, d_ce, d_de, d_ee,
+											d_am0, //d_am, d_bm, d_cm, d_dm, d_em,
 											d_Ext, d_Extt, d_Exz1, d_Exz2,
 											x1, Z1, Z2,
 											n,
@@ -578,7 +578,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
-	cout << "Simulation run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
+	cout << endl << "Simulation run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
 	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
 
 	// Saving electric field data arrays.
