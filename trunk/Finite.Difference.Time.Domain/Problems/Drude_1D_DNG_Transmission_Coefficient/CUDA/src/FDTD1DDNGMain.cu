@@ -45,6 +45,8 @@ int main(int argc, char * argv[])
 	std::cout << "CPU Simulation time (sec): " << FDTD1DDNGSim.GetElapsedTime () << std::endl;
 	*/
 	FDTD1DDNGSim.StartTimer();
+	cout << "Memory required for simulation = " << FDTD1DDNGSim.SimSize() << " bytes (" << (double)FDTD1DDNGSim.SimSize()/1024UL << "kB/" << (double)FDTD1DDNGSim.SimSize()/1024UL/1024UL << "MB)." << endl;
+	cout << "HDD space required for data storage = " << FDTD1DDNGSim.HDDSpace() << " bytes (" << (double)FDTD1DDNGSim.HDDSpace()/1024UL << "kB/" << (double)FDTD1DDNGSim.HDDSpace()/1024UL/1024UL << "MB)." << endl;
 	FDTD1DDNGSim.AllocateMemoryCPU();
 	FDTD1DDNGSim.InitialiseCPU();
 

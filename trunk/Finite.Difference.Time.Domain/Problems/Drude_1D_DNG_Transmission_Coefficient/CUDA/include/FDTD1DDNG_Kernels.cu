@@ -36,26 +36,26 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
 
 	if (i != Size-1) // Normal update equation.
-	{
 		Hy(i,nf) = Hy(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/(u0*dz);
-	}
-	else // ABC
-	{
-		__syncthreads();
+
+	__syncthreads();
+
+	// ABC
+	if (i == Size-1)
 		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
-	}
 
 	__syncthreads();
 
 	if (i != 0)
-	{
 		Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
-	}
-	else // ABC
-	{
-		__syncthreads();
+
+	__syncthreads();
+
+	// ABC
+	if (i == 0)
 		Ex(i,nf) = Ex(i+1,n0) + (Sc-1)/(Sc+1)*(Ex(i+1,nf)-Ex(i,n0));
-	}
+
+	__syncthreads();
 
 	// Source.
 	if (i == SourceLocation)
@@ -133,9 +133,11 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 		By(i,nf) = By(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/dz;
 		Hy(i,nf) = am_(i)*(By(i,nf)-2*By(i,n0)+By(i,np)) + bm_(i)*(By(i,nf)-By(i,np)) + cm_(i)*(2*Hy(i,n0)-Hy(i,np)) + dm_(i)*(2*Hy(i,n0)+Hy(i,np)) + em_(i)*(Hy(i,np));
 	}
-	else // ABC
+	__syncthreads();
+
+	// ABC
+	if (i == Size-1)
 	{
-		__syncthreads();
 		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
 		By(i,nf) = u0*Hy(i,nf);
 	}
@@ -147,12 +149,15 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 		Dx(i,nf) = Dx(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/dz;
 		Ex(i,nf) = ae_(i)*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be_(i)*(Dx(i,nf)-Dx(i,np)) + ce_(i)*(2*Ex(i,n0)-Ex(i,np)) + de_(i)*(2*Ex(i,n0)+Ex(i,np)) + ee_(i)*(Ex(i,np));
 	}
-	else // ABC
+	__syncthreads();
+
+	// ABC
+	if (i == 0)
 	{
-		__syncthreads();
 		Ex(i,nf) = Ex(i+1,n0) + (Sc-1)/(Sc+1)*(Ex(i+1,nf)-Ex(i,n0));
 		Dx(i,nf) = e0*Ex(i,nf);
 	}
+	__syncthreads();
 
 	// Source.
 	if (i == SourceLocation)
