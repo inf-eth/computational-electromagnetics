@@ -15,7 +15,8 @@
 #include <cstdlib>
 #include <string>
 #include <FDTD1DDNG_Kernels.cu>
-#include <cutil.h>
+#include <helper_cuda.h>
+#include <helper_functions.h> // helper functions for SDK examples
 using namespace std;
 
 CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
@@ -210,37 +211,37 @@ int CFDTD1DDNG::AllocateMemoryGPU ()
 	// Device memory allocation
 
 	// Data arrays.
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Ex_, sizeof(PRECISION)*Size*3));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Dx_, sizeof(PRECISION)*Size*3));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Hy_, sizeof(PRECISION)*Size*3));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_By_, sizeof(PRECISION)*Size*3));
+	checkCudaErrors(cudaMalloc((void **)&d_Ex_, sizeof(PRECISION)*Size*3));
+	checkCudaErrors(cudaMalloc((void **)&d_Dx_, sizeof(PRECISION)*Size*3));
+	checkCudaErrors(cudaMalloc((void **)&d_Hy_, sizeof(PRECISION)*Size*3));
+	checkCudaErrors(cudaMalloc((void **)&d_By_, sizeof(PRECISION)*Size*3));
 	// Incident and transmitted fields.
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Exi, sizeof(PRECISION)*MaxTime));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Ext, sizeof(PRECISION)*MaxTime));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Extt, sizeof(PRECISION)*MaxTime));
+	checkCudaErrors(cudaMalloc((void **)&d_Exi, sizeof(PRECISION)*MaxTime));
+	checkCudaErrors(cudaMalloc((void **)&d_Ext, sizeof(PRECISION)*MaxTime));
+	checkCudaErrors(cudaMalloc((void **)&d_Extt, sizeof(PRECISION)*MaxTime));
 	// Refractive Index.
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Exz1, sizeof(PRECISION)*MaxTime));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_Exz2, sizeof(PRECISION)*MaxTime));
+	checkCudaErrors(cudaMalloc((void **)&d_Exz1, sizeof(PRECISION)*MaxTime));
+	checkCudaErrors(cudaMalloc((void **)&d_Exz2, sizeof(PRECISION)*MaxTime));
 	// Drude material parameters.
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_einf, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_uinf, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_wpesq, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_wpmsq, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_ge, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_gm, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_einf, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_uinf, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_wpesq, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_wpmsq, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_ge, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_gm, sizeof(PRECISION)*Size));
 	// Auxiliary field scalars.
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_ae0, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_ae, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_be, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_ce, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_de, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_ee, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_am0, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_am, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_bm, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_cm, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_dm, sizeof(PRECISION)*Size));
-	CUDA_SAFE_CALL(cudaMalloc((void **)&d_em, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_ae0, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_ae, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_be, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_ce, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_de, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_ee, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_am0, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_am, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_bm, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_cm, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_dm, sizeof(PRECISION)*Size));
+	checkCudaErrors(cudaMalloc((void **)&d_em, sizeof(PRECISION)*Size));
 
 	return 0;
 }
@@ -249,44 +250,44 @@ int CFDTD1DDNG::CopyDataCPUtoGPU()
 	// Device data initialisation.
 
 	// Data arrays.
-	CUDA_SAFE_CALL(cudaMemcpy(d_Ex_, Ex_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_Dx_, Dx_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_Hy_, Hy_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_By_, By_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Ex_, Ex_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Dx_, Dx_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Hy_, Hy_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_By_, By_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
 	// Incident and transmitted fields.
-	CUDA_SAFE_CALL(cudaMemcpy(d_Exi, Exi, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_Ext, Ext, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_Extt, Extt, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Exi, Exi, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Ext, Ext, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Extt, Extt, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
 	// Refractive Index.
-	CUDA_SAFE_CALL(cudaMemcpy(d_Exz1, Exz1, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_Exz2, Exz2, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Exz1, Exz1, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Exz2, Exz2, sizeof(PRECISION)*MaxTime, cudaMemcpyHostToDevice));
 	// Drude material parameters.
-	CUDA_SAFE_CALL(cudaMemcpy(d_einf, einf, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_uinf, uinf, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_wpesq, wpesq, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_wpmsq, wpmsq, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_ge, ge, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_gm, gm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_einf, einf, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_uinf, uinf, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_wpesq, wpesq, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_wpmsq, wpmsq, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_ge, ge, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_gm, gm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
 	// Auxiliary field scalars.
-	CUDA_SAFE_CALL(cudaMemcpy(d_ae0, ae0, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_ae, ae, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_be, be, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_ce, ce, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_de, de, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_ee, ee, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_am0, am0, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_am, am, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_bm, bm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_cm, cm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_dm, dm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_em, em, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_ae0, ae0, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_ae, ae, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_be, be, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_ce, ce, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_de, de, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_ee, ee, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_am0, am0, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_am, am, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_bm, bm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_cm, cm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_dm, dm, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_em, em, sizeof(PRECISION)*Size, cudaMemcpyHostToDevice));
 
 	return 0;
 }
 int CFDTD1DDNG::CopyExHyCPUtoGPU()
 {
-	CUDA_SAFE_CALL(cudaMemcpy(d_Ex_, Ex_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_Hy_, Hy_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Ex_, Ex_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Hy_, Hy_, sizeof(PRECISION)*Size*3, cudaMemcpyHostToDevice));
 
 	return 0;
 }
@@ -450,15 +451,15 @@ int CFDTD1DDNG::DryRunGPU()
 	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
 	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
 
-	unsigned int hTimer;
-	CUT_SAFE_CALL(cutCreateTimer(&hTimer));
-	CUT_SAFE_CALL(cutResetTimer(hTimer));
+	StopWatchInterface *Timer = 0;
+	sdkCreateTimer(&Timer);
+	sdkResetTimer(&Timer);
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
 		if (n % (MaxTime/1024U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
-		CUT_SAFE_CALL(cutStartTimer(hTimer));
+		sdkStartTimer(&Timer);
 
 		// Kernel call.
 		FDTD1DDNGKernel_DryRun <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
@@ -484,16 +485,16 @@ int CFDTD1DDNG::DryRunGPU()
 											n0,
 											nf);
 
-		CUT_CHECK_ERROR("FDTDKernel() execution failed\n");
-		CUDA_SAFE_CALL(cudaThreadSynchronize());
-		CUT_SAFE_CALL( cutStopTimer(hTimer) );
+		getLastCudaError("Kernel execution failed");
+		checkCudaErrors(cudaThreadSynchronize());
+		sdkStopTimer(&Timer);
 
 		np = (np+1)%3;
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
-	cout << "\r" << "Dry run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
-	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
+	cout << "\r" << "Dry run kernel execution time = " << sdkGetTimerValue(&Timer) << " ms." << endl;
+	sdkDeleteTimer(&Timer);
 
 	return 0;
 }
@@ -517,9 +518,9 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
 	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
 
-	unsigned int hTimer;
-	CUT_SAFE_CALL(cutCreateTimer(&hTimer));
-	CUT_SAFE_CALL(cutResetTimer(hTimer));
+	StopWatchInterface *Timer = 0;
+	sdkCreateTimer(&Timer);
+	sdkResetTimer(&Timer);
 
 	stringstream framestream;
 	string basename = "FieldData/Ex";
@@ -531,7 +532,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 	{
 		if (n % (MaxTime/1024U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
-		CUT_SAFE_CALL(cutStartTimer(hTimer));
+		sdkStartTimer(&Timer);
 
 		// Kernel call.
 		FDTD1DDNGKernel_Simulation <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
@@ -559,9 +560,9 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 											n0,
 											nf);
 
-		CUT_CHECK_ERROR("FDTDKernel() execution failed\n");
-		CUDA_SAFE_CALL(cudaThreadSynchronize());
-		CUT_SAFE_CALL(cutStopTimer(hTimer));
+		getLastCudaError("Kernel execution failed");
+		checkCudaErrors(cudaThreadSynchronize());
+		sdkStopTimer(&Timer);
 
 		// Saving electric field snapshot.
 		if (n%SnapshotInterval == 0 && SaveFields == true)
@@ -571,7 +572,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 			framestream << ++frame;
 			filename = basename + framestream.str() + ".fdt";
 			snapshot.open(filename.c_str(), std::ios::out|std::ios::binary);
-			CUDA_SAFE_CALL(cudaMemcpy(Ex_, d_Ex_, sizeof(PRECISION)*Size*3, cudaMemcpyDeviceToHost));
+			checkCudaErrors(cudaMemcpy(Ex_, d_Ex_, sizeof(PRECISION)*Size*3, cudaMemcpyDeviceToHost));
 			snapshot.write((char*)&(Ex(0,nf)), sizeof(PRECISION)*Size);
 			snapshot.close();
 		}
@@ -580,8 +581,8 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
-	cout << "\r" << "Simulation run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
-	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
+	cout << "\r" << "Simulation run kernel execution time = " << sdkGetTimerValue(&Timer) << " ms." << endl;
+	sdkDeleteTimer(&Timer);
 
 	// Saving electric field data arrays.
 	if (SaveFields == true)
@@ -592,23 +593,23 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		parametersfile.close();
 		// Write saved fields to files.
 		snapshot.open("FieldData/Exi.fdt", std::ios::out|std::ios::binary);
-		CUDA_SAFE_CALL(cudaMemcpy(Exi, d_Exi, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(Exi, d_Exi, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
 		snapshot.write((char*)Exi, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Ext.fdt", std::ios::out|std::ios::binary);
-		CUDA_SAFE_CALL(cudaMemcpy(Ext, d_Ext, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(Ext, d_Ext, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
 		snapshot.write((char*)Ext, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Extt.fdt", std::ios::out|std::ios::binary);
-		CUDA_SAFE_CALL(cudaMemcpy(Extt, d_Extt, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(Extt, d_Extt, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
 		snapshot.write((char*)Extt, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Exz1.fdt", std::ios::out|std::ios::binary);
-		CUDA_SAFE_CALL(cudaMemcpy(Exz1, d_Exz1, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(Exz1, d_Exz1, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
 		snapshot.write((char*)Exz1, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Exz2.fdt", std::ios::out|std::ios::binary);
-		CUDA_SAFE_CALL(cudaMemcpy(Exz2, d_Exz2, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(Exz2, d_Exz2, sizeof(PRECISION)*MaxTime, cudaMemcpyDeviceToHost));
 		snapshot.write((char*)Exz2, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 	}
@@ -698,7 +699,7 @@ int CFDTD1DDNG::runFDTD1DDNGKernels (bool SaveFields)
 
 
 			CUT_CHECK_ERROR("FDTD2DKernel() execution failed\n");
-			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			checkCudaErrors( cudaThreadSynchronize() );
 			flagHalf = !flagHalf;
 		}
 		CUT_SAFE_CALL( cutStopTimer(hTimer) );
@@ -707,7 +708,7 @@ int CFDTD1DDNG::runFDTD1DDNGKernels (bool SaveFields)
 		if (n % tResolution == 0 && SaveFields == true)
 		{
 			// Copy the data back to the host
-			CUDA_SAFE_CALL( cudaMemcpy(Ez, d_Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyDeviceToHost) );
+			checkCudaErrors( cudaMemcpy(Ez, d_Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyDeviceToHost) );
 
 			framestream.str(std::string());			// Clearing stringstream contents.
 			framestream << frame;
@@ -852,36 +853,38 @@ PRECISION CFDTD1DDNG::GetElapsedTime()
 int CFDTD1DDNG::CleanupGPU()
 {
 	// Device cleanup.
-	CUDA_SAFE_CALL(cudaFree(d_Ex_));
-	CUDA_SAFE_CALL(cudaFree(d_Dx_));
-	CUDA_SAFE_CALL(cudaFree(d_Hy_));
-	CUDA_SAFE_CALL(cudaFree(d_By_));
+	checkCudaErrors(cudaFree(d_Ex_));
+	checkCudaErrors(cudaFree(d_Dx_));
+	checkCudaErrors(cudaFree(d_Hy_));
+	checkCudaErrors(cudaFree(d_By_));
 
-	CUDA_SAFE_CALL(cudaFree(d_Exi));
-	CUDA_SAFE_CALL(cudaFree(d_Ext));
-	CUDA_SAFE_CALL(cudaFree(d_Extt));
-	CUDA_SAFE_CALL(cudaFree(d_Exz1));
-	CUDA_SAFE_CALL(cudaFree(d_Exz2));
+	checkCudaErrors(cudaFree(d_Exi));
+	checkCudaErrors(cudaFree(d_Ext));
+	checkCudaErrors(cudaFree(d_Extt));
+	checkCudaErrors(cudaFree(d_Exz1));
+	checkCudaErrors(cudaFree(d_Exz2));
 
-	CUDA_SAFE_CALL(cudaFree(d_einf));
-	CUDA_SAFE_CALL(cudaFree(d_uinf));
-	CUDA_SAFE_CALL(cudaFree(d_wpesq));
-	CUDA_SAFE_CALL(cudaFree(d_wpmsq));
-	CUDA_SAFE_CALL(cudaFree(d_ge));
-	CUDA_SAFE_CALL(cudaFree(d_gm));
+	checkCudaErrors(cudaFree(d_einf));
+	checkCudaErrors(cudaFree(d_uinf));
+	checkCudaErrors(cudaFree(d_wpesq));
+	checkCudaErrors(cudaFree(d_wpmsq));
+	checkCudaErrors(cudaFree(d_ge));
+	checkCudaErrors(cudaFree(d_gm));
 
-	CUDA_SAFE_CALL(cudaFree(d_ae0));
-	CUDA_SAFE_CALL(cudaFree(d_ae));
-	CUDA_SAFE_CALL(cudaFree(d_be));
-	CUDA_SAFE_CALL(cudaFree(d_ce));
-	CUDA_SAFE_CALL(cudaFree(d_de));
-	CUDA_SAFE_CALL(cudaFree(d_ee));
-	CUDA_SAFE_CALL(cudaFree(d_am0));
-	CUDA_SAFE_CALL(cudaFree(d_am));
-	CUDA_SAFE_CALL(cudaFree(d_bm));
-	CUDA_SAFE_CALL(cudaFree(d_cm));
-	CUDA_SAFE_CALL(cudaFree(d_dm));
-	CUDA_SAFE_CALL(cudaFree(d_em));
+	checkCudaErrors(cudaFree(d_ae0));
+	checkCudaErrors(cudaFree(d_ae));
+	checkCudaErrors(cudaFree(d_be));
+	checkCudaErrors(cudaFree(d_ce));
+	checkCudaErrors(cudaFree(d_de));
+	checkCudaErrors(cudaFree(d_ee));
+	checkCudaErrors(cudaFree(d_am0));
+	checkCudaErrors(cudaFree(d_am));
+	checkCudaErrors(cudaFree(d_bm));
+	checkCudaErrors(cudaFree(d_cm));
+	checkCudaErrors(cudaFree(d_dm));
+	checkCudaErrors(cudaFree(d_em));
+
+	cudaDeviceReset();
 
 	return 0;
 }

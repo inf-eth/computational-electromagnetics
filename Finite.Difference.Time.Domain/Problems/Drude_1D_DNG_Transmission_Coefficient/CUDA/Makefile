@@ -47,7 +47,7 @@ INCLUDES    += -Iinclude/
 CCFILES		:= src/Timer.cpp
 
 # Omit CUTIL and SHRUTIL? (0 to include, 1 to omit)
-OMIT_CUTIL_LIB   := 0
+OMIT_CUTIL_LIB   := 1
 OMIT_SHRUTIL_LIB := 1
 
 # Additional compiler flags and LIBs to include
@@ -62,7 +62,7 @@ OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
 
 # Overrides
 SRCDIR     := src/
-ROOTDIR    := /opt/NVIDIA_GPU_Computing_SDK_4.1/C/src
+ROOTDIR    := /opt/NVIDIA_GPU_Computing_SDK_4.2/C/src
 ROOTBINDIR := bin
 BINDIR     := $(ROOTBINDIR)/$(OSLOWER)
 
