@@ -78,17 +78,6 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 		Exi[n] = Ex(i,nf);
 }
 
-#define ae_(i) (1./pow(dt,2))*ae0[i]
-#define be_(i) (1./(2.*dt))*ge[i]*ae0[i]
-#define ce_(i) (e0/pow(dt,2))*einf[i]*ae0[i]
-#define de_(i) (-1.*e0/4.)*wpesq[i]*ae0[i]
-#define ee_(i) (1./(2.*dt))*e0*einf[i]*ge[i]*ae0[i]
-#define am_(i) (1./pow(dt,2))*am0[i]
-#define bm_(i) (1./(2.*dt))*gm[i]*am0[i]
-#define cm_(i) (u0/pow(dt,2))*uinf[i]*am0[i]
-#define dm_(i) (-1.*u0/4.)*wpmsq[i]*am0[i]
-#define em_(i) (1./(2.*dt))*u0*uinf[i]*gm[i]*am0[i]
-			
 // Simulation kernel.
 template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_Simulation(
 							const unsigned int Size,
@@ -110,8 +99,8 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 							// Drude material parameters.
 							PRECISION *einf, PRECISION *uinf, PRECISION *wpesq, PRECISION *wpmsq, PRECISION *ge, PRECISION *gm,
 							// Drude scalars.
-							PRECISION *ae0, //PRECISION *ae, PRECISION *be, PRECISION *ce, PRECISION *de, PRECISION *ee,
-							PRECISION *am0, //PRECISION *am, PRECISION *bm, PRECISION *cm, PRECISION *dm, PRECISION *em,
+							PRECISION *ae0, PRECISION *ae, PRECISION *be, PRECISION *ce, PRECISION *de, PRECISION *ee,
+							PRECISION *am0, PRECISION *am, PRECISION *bm, PRECISION *cm, PRECISION *dm, PRECISION *em,
 							// Incident field.
 							PRECISION *Ext,
 							PRECISION *Extt,
@@ -131,7 +120,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 	if (i != Size-1) // Normal update equation.
 	{
 		By(i,nf) = By(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/dz;
-		Hy(i,nf) = am_(i)*(By(i,nf)-2*By(i,n0)+By(i,np)) + bm_(i)*(By(i,nf)-By(i,np)) + cm_(i)*(2*Hy(i,n0)-Hy(i,np)) + dm_(i)*(2*Hy(i,n0)+Hy(i,np)) + em_(i)*(Hy(i,np));
+		Hy(i,nf) = am[i]*(By(i,nf)-2*By(i,n0)+By(i,np)) + bm[i]*(By(i,nf)-By(i,np)) + cm[i]*(2*Hy(i,n0)-Hy(i,np)) + dm[i]*(2*Hy(i,n0)+Hy(i,np)) + em[i]*(Hy(i,np));
 	}
 	__syncthreads();
 
@@ -147,7 +136,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 	if (i != 0)
 	{
 		Dx(i,nf) = Dx(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/dz;
-		Ex(i,nf) = ae_(i)*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be_(i)*(Dx(i,nf)-Dx(i,np)) + ce_(i)*(2*Ex(i,n0)-Ex(i,np)) + de_(i)*(2*Ex(i,n0)+Ex(i,np)) + ee_(i)*(Ex(i,np));
+		Ex(i,nf) = ae[i]*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be[i]*(Dx(i,nf)-Dx(i,np)) + ce[i]*(2*Ex(i,n0)-Ex(i,np)) + de[i]*(2*Ex(i,n0)+Ex(i,np)) + ee[i]*(Ex(i,np));
 	}
 	__syncthreads();
 
