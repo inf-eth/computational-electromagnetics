@@ -433,8 +433,8 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 int CFDTD1DDNG::DryRunGPU()
 {
 	// Total local threads in a block. Can be thought of as Block dimensions.
-	unsigned int ThreadsX = 256;
-	unsigned int ThreadsY = 1;
+	const unsigned int ThreadsX = 256;
+	const unsigned int ThreadsY = 1;
 	
 	// Total blocks in simulation grid. Can be thought of as no. of blocks in grid.
 	// Size should be divisible by 256.
@@ -456,11 +456,12 @@ int CFDTD1DDNG::DryRunGPU()
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n % (MaxTime/1024U) == 0)
+			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		CUT_SAFE_CALL(cutStartTimer(hTimer));
 
 		// Kernel call.
-		FDTD1DDNGKernel_DryRun <256, 1> <<<Blocks, Threads>>>(
+		FDTD1DDNGKernel_DryRun <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
 											Size,
 											PulseWidth,
 											td,
@@ -491,7 +492,7 @@ int CFDTD1DDNG::DryRunGPU()
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
-	cout << endl << "Dry run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
+	cout << "\r" << "Dry run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
 	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
 
 	return 0;
@@ -499,8 +500,8 @@ int CFDTD1DDNG::DryRunGPU()
 int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 {
 	// Total local threads in a block. Can be thought of as Block dimensions.
-	unsigned int ThreadsX = 256;
-	unsigned int ThreadsY = 1;
+	const unsigned int ThreadsX = 256;
+	const unsigned int ThreadsY = 1;
 	
 	// Total blocks in simulation grid. Can be thought of as no. of blocks in grid.
 	// Size should be divisible by 256.
@@ -511,7 +512,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 	dim3 Blocks(BlocksX, BlocksY);
 	dim3 Threads(ThreadsX, ThreadsY);
 
-	cout << "Simulation (GPU) started..." << std::endl;
+	cout << "Simulation (GPU) started..." << endl;
 
 	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
 	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
@@ -528,11 +529,12 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n % (MaxTime/1024U) == 0)
+			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		CUT_SAFE_CALL(cutStartTimer(hTimer));
 
 		// Kernel call.
-		FDTD1DDNGKernel_Simulation <256, 1> <<<Blocks, Threads>>>(
+		FDTD1DDNGKernel_Simulation <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
 											Size,
 											PulseWidth,
 											td,
@@ -578,7 +580,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
-	cout << endl << "Simulation run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
+	cout << "\r" << "Simulation run kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << endl;
 	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
 
 	// Saving electric field data arrays.
