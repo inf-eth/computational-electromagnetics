@@ -3,7 +3,7 @@
 % Input files are assumed to be in binary format.
 clc
 clear all
-Precision = 'float';
+Precision = 'double';
 
 fidp = fopen ('./FieldData/Parameters.smp', 'r', 'l');
 if fidp == -1
@@ -173,7 +173,7 @@ for i=1:simTime
     if fid == -1
         return;
     end
-    
+
     ExSnapshot = fread (fid, size, Precision);
     figure (6)
     % Scatterer boundaries.

@@ -1,5 +1,4 @@
 #include <FDTD1DDNG.hpp>
-#include <cutil.h>
 #include <iostream>
 using namespace std;
 
@@ -66,6 +65,6 @@ int main(int argc, char * argv[])
 	FDTD1DDNGSim.StopTimer();
 	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;
 
-	CUT_EXIT(argc, argv);
+	//CUT_EXIT(argc, argv);
 	return 0;
 }

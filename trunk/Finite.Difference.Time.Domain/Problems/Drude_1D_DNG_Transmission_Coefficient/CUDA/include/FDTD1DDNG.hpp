@@ -4,7 +4,7 @@
 // Constants.
 #define c0	299792458.
 #define PI	3.14159265358979323846
-#define PRECISION float
+#define PRECISION double
 
 #include <Timer.h>
 
