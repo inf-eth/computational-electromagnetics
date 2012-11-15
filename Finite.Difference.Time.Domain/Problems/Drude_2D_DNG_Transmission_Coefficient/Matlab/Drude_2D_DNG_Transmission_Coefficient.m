@@ -2,22 +2,22 @@ clc
 clear all
 
 % Simulation parameters.
-SizeI = 512; % No. of spatial steps in x direction.
-SizeJ = 512; % No. of spatial steps in y direction.
+SizeI = 256; % No. of spatial steps in x direction.
+SizeJ = 256; % No. of spatial steps in y direction.
 PMLw = 0; % Width of PML layer.
 SlabLeft = round(SizeJ/3+PMLw); % Location of left end of Slab.
 SlabRight = round(2*SizeJ/3+PMLw); % Location of right end of Slab
-MaxTime = SizeJ; % No. of time steps
+MaxTime = 0.5*SizeJ; % No. of time steps
 PulseWidth = round(SizeJ/6); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
-SnapshotInterval = 16; % Amount of time delay between snaps.
+SnapshotInterval = 2; % Amount of time delay between snaps.
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
 SourceChoice = 1;
 SourcePlane = 1; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
 SourceLocationX = 20; % X Location of source. Only used for an omni-source.
-SourceLocationY = PMLw+1; % Y Location of source.
+SourceLocationY = PMLw+10; % Y Location of source.
 
 % Constants.
 c = 3e8;
@@ -39,6 +39,38 @@ if SourceChoice == 3
     fp = f; % Peak frenuency
     dr = PulseWidth*dt*2; % Delay
 end
+% PML arrays.
+PsiEzX = zeros(SizeI, SizeJ+2*PMLw);
+PsiEzY = zeros(SizeI, SizeJ+2*PMLw);
+PsiHyX = zeros(SizeI, SizeJ+2*PMLw);
+PsiHxY = zeros(SizeI, SizeJ+2*PMLw+1);
+
+% PML parameters.
+kapp = 1;
+a = 1;
+sig = 1;
+% Electric.
+kappex = kapp;
+kappey = kapp;
+aex = a;
+aey = a;
+sigex = sig;
+sigey = sig;
+bex = exp(-1*(aex/e0+sigex/(kappex*e0))*dt);
+bey = exp(-1*(aey/e0+sigey/(kappey*e0))*dt);
+Cex = (bex-1)*sigex/(sigex*kappex+kappex^2*aex);
+Cey = (bey-1)*sigey/(sigey*kappey+kappey^2*aey);
+% Magnetic.
+kappmx = kapp;
+kappmy = kapp;
+amx = a;
+amy = a;
+sigmx = sig;
+sigmy = sig;
+bmx = exp(-1*(amx/u0+sigmx/(kappmx*u0))*dt);
+bmy = exp(-1*(amy/u0+sigmy/(kappmy*u0))*dt);
+Cmx = (bmx-1)*sigmx/(sigmx*kappmx+kappmx^2*amx);
+Cmy = (bmy-1)*sigmy/(sigmy*kappmy+kappmy^2*amy);
 
 % Initialization.
 Ez = zeros(SizeI, SizeJ+2*PMLw, 3); % z-component of E-field
@@ -108,38 +140,67 @@ for n = 0:MaxTime
     end
     
     % ========================= Bx and Hx =============================
-    % Bx in normal space.
+    % Hx Psi array.
     x=1:SizeI;
-    y=(2+PMLw):(SizeJ-PMLw-1);
+    y=2:SizeJ+2*PMLw;
+    PsiHxY(x,y) = (Cmy/delta)*(-Ez(x,y,n0) + Ez(x,y-1,n0)) + bmy*PsiHxY(x,y);
+    % Bx in normal space.
+    y=(2+PMLw):((SizeJ+2*PMLw+1)-PMLw-1);
     Bx(x,y,nf) = Bx(x,y,n0) + (-Ez(x,y,n0) + Ez(x,y-1,n0)) * dt/delta;
-    % Bx in lower PML layer.
-    % TODO.
-    % Bx in upper PML layer.
-    % TODO.
+    if PMLw > 0
+        % Bx in lower PML layer.
+        y=2:PMLw+1;
+        Bx(x,y,nf) = Bx(x,y,n0) + (1/kappmy)*(-Ez(x,y,n0) + Ez(x,y-1,n0)) * dt/delta + PsiHxY(x,y);
+        % Bx in upper PML layer.
+        y=(SizeJ+2*PMLw+1)-PMLw:(SizeJ+2*PMLw);
+        Bx(x,y,nf) = Bx(x,y,n0) + (1/kappmy)*(-Ez(x,y,n0) + Ez(x,y-1,n0)) * dt/delta + PsiHxY(x,y);
+    end
     Hx(:,:,nf) = Bx(:,:,nf)./(u0*uinf);
     
     % ========================= By and Hy =============================
-    % By in normal space.
+    % Hy Psi array.
     x=1:SizeI-1;
-    y=(1+PMLw):(SizeJ-PMLw);
+    y=1:SizeJ+2*PMLw;
+    PsiHyX(x,y) = (Cmx/delta)*(Ez(x+1,y,n0)-Ez(x,y,n0)) + bmx*PsiHyX(x,y);
+    PsiHyX(SizeI,y) = (Cmx/delta)*(Ez(1,y,n0)-Ez(SizeI,y,n0)) + bmx*PsiHyX(SizeI,y);
+    % By in normal space.
+    y=(1+PMLw):(SizeJ+2*PMLw)-PMLw;
     By(x,y,nf) = By(x,y,n0) + (Ez(x+1,y,n0) - Ez(x,y,n0)) * dt/delta;
     By(SizeI,y,nf) = By(SizeI,y,n0) + (Ez(1,y,n0) - Ez(SizeI,y,n0)) * dt/delta; % PBC
-    % By in lower PML layer.
-    % TODO.
-    % By in upper PML layer.
-    % TODO.
+    if PMLw > 0
+        % By in lower PML layer.
+        y=1:PMLw;
+        By(x,y,nf) = By(x,y,n0) + (1/kappmx)*(Ez(x+1,y,n0) - Ez(x,y,n0)) * dt/delta + PsiHyX(x,y);
+        By(SizeI,y,nf) = By(SizeI,y,n0) + (1/kappmx)*(Ez(1,y,n0) - Ez(SizeI,y,n0)) * dt/delta + PsiHyX(SizeI,y); % PBC
+        % By in upper PML layer.
+        y=(SizeJ+2*PMLw)-PMLw+1:(SizeJ+2*PMLw);
+        By(x,y,nf) = By(x,y,n0) + (1/kappmx)*(Ez(x+1,y,n0) - Ez(x,y,n0)) * dt/delta + PsiHyX(x,y);
+        By(SizeI,y,nf) = By(SizeI,y,n0) + (1/kappmx)*(Ez(1,y,n0) - Ez(SizeI,y,n0)) * dt/delta + PsiHyX(SizeI,y); % PBC
+    end
     Hy(:,:,nf) = By(:,:,nf)./(u0*uinf(:,1:SizeJ+2*PMLw));
     
     % ========================= Dz and Ez =============================
-    % Dz in Normal Space.
+    % Psi arrays.
     x=2:SizeI;
-    y=(1+PMLw):(SizeJ-PMLw);
+    y=1:SizeJ+2*PMLw;
+    PsiEzX(x,y) = (Cex/delta)*(Hy(x,y,nf)-Hy(x-1,y,nf)) + bex*PsiEzX(x,y);
+    PsiEzX(1,y) = (Cex/delta)*(Hy(1,y,nf)-Hy(SizeI,y,nf)) + bex*PsiEzX(1,y); % PBC
+    PsiEzY(x,y) = (Cey/delta)*(-Hx(x,y+1,nf)+Hx(x,y,nf)) + bey*PsiEzY(x,y);
+    PsiEzY(1,y) = (Cey/delta)*(-Hx(1,y+1,nf)+Hx(1,y,nf)) + bey*PsiEzY(1,y); % PBC
+    % Dz in Normal Space.
+    y=(1+PMLw):((SizeJ+2*PMLw)-PMLw);
     Dz(x,y,nf) = Dz(x,y,n0) + (Hy(x,y,nf)-Hy(x-1,y,nf)-Hx(x,y+1,nf)+Hx(x,y,nf)) * dt/delta;
     Dz(1,y,nf) = Dz(1,y,n0) + (Hy(1,y,nf)-Hy(SizeI,y,nf)-Hx(1,y+1,nf)+Hx(1,y,nf)) * dt/delta; % PBC
-    % Dz in lower PML layer.
-    % TODO
-    % Dz in upper PML layer.
-    % TODO
+    if PMLw > 0
+        % Dz in lower PML layer.
+        y=1:PMLw;
+        Dz(x,y,nf) = Dz(x,y,n0) + ((1/kappex)*(Hy(x,y,nf)-Hy(x-1,y,nf))+(1/kappey)*(-Hx(x,y+1,nf)+Hx(x,y,nf))) * dt/delta + PsiEzX(x,y) + PsiEzY(x,y);
+        Dz(1,y,nf) = Dz(1,y,n0) + ((1/kappex)*(Hy(1,y,nf)-Hy(SizeI,y,nf))+(1/kappey)*(-Hx(1,y+1,nf)+Hx(1,y,nf))) * dt/delta + PsiEzX(1,y) + PsiEzY(1,y); % PBC
+        % Dz in upper PML layer.
+        y=(SizeJ+2*PMLw)-PMLw+1:(SizeJ+2*PMLw);
+        Dz(x,y,nf) = Dz(x,y,n0) + ((1/kappex)*(Hy(x,y,nf)-Hy(x-1,y,nf))+(1/kappey)*(-Hx(x,y+1,nf)+Hx(x,y,nf))) * dt/delta + PsiEzX(x,y) + PsiEzY(x,y);
+        Dz(1,y,nf) = Dz(1,y,n0) + ((1/kappex)*(Hy(1,y,nf)-Hy(SizeI,y,nf))+(1/kappey)*(-Hx(1,y+1,nf)+Hx(1,y,nf))) * dt/delta + PsiEzX(1,y) + PsiEzY(1,y); % PBC
+    end
     Ez(:,:,nf) = Dz(:,:,nf)./(e0*einf(:,1:SizeJ+2*PMLw));
     
     % ====================== Source ===================
@@ -176,7 +237,7 @@ for i=1:(MaxTime/SnapshotInterval)-1
     
     figure (6)
     mesh ( EzSnapshots (:, :, i) );
-    view (0, 90)
+    view (4, 4)
     zlim ( [-1 1] )
     caxis([0 1])
     xlabel ('y-axis')
