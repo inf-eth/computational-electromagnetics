@@ -2,21 +2,21 @@ clc
 clear all
 
 % Simulation parameters.
-SizeI = 256; % No. of spatial steps in x direction.
-SizeJ = 256; % No. of spatial steps in y direction.
-PMLw = 80; % Width of PML layer.
+SizeI = 512; % No. of spatial steps in x direction.
+SizeJ = 512; % No. of spatial steps in y direction.
+PMLw = 50; % Width of PML layer.
 SlabLeft = round(SizeJ/3+PMLw); % Location of left end of Slab.
 SlabRight = round(2*SizeJ/3+PMLw); % Location of right end of Slab
-MaxTime = SizeJ; % No. of time steps
-PulseWidth = round(SizeJ/6); % Controls width of Gaussian Pulse
+MaxTime = 4*SizeJ; % No. of time steps
+PulseWidth = round(SizeJ/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
-SnapshotInterval = 2; % Amount of time delay between snaps.
+SnapshotInterval = 4; % Amount of time delay between snaps.
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
 SourceChoice = 1;
 SourcePlane = 1; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
-SourceLocationX = 50; % X Location of source. Only used for an omni-source.
+SourceLocationX = SizeI/2; % X Location of source. Only used for an omni-source.
 SourceLocationY = PMLw+10; % Y Location of source.
 
 % Constants.
@@ -47,8 +47,8 @@ PsiHxY = zeros(SizeI, SizeJ+2*PMLw+1);
 
 % PML parameters.
 kapp = 1;
-a = 0.0008;
-sig = 0.04;
+a = 0.0004;
+sig = 0.045;
 % Electric.
 kappex = kapp;
 kappey = kapp;
@@ -87,9 +87,9 @@ Eztt = zeros(MaxTime, 1);
 x1 = SlabLeft+1; % Position of observation.
 
 % Refractive Index calculations.
-Y1 = SlabLeft + 50;
+Y1 = SlabLeft + 5;
 y1 = Y1*delta;
-Y2 = SlabLeft + 60;
+Y2 = SlabLeft + 6;
 y2 = Y2*delta;
 Ezy1 = zeros(MaxTime, 1);
 Ezy2 = zeros(MaxTime, 1);
@@ -98,21 +98,21 @@ einf = ones(SizeI,SizeJ+2*PMLw+1);
 einf(:,SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SizeI,SizeJ+2*PMLw+1);
 uinf(:,SlabLeft:SlabRight) = 1; % uinf(Drude) or ur in slab.
-wpesn = ones(SizeI,SizeJ+2*PMLw+1);
+wpesn = zeros(SizeI,SizeJ+2*PMLw+1);
 wpesn(:,SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpe snuared in slab.
-wpmsn = ones(SizeI,SizeJ+2*PMLw+1);
+wpmsn = zeros(SizeI,SizeJ+2*PMLw+1);
 wpmsn(:,SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm snuared in slab.
-ge = ones(SizeI,SizeJ+2*PMLw+1);
+ge = zeros(SizeI,SizeJ+2*PMLw+1);
 ge(:,SlabLeft:SlabRight) = w/32; % Electric collision frenuency in slab.
-gm = ones(SizeI,SizeJ+2*PMLw+1);
+gm = zeros(SizeI,SizeJ+2*PMLw+1);
 gm(:,SlabLeft:SlabRight) = w/32; % Magnetic collision frenuency in slab.
 
-a0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesn+2*dt*einf.*ge));
-a = (1/dt^2)*a0;
-b = (1/(2*dt))*ge.*a0;
-c = (e0/dt^2)*einf.*a0;
-d = (-1*e0/4).*wpesn.*a0;
-e = (1/(2*dt))*e0*einf.*ge.*a0;
+ae0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesn+2*dt*einf.*ge));
+ae = (1/dt^2)*ae0;
+be = (1/(2*dt))*ge.*ae0;
+ce = (e0/dt^2)*einf.*ae0;
+de = (-1*e0/4).*wpesn.*ae0;
+ee = (1/(2*dt))*e0*einf.*ge.*ae0;
 am0 = (4*dt^2)./(u0*(4*uinf+dt^2*wpmsn+2*dt*uinf.*gm));
 am = (1/dt^2)*am0;
 bm = (1/(2*dt))*gm.*am0;
@@ -120,7 +120,7 @@ cm = (u0/dt^2)*uinf.*am0;
 dm = (-1*u0/4).*wpmsn.*am0;
 em = (1/(2*dt))*u0*uinf.*gm.*am0;
 
-EzSnapshots = zeros(SizeI/SnapshotResolution, SizeJ/SnapshotResolution, MaxTime/SnapshotInterval); % Data for plotting.
+EzSnapshots = zeros(SizeI/SnapshotResolution, (SizeJ+2*PMLw)/SnapshotResolution, MaxTime/SnapshotInterval); % Data for plotting.
 frame = 1;
 
 np = 1;
@@ -221,17 +221,160 @@ for n = 0:MaxTime
     end
     Dz(x,y,nf) = e0*Ez(x,y,nf);
     
-    Ezi(n+1) = Ez(SizeI/2,x1,nf); % Incident field is left of slab.
+    Ezi(n+1) = Ez(SizeI/2,SlabLeft+1,nf); % Incident field is left of slab.
     
     if (mod(n, SnapshotInterval) == 0)
-        EzSnapshots(:,:,n/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(SizeI-1)), 1+(0:SnapshotResolution:(SizeJ-1)), nf);
+        EzSnapshots(:,:,n/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(SizeI-1)), 1+(0:SnapshotResolution:((SizeJ+2*PMLw)-1)), nf);
     end
+
     
     np = mod(np, 3)+1;
     n0 = mod(n0, 3)+1;
     nf = mod(nf, 3)+1;
 end
 fprintf ( 1, '\rDry run complete! \n');
+toc
+% Reinitialization of fields for actual simulation.
+Ez = zeros(SizeI, SizeJ+2*PMLw, 3); % z-component of E-field
+Dz = zeros(SizeI, SizeJ+2*PMLw, 3); % z-component of D
+Hx = zeros(SizeI, SizeJ+2*PMLw+1, 3); % x-component of H-field
+Bx = zeros(SizeI, SizeJ+2*PMLw+1, 3); % x-component of B
+Hy = zeros(SizeI, SizeJ+2*PMLw, 3); % y-component of H-field
+By = zeros(SizeI, SizeJ+2*PMLw, 3); % y-component of B
+
+% Actual simulation with scatterer.
+fprintf ( 1, 'Simulation started... \n');
+np = 1;
+n0 = 2;
+nf = 3;
+linecount = 0;
+% Outer loop for time-stepping.
+tic
+% Test loop for incident field in free space.
+for n = 0:MaxTime
+    
+    % Progress indicator.
+    if mod(n,2) == 0
+        fprintf(1, repmat('\b',1,linecount));
+        linecount = fprintf(1, '%g %%', (n*100)/MaxTime );
+    end
+    
+    % ========================= Bx and Hx =============================
+    % Hx Psi array.
+    x=1:SizeI;
+    y=2:SizeJ+2*PMLw;
+    PsiHxY(x,y) = (Cmy/delta)*(-Ez(x,y,n0) + Ez(x,y-1,n0)) + bmy*PsiHxY(x,y);
+    % Bx in normal space.
+    y=(2+PMLw):((SizeJ+2*PMLw+1)-PMLw-1);
+    Bx(x,y,nf) = Bx(x,y,n0) + (-Ez(x,y,n0) + Ez(x,y-1,n0)) * dt/delta;
+    Hx(x,y,nf) = am(x,y).*(Bx(x,y,nf)-2*Bx(x,y,n0)+Bx(x,y,np))+bm(x,y).*(Bx(x,y,nf)-Bx(x,y,np))+cm(x,y).*(2*Hx(x,y,n0)-Hx(x,y,np))+dm(x,y).*(2*Hx(x,y,n0)+Hx(x,y,np))+em(x,y).*Hx(x,y,np);
+    if PMLw > 0
+        % Bx in lower PML layer.
+        y=2:PMLw+1;
+        Bx(x,y,nf) = Bx(x,y,n0) + dt*((1/kappmy)*(-Ez(x,y,n0) + Ez(x,y-1,n0)) * 1/delta + PsiHxY(x,y));
+        Hx(x,y,nf) = Bx(x,y,nf)./(u0*uinf(x,y));
+        % Bx in upper PML layer.
+        y=(SizeJ+2*PMLw+1)-PMLw:(SizeJ+2*PMLw);
+        Bx(x,y,nf) = Bx(x,y,n0) + dt*((1/kappmy)*(-Ez(x,y,n0) + Ez(x,y-1,n0)) * 1/delta + PsiHxY(x,y));
+        Hx(x,y,nf) = Bx(x,y,nf)./(u0*uinf(x,y));
+    end
+    
+    % ========================= By and Hy =============================
+    % Hy Psi array.
+    x=1:SizeI-1;
+    y=1:SizeJ+2*PMLw;
+    PsiHyX(x,y) = (Cmx/delta)*(Ez(x+1,y,n0)-Ez(x,y,n0)) + bmx*PsiHyX(x,y);
+    PsiHyX(SizeI,y) = (Cmx/delta)*(Ez(1,y,n0)-Ez(SizeI,y,n0)) + bmx*PsiHyX(SizeI,y);
+    % By in normal space.
+    y=(1+PMLw):(SizeJ+2*PMLw)-PMLw;
+    By(x,y,nf) = By(x,y,n0) + (Ez(x+1,y,n0) - Ez(x,y,n0)) * dt/delta;
+    By(SizeI,y,nf) = By(SizeI,y,n0) + (Ez(1,y,n0) - Ez(SizeI,y,n0)) * dt/delta; % PBC
+    x=1:SizeI;
+    Hy(x,y,nf) = am(x,y).*(By(x,y,nf)-2*By(x,y,n0)+By(x,y,np))+bm(x,y).*(By(x,y,nf)-By(x,y,np))+cm(x,y).*(2*Hy(x,y,n0)-Hy(x,y,np))+dm(x,y).*(2*Hy(x,y,n0)+Hy(x,y,np))+em(x,y).*Hy(x,y,np);
+    if PMLw > 0
+        % By in lower PML layer.
+        x=1:SizeI-1;
+        y=1:PMLw;
+        By(x,y,nf) = By(x,y,n0) + dt*((1/kappmx)*(Ez(x+1,y,n0) - Ez(x,y,n0)) * 1/delta + PsiHyX(x,y));
+        By(SizeI,y,nf) = By(SizeI,y,n0) + dt*((1/kappmx)*(Ez(1,y,n0) - Ez(SizeI,y,n0)) * 1/delta + PsiHyX(SizeI,y)); % PBC
+        x=1:SizeI;
+        Hy(x,y,nf) = By(x,y,nf)./(u0*uinf(x,y));
+        % By in upper PML layer.
+        x=1:SizeI-1;
+        y=(SizeJ+2*PMLw)-PMLw+1:(SizeJ+2*PMLw);
+        By(x,y,nf) = By(x,y,n0) + dt*((1/kappmx)*(Ez(x+1,y,n0) - Ez(x,y,n0)) * 1/delta + PsiHyX(x,y));
+        By(SizeI,y,nf) = By(SizeI,y,n0) + dt*((1/kappmx)*(Ez(1,y,n0) - Ez(SizeI,y,n0)) * 1/delta + PsiHyX(SizeI,y)); % PBC
+        x=1:SizeI;
+        Hy(x,y,nf) = By(x,y,nf)./(u0*uinf(x,y));
+    end    
+    
+    % ========================= Dz and Ez =============================
+    % Psi arrays.
+    x=2:SizeI;
+    y=1:SizeJ+2*PMLw;
+    PsiEzX(x,y) = (Cex/delta)*(Hy(x,y,nf)-Hy(x-1,y,nf)) + bex*PsiEzX(x,y);
+    PsiEzX(1,y) = (Cex/delta)*(Hy(1,y,nf)-Hy(SizeI,y,nf)) + bex*PsiEzX(1,y); % PBC
+    PsiEzY(x,y) = (Cey/delta)*(-Hx(x,y+1,nf)+Hx(x,y,nf)) + bey*PsiEzY(x,y);
+    PsiEzY(1,y) = (Cey/delta)*(-Hx(1,y+1,nf)+Hx(1,y,nf)) + bey*PsiEzY(1,y); % PBC
+    % Dz in Normal Space.
+    y=(1+PMLw):((SizeJ+2*PMLw)-PMLw);
+    Dz(x,y,nf) = Dz(x,y,n0) + (Hy(x,y,nf)-Hy(x-1,y,nf)-Hx(x,y+1,nf)+Hx(x,y,nf)) * dt/delta;
+    Dz(1,y,nf) = Dz(1,y,n0) + (Hy(1,y,nf)-Hy(SizeI,y,nf)-Hx(1,y+1,nf)+Hx(1,y,nf)) * dt/delta; % PBC
+    x=1:SizeI;
+    Ez(x,y,nf) = ae(x,y).*(Dz(x,y,nf)-2*Dz(x,y,n0)+Dz(x,y,np))+be(x,y).*(Dz(x,y,nf)-Dz(x,y,np))+ce(x,y).*(2*Ez(x,y,n0)-Ez(x,y,np))+de(x,y).*(2*Ez(x,y,n0)+Ez(x,y,np))+ee(x,y).*Ez(x,y,np);
+    if PMLw > 0
+        % Dz in lower PML layer.
+        x=2:SizeI;
+        y=1:PMLw;
+        Dz(x,y,nf) = Dz(x,y,n0) + dt*(((1/kappex)*(Hy(x,y,nf)-Hy(x-1,y,nf))+(1/kappey)*(-Hx(x,y+1,nf)+Hx(x,y,nf))) * 1/delta + PsiEzX(x,y) + PsiEzY(x,y));
+        Dz(1,y,nf) = Dz(1,y,n0) + dt*(((1/kappex)*(Hy(1,y,nf)-Hy(SizeI,y,nf))+(1/kappey)*(-Hx(1,y+1,nf)+Hx(1,y,nf))) * 1/delta + PsiEzX(1,y) + PsiEzY(1,y)); % PBC
+        x=1:SizeI;
+        Ez(x,y,nf) = Dz(x,y,nf)./(e0*einf(x,y));
+        % Dz in upper PML layer.
+        x=2:SizeI;
+        y=(SizeJ+2*PMLw)-PMLw+1:(SizeJ+2*PMLw);
+        Dz(x,y,nf) = Dz(x,y,n0) + dt*(((1/kappex)*(Hy(x,y,nf)-Hy(x-1,y,nf))+(1/kappey)*(-Hx(x,y+1,nf)+Hx(x,y,nf))) * 1/delta + PsiEzX(x,y) + PsiEzY(x,y));
+        Dz(1,y,nf) = Dz(1,y,n0) + dt*(((1/kappex)*(Hy(1,y,nf)-Hy(SizeI,y,nf))+(1/kappey)*(-Hx(1,y+1,nf)+Hx(1,y,nf))) * 1/delta + PsiEzX(1,y) + PsiEzY(1,y)); % PBC
+        x=1:SizeI;
+        Ez(x,y,nf) = Dz(x,y,nf)./(e0*einf(x,y));
+    end
+            
+    % ====================== Source ===================
+    if SourcePlane == 1
+        x = 1:SizeI;
+        y = SourceLocationY;        
+    else
+        x = SourceLocationX;
+        y = SourceLocationY;
+    end
+    % Source.
+    if SourceChoice == 1
+        Ez(x,y,nf) = Ez(x,y,nf) + exp( -1*((n-td)/(PulseWidth/4))^2 ) * Sc;
+    elseif SourceChoice == 2
+        Ez(x,y,nf) = Ez(x,y,nf) + sin(2*pi*f*(n)*dt) * Sc;
+    elseif SourceChoice == 3
+        Ez(x,y,nf) = Ez(x,y,nf) + (1-2*(pi*fp*(n*dt-dr))^2)*exp(-1*(pi*fp*(n*dt-dr))^2) * Sc;
+    end
+    Dz(x,y,nf) = e0*Ez(x,y,nf);
+    
+    % Transmitted fields.
+    Ezt(n+1) = Ez(SizeI/2,SlabLeft+1,nf);
+    Eztt(n+1) = Ez(SizeI/2,SlabRight+10,nf);
+    
+    % Fields for calculation of refractive index.
+    Ezy1(n+1) = Ez(SizeI/2,Y1,nf);
+    Ezy2(n+1) = Ez(SizeI/2,Y2, nf);
+    
+    if (mod(n, SnapshotInterval) == 0)
+        EzSnapshots(:,:,n/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(SizeI-1)), 1+(0:SnapshotResolution:((SizeJ+2*PMLw)-1)), nf);
+    end
+    
+    np = mod(np, 3)+1;
+    n0 = mod(n0, 3)+1;
+    nf = mod(nf, 3)+1;
+end
+fprintf ( 1, '\rSimulation complete! \n');
+toc
 % Electric field snapshots.
 for i=1:(MaxTime/SnapshotInterval)-1
     
@@ -239,204 +382,126 @@ for i=1:(MaxTime/SnapshotInterval)-1
     mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
     zlim ( [-1 1] )
-    %caxis([0 1])
+    caxis([-0.1 0.6])
     xlabel ('y-axis')
     ylabel ('x-axis')
     %colorbar
     
-%     figure (7)
-%     surf ( EzSnapshots (:, :, i) );
-%     view (0, 90)
-%     zlim ( [-10 10] )
-%     %caxis([0 1])
-%     xlabel ('y-axis')
-%     ylabel ('x-axis')
+    figure (7)
+    mesh ( EzSnapshots (:, :, i) );
+    view (0, 90)
+    zlim ( [-10 10] )
+    caxis([-0.1 0.6])
+    xlabel ('y-axis')
+    ylabel ('x-axis')
     %colorbar
     
 end
-% 
-% % Reinitialization of fields for actual simulation.
-% Ex = zeros(SIZE, 3); % x-component of E-field
-% Hy = zeros(SIZE, 3); % y-component of H-field
-% % Actual simulation with scatterer.
-% fprintf ( 1, 'Simulation started... \n');
-% for n = 0:MaxTime
-%     
-%     % Progress indicator.
-%     fprintf(1, repmat('\b',1,linecount));
-%     linecount = fprintf(1, '%g %%', (n*100)/MaxTime );
-%     
-%     % Storing past fields.
-%     Ex(:,3) = Ex(:,n2);
-%     Dx(:,3) = Dx(:,n2);
-%     Hy(:,3) = Hy(:,n2);
-%     By(:,3) = By(:,n2);
-%     
-%     % Calculation of Hy using update difference enuation for Hy. This is time step n.
-%     By(1:SIZE-1,n2) = By(1:SIZE-1,n1) + ( ( Ex(1:SIZE-1,n1) - Ex(2:SIZE,n1) ) * dt/(dz) );
-%     Hy(:,n2) = am.*(By(:,n2)-2*By(:,n1)+By(:,3))+bm.*(By(:,n2)-By(:,3))+cm.*(2*Hy(:,n1)-Hy(:,3))+dm.*(2*Hy(:,n1)+Hy(:,3))+em.*(Hy(:,3));
-%     
-%     % ABC for H at SIZE.
-%     Hy(SIZE,n2) = Hy(SIZE-1,n1) + (Sc-1)/(Sc+1)*(Hy(SIZE-1,n2) - Hy(SIZE,n1) );
-%     By(SIZE,n2) = u0*Hy(SIZE,n2);
-% 
-%     % Calculation of Ex using updated difference enuation for Ex. This is time step n+1/2.
-%     Dx(2:SIZE,n2) = Dx(2:SIZE, n1) + ( dt/(dz)*(Hy(1:SIZE-1, n2) - Hy(2:SIZE, n2)) );
-%     Ex(:,n2) = a.*(Dx(:,n2)-2*Dx(:,n1)+Dx(:,3))+b.*(Dx(:,n2)-Dx(:,3))+c.*(2*Ex(:,n1)-Ex(:,3))+d.*(2*Ex(:,n1)+Ex(:,3))+e.*(Ex(:,3));
-%     
-%     % ABC for E at 1.
-%     Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
-%     Dx(1,n2) = e0*Ex(1,n2);
-%     
-%     % Source.
-%     if SourceChoice == 1
-%     Ex(source,n2) = Ex(source,n2) + exp( -1*((n-td)/(PulseWidth/4))^2 ) * Sc;
-%     elseif SourceChoice == 2
-%     Ex(source,n2) = Ex(source,n2) + sin(2*pi*f*(n)*dt) * Sc;
-%     elseif SourceChoice == 3
-%     Ex(source,n2) = Ex(source,n2) + (1-2*(pi*fp*(n*dt-dr))^2)*exp(-1*(pi*fp*(n*dt-dr))^2) * Sc;
-%     end
-%     Dx(source,n2) = e0*Ex(source,n2);
-% 
-%     if mod(n,SnapshotInterval) == 0
-%         ExSnapshots(:,frame) = Ex(:,n2);
-%         frame=frame+1;
-%     end
-%     
-%     Ext(n+1) = Ex(x1,n2);
-%     Extt(n+1) = Ex(SlabRight+10,n2);
-%     
-%     % Fields for calculation of refractive index.
-%     Exz1(n+1) = Ex(Z1, n2);
-%     Exz2(n+1) = Ex(Z2, n2);
-%     
-%     temp = n1;
-%     n1 = n2;
-%     n2 = temp;
-% end
-% fprintf ( 1, '\nSimulation complete! \n');
-% toc
-% % Postprocessing.
-% Fs = 1/dt;                    % Sampling frenuency
-% T = dt;                       % Sample time
-% L = length(Exi);              % Length of signal
-% t = (0:L-1)*T;                % Time vector
-% fspan = 100;                  % Points to plot in frenuency domain
-% 
-% figure(1)
-% subplot(211)
-% plot(Fs*t, Exi, 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Incident Field', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(2)
-% subplot(211)
-% plot(Fs*t, Ext, 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(3)
-% subplot(211)
-% plot(Fs*t, Extt, 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Transmitted Field Beyond Slab', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% 
-% NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
-% % Incident and Transmitted fields.
-% EXI = fft(Exi,NFFT)/L;
-% EXT = fft(Ext,NFFT)/L;
-% EXTT = fft(Extt,NFFT)/L;
-% % Refractive index calculations.
-% EXZ1 = fft(Exz1,NFFT)/L;
-% EXZ2 = fft(Exz2,NFFT)/L;
-% f = Fs/2*linspace(0,1,NFFT/2+1);
-% 
-% % Plot single-sided amplitude spectrum.
-% figure(1)
-% subplot(212)
-% EXIp = 2*abs(EXI(1:NFFT/2+1));
-% plot(f(1:fspan), EXIp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Single-Sided Amplitude Spectrum of Exi(t)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EXI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(2)
-% subplot(212)
-% EXTp = 2*abs(EXT(1:NFFT/2+1));
-% plot(f(1:fspan), EXTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Single-Sided Amplitude Spectrum of Ext(t)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EXT(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(3)
-% subplot(212)
-% EXTTp = 2*abs(EXTT(1:NFFT/2+1));
-% plot(f(1:fspan), EXTTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Single-Sided Amplitude Spectrum of Extt(t)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EXT(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% 
-% % Transmission Coefficient.
-% figure(4)
-% subplot(211)
-% TAU = abs(EXT(1:NFFT/2+1)./EXI(1:NFFT/2+1));
-% plot(f(1:fspan), TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EXT(f)/EXI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% axis([-1 1 -2 2])
-% axis 'auto x'
-% grid on
-% subplot(212)
-% plot(f(1:fspan), 1-TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('1-|EXT(f)/EXI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% axis([-1 1 -2 2])
-% axis 'auto x'
-% grid on
-% 
-% % Refractive Index calculations.
-% nFDTD = (1/(1i*k0*(z1-z2))).*log(EXZ2(1:NFFT/2+1)./EXZ1(1:NFFT/2+1));
-% figure(5)
-% subplot(211)
-% plot(f(1:fspan), real(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'b');
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Refractive index re(n)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11)
-% ylabel('re(n)', 'FontSize', 11)
-% grid on
-% subplot(212)
-% plot(f(1:fspan), imag(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'r');
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% 
-% % Simulation animation.
-% for i=1:frame-1
-%     figure (6)
-%     % Scatterer boundaries.
-%     hold off
-%     plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
-%     hold on
-%     plot([SlabRight SlabRight], [-1 1], 'Color', 'r');
-%     plot(ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
-%     set(gca, 'FontSize', 10, 'FontWeight', 'b')
-%     axis([0 SIZE -1 1])
-%     title('Time Domain Simulation', 'FontSize', 12, 'FontWeight', 'b')
-%     xlabel('Spatial step (k)', 'FontSize', 11, 'FontWeight', 'b')
-%     ylabel('Electric field (Ex)', 'FontSize', 11, 'FontWeight', 'b')
-%     grid on
-% end
+
+% Postprocessing.
+Fs = 1/dt;                    % Sampling frenuency
+T = dt;                       % Sample time
+L = length(Ezi);              % Length of signal
+t = (0:L-1)*T;                % Time vector
+fspan = 100;                  % Points to plot in frenuency domain
+
+figure(1)
+subplot(211)
+plot(Fs*t, Ezi, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Incident Field', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(2)
+subplot(211)
+plot(Fs*t, Ezt, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(3)
+subplot(211)
+plot(Fs*t, Eztt, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted Field Beyond Slab', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+
+NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
+% Incident and Transmitted fields.
+EZI = fft(Ezi,NFFT)/L;
+EZT = fft(Ezt,NFFT)/L;
+EZTT = fft(Eztt,NFFT)/L;
+% Refractive index calculations.
+EZY1 = fft(Ezy1,NFFT)/L;
+EZY2 = fft(Ezy2,NFFT)/L;
+f = Fs/2*linspace(0,1,NFFT/2+1);
+
+% Plot single-sided amplitude spectrum.
+figure(1)
+subplot(212)
+EZIp = 2*abs(EZI(1:NFFT/2+1));
+plot(f(1:fspan), EZIp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Ezi(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(2)
+subplot(212)
+EZTp = 2*abs(EZT(1:NFFT/2+1));
+plot(f(1:fspan), EZTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Ezt(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZT(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(3)
+subplot(212)
+EZTTp = 2*abs(EZTT(1:NFFT/2+1));
+plot(f(1:fspan), EZTTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Eztt(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZT(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+
+% Transmission Coefficient.
+figure(4)
+subplot(211)
+TAU = abs(EZT(1:NFFT/2+1)./EZI(1:NFFT/2+1));
+plot(f(1:fspan), TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+axis([-1 1 -2 2])
+axis 'auto x'
+grid on
+subplot(212)
+plot(f(1:fspan), 1-TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('1-|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+axis([-1 1 -2 2])
+axis 'auto x'
+grid on
+
+% Refractive Index calculations.
+nFDTD = (1/(1i*k0*(y1-y2))).*log(EZY2(1:NFFT/2+1)./EZY1(1:NFFT/2+1));
+figure(5)
+subplot(211)
+plot(f(1:fspan), real(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'b');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Refractive index re(n)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11)
+ylabel('re(n)', 'FontSize', 11)
+grid on
+subplot(212)
+plot(f(1:fspan), imag(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'r');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
