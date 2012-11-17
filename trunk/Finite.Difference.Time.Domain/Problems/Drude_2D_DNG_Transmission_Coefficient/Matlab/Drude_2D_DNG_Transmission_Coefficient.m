@@ -11,7 +11,7 @@ MaxTime = 4*SizeJ; % No. of time steps
 PulseWidth = round(SizeJ/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
-SnapshotInterval = 4; % Amount of time delay between snaps.
+SnapshotInterval = 16; % Amount of time delay between snaps.
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
 SourceChoice = 1;
@@ -376,13 +376,16 @@ end
 fprintf ( 1, '\rSimulation complete! \n');
 toc
 % Electric field snapshots.
+sizeS=size(EzSnapshots);
 for i=1:(MaxTime/SnapshotInterval)-1
     
     figure (6)
     mesh ( EzSnapshots (:, :, i) );
     view (4, 4)
-    zlim ( [-1 1] )
-    caxis([-0.1 0.6])
+    xlim([0 sizeS(2)])
+    ylim([0 sizeS(1)])
+    zlim([-1 1])
+    %caxis([-0.1 0.6])
     xlabel ('y-axis')
     ylabel ('x-axis')
     %colorbar
@@ -390,8 +393,10 @@ for i=1:(MaxTime/SnapshotInterval)-1
     figure (7)
     mesh ( EzSnapshots (:, :, i) );
     view (0, 90)
-    zlim ( [-10 10] )
-    caxis([-0.1 0.6])
+    xlim([0 sizeS(2)])
+    ylim([0 sizeS(1)])
+    zlim([-10 10])
+    %caxis([-0.1 0.6])
     xlabel ('y-axis')
     ylabel ('x-axis')
     %colorbar
