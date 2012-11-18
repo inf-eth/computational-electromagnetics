@@ -7,17 +7,17 @@ SizeJ = 512; % No. of spatial steps in y direction.
 PMLw = 50; % Width of PML layer.
 SlabLeft = round(SizeJ/3+PMLw); % Location of left end of Slab.
 SlabRight = round(2*SizeJ/3+PMLw); % Location of right end of Slab
-MaxTime = 4*SizeJ; % No. of time steps
+MaxTime = 6*SizeJ; % No. of time steps
 PulseWidth = round(SizeJ/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
 SnapshotInterval = 16; % Amount of time delay between snaps.
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
-SourceChoice = 1;
-SourcePlane = 1; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
+SourceChoice = 2;
+SourcePlane = 0; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
 SourceLocationX = SizeI/2; % X Location of source. Only used for an omni-source.
-SourceLocationY = PMLw+10; % Y Location of source.
+SourceLocationY = PMLw+72; % Y Location of source.
 
 % Constants.
 c = 3e8;
@@ -30,7 +30,7 @@ delta = 3e-3;
 Sc = c * dt/delta
 
 l = PulseWidth*delta;
-f = c/l
+f = 2*c/l
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
@@ -98,26 +98,26 @@ einf = ones(SizeI,SizeJ+2*PMLw+1);
 einf(:,SlabLeft:SlabRight) = 1; % einf(Drude) or er in slab.
 uinf = ones(SizeI,SizeJ+2*PMLw+1);
 uinf(:,SlabLeft:SlabRight) = 1; % uinf(Drude) or ur in slab.
-wpesn = zeros(SizeI,SizeJ+2*PMLw+1);
-wpesn(:,SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpe snuared in slab.
-wpmsn = zeros(SizeI,SizeJ+2*PMLw+1);
-wpmsn(:,SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm snuared in slab.
+wpesq = zeros(SizeI,SizeJ+2*PMLw+1);
+wpesq(:,SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpe squared in slab.
+wpmsq = zeros(SizeI,SizeJ+2*PMLw+1);
+wpmsq(:,SlabLeft:SlabRight) = 2*w^2; % DNG(Drude) value of wpm squared in slab.
 ge = zeros(SizeI,SizeJ+2*PMLw+1);
-ge(:,SlabLeft:SlabRight) = w/32; % Electric collision frenuency in slab.
+%ge(:,SlabLeft:SlabRight) = w/32; % Electric collision frequency in slab.
 gm = zeros(SizeI,SizeJ+2*PMLw+1);
-gm(:,SlabLeft:SlabRight) = w/32; % Magnetic collision frenuency in slab.
+%gm(:,SlabLeft:SlabRight) = w/32; % Magnetic collision frequency in slab.
 
-ae0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesn+2*dt*einf.*ge));
+ae0 = (4*dt^2)./(e0*(4*einf+dt^2*wpesq+2*dt*einf.*ge));
 ae = (1/dt^2)*ae0;
 be = (1/(2*dt))*ge.*ae0;
 ce = (e0/dt^2)*einf.*ae0;
-de = (-1*e0/4).*wpesn.*ae0;
+de = (-1*e0/4).*wpesq.*ae0;
 ee = (1/(2*dt))*e0*einf.*ge.*ae0;
-am0 = (4*dt^2)./(u0*(4*uinf+dt^2*wpmsn+2*dt*uinf.*gm));
+am0 = (4*dt^2)./(u0*(4*uinf+dt^2*wpmsq+2*dt*uinf.*gm));
 am = (1/dt^2)*am0;
 bm = (1/(2*dt))*gm.*am0;
 cm = (u0/dt^2)*uinf.*am0;
-dm = (-1*u0/4).*wpmsn.*am0;
+dm = (-1*u0/4).*wpmsq.*am0;
 em = (1/(2*dt))*u0*uinf.*gm.*am0;
 
 EzSnapshots = zeros(SizeI/SnapshotResolution, (SizeJ+2*PMLw)/SnapshotResolution, MaxTime/SnapshotInterval); % Data for plotting.
