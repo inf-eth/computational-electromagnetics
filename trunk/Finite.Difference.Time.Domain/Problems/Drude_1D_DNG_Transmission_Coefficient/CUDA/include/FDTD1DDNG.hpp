@@ -113,9 +113,9 @@ public:
 	unsigned long HDDSpace();
 
 	// Memory allocation and initialisation.
-	void AllocateMemoryCPU();
-	void InitialiseCPU();
-	void InitialiseExHyCPU();
+	int AllocateMemoryCPU();
+	int InitialiseCPU();
+	int InitialiseExHyCPU();
 	int AllocateMemoryGPU();//int initializeFDTD1DDNGKernel();
 	int CopyDataCPUtoGPU();
 	int CopyExHyCPUtoGPU();
@@ -126,11 +126,18 @@ public:
 	int DryRunGPU();
 	int RunSimulationGPU(bool=true);//int runFDTD1DDNGKernels(bool=true);
 
+	// Complete Runs on CPU and GPU.
+	int CompleteRunCPU(bool=true);
+	int CompleteRunGPU(bool=true);
+
 	// Timing.
 	void StartTimer();
 	void StopTimer();
 	PRECISION GetElapsedTime();
 
+	int SafeCall(int, const char[]=NULL);
+
+	int CleanupCPU();
 	int CleanupGPU();
 	~CFDTD1DDNG();
 };

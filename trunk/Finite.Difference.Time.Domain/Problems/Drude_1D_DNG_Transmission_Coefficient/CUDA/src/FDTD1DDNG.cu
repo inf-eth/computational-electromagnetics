@@ -105,7 +105,7 @@ unsigned long CFDTD1DDNG::HDDSpace()
 	return (unsigned long)sizeof(PRECISION)*(5UL*(unsigned long)MaxTime+(unsigned long)Size*((unsigned long)MaxTime/(unsigned long)SnapshotInterval+1UL));
 }
 // Initialize data arrays.
-void CFDTD1DDNG::AllocateMemoryCPU()
+int CFDTD1DDNG::AllocateMemoryCPU()
 {
 	// Field arrays.
 	Ex_ = new PRECISION[Size*3];
@@ -139,8 +139,10 @@ void CFDTD1DDNG::AllocateMemoryCPU()
 	cm = new PRECISION[Size];
 	dm = new PRECISION[Size];
 	em = new PRECISION[Size];
+
+	return 0;
 }
-void CFDTD1DDNG::InitialiseCPU()
+int CFDTD1DDNG::InitialiseCPU()
 {
 	for (unsigned int i=0; i<3*Size; i++)
 	{
@@ -197,14 +199,16 @@ void CFDTD1DDNG::InitialiseCPU()
 		Exz1[i] = 0.;
 		Exz2[i] = 0.;
 	}
+	return 0;
 }
-void CFDTD1DDNG::InitialiseExHyCPU()
+int CFDTD1DDNG::InitialiseExHyCPU()
 {
 	for (unsigned int i=0; i<3*Size; i++)
 	{
 		Ex_[i] = 0.;
 		Hy_[i] = 0.;
 	}
+	return 0;
 }
 int CFDTD1DDNG::AllocateMemoryGPU ()
 {
@@ -616,227 +620,38 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 	return 0;
 }
-/*
-int CFDTD1DDNG::runFDTD1DDNGKernels (bool SaveFields)
+int CFDTD1DDNG::CompleteRunCPU(bool SaveFields)
 {
-	// Total local threads in a block. Can be thought of as Block dimensions.
-	unsigned int ThreadsX = 256;
-	unsigned int ThreadsY = 1;
-	
-	// Total blocks in simulation grid. Can be thought of as no. of blocks in grid.
-	// Obviously, I and J should be divisible by block dimensions.
-	unsigned int BlocksX = I/ThreadsX;
-	unsigned int BlocksY = (J+2*PMLw)/ThreadsY;
-
-	// Kernel parameters.
-	dim3 Blocks(BlocksX, BlocksY);
-	dim3 Threads(ThreadsX, ThreadsY);
-
-	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << std::endl;
-	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << std::endl;
-
-	unsigned int hTimer;
-	CUT_SAFE_CALL(cutCreateTimer(&hTimer));
-	CUT_SAFE_CALL(cutResetTimer(hTimer));
-		
-	// File handling from chapter 3 of Understanding FDTD. J. B. Schneider
-	fstream snapshot;
-	stringstream framestream;
-	string basename = "FieldData/Ex";
-	string filename;
-	unsigned int frame = 1;
-
-	unsigned int ProgressResolution;
-	NMax > 3000 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
-	cout << "Simulation (GPU) started..." << std::endl;
-
-	for (unsigned int n=0;n<MaxTime; n++)
-	{
-		CUT_SAFE_CALL( cutStartTimer(hTimer) );
-		for ( unsigned int step=0; step < 2; step++)
-		{
-			// Kernel call. 14 data pointers. 23 non-pointer arguments.
-			FDTD1DDNGKernel <16, 16> <<<Blocks, Threads>>>(
-												d_Hx,
-												d_Bx,
-												d_Hy,
-												d_By,
-												d_Ez,
-												d_Dz,
-												d_Dzx,
-												d_Dzy,
-												d_urHx,
-												d_urHy,
-												d_erEz,
-												d_ScmHx,
-												d_ScmHy,
-												d_Sc,
-												d_Scsx,
-												d_Scsy,
-												d_ScmsmxHy,
-												d_ScmsmyHx,
-												delta,
-												dtscalar,
-												dt,
-												PMLw,
-												e0,
-												u0,
-												Two_pi_f_deltat,
-												NHW,
-												Is,
-												Js,
-												IHx,
-												JHx,
-												IHy,
-												JHy,
-												IEz,
-												JEz,
-												n,
-												n0,
-												n1,
-												n2,
-												flagHalf);
-
-
-			CUT_CHECK_ERROR("FDTD2DKernel() execution failed\n");
-			checkCudaErrors( cudaThreadSynchronize() );
-			flagHalf = !flagHalf;
-		}
-		CUT_SAFE_CALL( cutStopTimer(hTimer) );
-
-		// Write field snapshot.
-		if (n % tResolution == 0 && SaveFields == true)
-		{
-			// Copy the data back to the host
-			checkCudaErrors( cudaMemcpy(Ez, d_Ez, sizeof(float) * IEz*JEz*3, cudaMemcpyDeviceToHost) );
-
-			framestream.str(std::string());			// Clearing stringstream contents.
-			framestream << frame;
-			filename = basename + framestream.str() + ".fdt";
-
-			#ifdef WIN32
-			snapshot.open (filename.c_str(), std::ios::out|std::ios::binary);
-			snapshot.write ( (char*)&(Ez[IEz*JEz*n2]), sizeof(PRECISION)*IEz*JEz);
-			snapshot.close();
-			#else
-			fd = open (filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-			write (fd, (void*)&(Ez[IEz*JEz*n2]), sizeof(PRECISION)*IEz*JEz);
-			close (fd);
-			#endif
-
-			frame++;
-		}
-		n0 = (n0+1)%3;
-		n1 = (n1+1)%3;
-		n2 = (n2+1)%3;
-
-		if (n%ProgressResolution == 0)
-			std::cout << std::setprecision(4) << std::setw(3) << "\r" << (float)n/(NMax-1)*100 << "%";
-	}
-	std::cout << "\r" << "Simulation complete!" << std::endl;
-	std::cout << "kernel execution time = " << cutGetTimerValue(hTimer) << " ms." << std::endl;
-	CUT_SAFE_CALL(cutDeleteTimer(hTimer));
+	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
+	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
+	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
+	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
+	SafeCall(DryRunCPU(), "Error: Dry run (CPU).");
+	SafeCall(InitialiseExHyCPU(), "Error: Initalising Ex/Hy arrays (CPU).");
+	SafeCall(RunSimulationCPU(SaveFields), "Error: Running simulation (CPU).");
+	SafeCall(CleanupCPU(), "Error: Cleaning up CPU.");
 
 	return 0;
 }
-int CFDTD1DDNG::RunSimulationCPU (bool SaveFields)
+int CFDTD1DDNG::CompleteRunGPU(bool SaveFields)
 {
-	// Time loop.
-	unsigned int n, i, j;
+	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
+	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
+	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
+	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 
-	// File Handling.
-	std::stringstream framestream;
-	std::string basename = "../FieldData/Ez";
-	std::string filename;
-	unsigned int frame = 1;
+	SafeCall(AllocateMemoryGPU(), "Error: Allocating memory on GPU.");
+	SafeCall(CopyDataCPUtoGPU(), "Error: Copying data from CPU to GPU.");
+	SafeCall(DryRunGPU(), "Error: Dry run (GPU).");
+	SafeCall(InitialiseExHyCPU(), "Error: Initalising Ex/Hy arrays (CPU).");
+	SafeCall(CopyExHyCPUtoGPU(), "Error: Copying Ex/Hy arrays from CPU to GPU.");
+	SafeCall(RunSimulationGPU(SaveFields), "Error: Running simulation on GPU.");
+	SafeCall(CleanupCPU(), "Error: Cleaning up CPU.");
+	SafeCall(CleanupGPU(), "Error: Cleaning up GPU.");
 
-	#ifdef WIN32
-	std::fstream snapshot;
-	#else
-	int fd;
-	#endif
-
-	unsigned int ProgressResolution;
-	NMax > 3000 ? ProgressResolution = NMax/100 : ProgressResolution = 1;
-	std::cout << "Simulation started..." << std::endl;
-
-	for (n=0; n < NMax-1; n++)
-	{
-		if (n%ProgressResolution == 0)
-			std::cout << std::setprecision(4) << std::setw(3) << "\r" << (float)n/(NMax-1)*100 << "%";
-
-		// t = 1/2.
-		// Magnetic field. IHx and JHx are one less than IHy and JHy.
-		for (i=0; i < IHx; i++)
-		{
-			for (j=0; j < JHx; j++)
-			{
-				Bx[i+IHx*j+IHx*JHx*n2] = (1-ScmHx[i+IHx*j])/(1+ScmHx[i+IHx*j]) * Bx[i+IHx*j+IHx*JHx*n1] + ( (dt/delta)/(1+ScmHx[i+IHx*j]) * (Ez[i+IEz*j+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hx[i+IHx*j+IHx*JHx*n2] = Bx[i+IHx*j+IHx*JHx*n2]/(u0*urHx[i+IHx*j]);
-
-				By[(i+1)+IHy*(j+1)+IHy*JHy*n2] = (1-ScmHy[(i+1)+IHy*(j+1)])/(1+ScmHy[(i+1)+IHy*(j+1)]) * By[(i+1)+IHy*(j+1)+IHy*JHy*n1] + ( (dt/delta)/(1+ScmHy[(i+1)+IHy*(j+1)]) * (Ez[(i+1)+IEz*(j+1)+IEz*JEz*n1]-Ez[i+IEz*(j+1)+IEz*JEz*n1]) );
-				Hy[(i+1)+IHy*(j+1)+IHy*JHy*n2] = By[(i+1)+IHy*(j+1)+IHy*JHy*n2]/(u0*urHy[(i+1)+IHy*(j+1)]);
-			}
-		}
-		// t = 1.
-		// Electric field.
-		for (i=0; i < IEz; i++)
-		{
-			for (j=1; j < JEz-1; j++)
-			{
-				Dz[i+IEz*j+IEz*JEz*n2] = (1-Sc[i+IEz*j])/(1+Sc[i+IEz*j]) * Dz[i+IEz*j+IEz*JEz*n1] + ( (dt/delta)/(1+Sc[i+IEz*j]) * ( Hy[(i+1)+IHy*j+IHy*JHy*n2] - Hy[i+IHy*j+IHy*JHy*n2] - Hx[i+IHx*j+IHx*JHx*n2] + Hx[i+IHx*(j-1)+IHx*JHx*n2]) );
-				Ez[i+IEz*j+IEz*JEz*n2] = Dz[i+IEz*j+IEz*JEz*n2]/(e0*erEz[i+IEz*j]);
-
-				// Source.
-				if (j == Js && n < NHW)
-				{
-					Ez[i+IEz*j+IEz*JEz*n2] = Ez[i+IEz*j+IEz*JEz*n2] + 1 * sin (Two_pi_f_deltat * n) / dtscalar;
-					Dz[i+IEz*j+IEz*JEz*n2] = e0 * Ez[i+IEz*j+IEz*JEz*n2];
-				}
-			}
-		}
-
-		// Write field snapshot.
-		if (n % tResolution == 0 && SaveFields == true)
-		{
-			framestream.str(std::string());			// Clearing stringstream contents.
-			framestream << frame;
-			filename = basename + framestream.str() + ".fdt";
-
-			#ifdef WIN32
-			snapshot.open (filename.c_str(), std::ios::out|std::ios::binary);
-			snapshot.write ( (char*)&(Ez[IEz*JEz*n2]), sizeof(float)*IEz*JEz);
-			snapshot.close();
-			#else
-			fd = open (filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-			write (fd, (void*)&(Ez[IEz*JEz*n2]), sizeof(float)*IEz*JEz);
-			close (fd);
-			#endif
-
-			frame++;
-		}
-		n0 = (n0+1)%3;
-		n1 = (n1+1)%3;
-		n2 = (n2+1)%3;
-	}
-	std::cout << "\r" << "Simulation complete!" << std::endl;
 	return 0;
 }
 
-void CFDTD1DDNG::DisplaySimulationParameters ()
-{
-	std::cout << "======= Simulation Parameters =======" << std::endl;
-	std::cout << "I = " << I << std::endl;
-	std::cout << "J = " << J << std::endl;
-	std::cout << "NMax = " << NMax << std::endl;
-	std::cout << "f = " << f << std::endl;
-	std::cout << "delta = " << delta << std::endl;
-	std::cout << "dt = " << dt << std::endl;
-	std::cout << "t rez = " << tResolution << std::endl;
-	std::cout << "x rez = " << xResolution << std::endl;
-	std::cout << "y rez = " << yResolution << std::endl;
-	std::cout << "=====================================" << std::endl;
-}*/
 // Timing.
 void CFDTD1DDNG::StartTimer()
 {
@@ -849,6 +664,60 @@ void CFDTD1DDNG::StopTimer()
 PRECISION CFDTD1DDNG::GetElapsedTime()
 {
 	return ((PRECISION)(tEnd-tStart))/(1000000.);
+}
+int CFDTD1DDNG::SafeCall(int Status, const char *Error)
+{
+	if (Status != 0)
+	{
+		if (Error!=NULL) cout << Error << endl;
+		exit(Status);
+	}
+	return Status;
+}
+template<typename T> void DeleteArray(T *&ptr)
+{
+	if (ptr != NULL)
+	{
+		delete[] ptr;
+		ptr = NULL;
+	}
+}
+int CFDTD1DDNG::CleanupCPU()
+{
+	// Field arrays.
+	DeleteArray(Ex_);
+	DeleteArray(Dx_);
+	DeleteArray(Hy_);
+	DeleteArray(By_);
+	// Incident and transmitted fields.
+	DeleteArray(Exi);
+	DeleteArray(Ext);
+	DeleteArray(Extt);
+	// Refractive index.
+	DeleteArray(Exz1);
+	DeleteArray(Exz2);
+	// Drude parameter arrays.
+	DeleteArray(einf);
+	DeleteArray(uinf);
+	DeleteArray(wpesq);
+	DeleteArray(wpmsq);
+	DeleteArray(ge);
+	DeleteArray(gm);
+	// Auxiliary field scalars.
+	DeleteArray(ae0);
+	DeleteArray(ae);
+	DeleteArray(be);
+	DeleteArray(ce);
+	DeleteArray(de);
+	DeleteArray(ee);
+	DeleteArray(am0);
+	DeleteArray(am);
+	DeleteArray(bm);
+	DeleteArray(cm);
+	DeleteArray(dm);
+	DeleteArray(em);
+
+	return 0;
 }
 int CFDTD1DDNG::CleanupGPU()
 {
@@ -891,35 +760,35 @@ int CFDTD1DDNG::CleanupGPU()
 CFDTD1DDNG::~CFDTD1DDNG ()
 {
 	// Field arrays.
-	if (Ex_ != NULL) delete[] Ex_;
-	if (Dx_ != NULL) delete[] Dx_;
-	if (Hy_ != NULL) delete[] Hy_;
-	if (By_ != NULL) delete[] By_;
+	DeleteArray(Ex_);
+	DeleteArray(Dx_);
+	DeleteArray(Hy_);
+	DeleteArray(By_);
 	// Incident and transmitted fields.
-	if (Exi != NULL) delete[] Exi;
-	if (Ext != NULL) delete[] Ext;
-	if (Extt != NULL) delete[] Extt;
+	DeleteArray(Exi);
+	DeleteArray(Ext);
+	DeleteArray(Extt);
 	// Refractive index.
-	if (Exz1 != NULL) delete[] Exz1;
-	if (Exz2 != NULL) delete[] Exz2;
+	DeleteArray(Exz1);
+	DeleteArray(Exz2);
 	// Drude parameter arrays.
-	if (einf != NULL) delete[] einf;
-	if (uinf != NULL) delete[] uinf;
-	if (wpesq != NULL) delete[] wpesq;
-	if (wpmsq != NULL) delete[] wpmsq;
-	if (ge != NULL) delete[] ge;
-	if (gm != NULL) delete[] gm;
+	DeleteArray(einf);
+	DeleteArray(uinf);
+	DeleteArray(wpesq);
+	DeleteArray(wpmsq);
+	DeleteArray(ge);
+	DeleteArray(gm);
 	// Auxiliary field scalars.
-	if (ae0 != NULL) delete[] ae0;
-	if (ae != NULL) delete[] ae;
-	if (be != NULL) delete[] be;
-	if (ce != NULL) delete[] ce;
-	if (de != NULL) delete[] de;
-	if (ee != NULL) delete[] ee;
-	if (am0 != NULL) delete[] am0;
-	if (am != NULL) delete[] am;
-	if (bm != NULL) delete[] bm;
-	if (cm != NULL) delete[] cm;
-	if (dm != NULL) delete[] dm;
-	if (em != NULL) delete[] em;
+	DeleteArray(ae0);
+	DeleteArray(ae);
+	DeleteArray(be);
+	DeleteArray(ce);
+	DeleteArray(de);
+	DeleteArray(ee);
+	DeleteArray(am0);
+	DeleteArray(am);
+	DeleteArray(bm);
+	DeleteArray(cm);
+	DeleteArray(dm);
+	DeleteArray(em);
 }
