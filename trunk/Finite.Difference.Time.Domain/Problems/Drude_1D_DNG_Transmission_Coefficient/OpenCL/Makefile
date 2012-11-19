@@ -19,7 +19,7 @@ EXE_TARGET_INSTALL   	= FDTD1DDNG
 #
 ####
 
-FILES 	= FDTD1DDNGMain FDTD1DDNG
+FILES 	= FDTD1DDNGMain FDTD1DDNG Timer
 CLFILES	= FDTD1DDNG_Kernels.cl
 
 include openclsdkrules.mk 
