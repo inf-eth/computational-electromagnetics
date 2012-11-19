@@ -104,7 +104,7 @@ unsigned long CFDTD1DDNG::HDDSpace()
 {
 	return (unsigned long)sizeof(PRECISION)*(5UL*(unsigned long)MaxTime+(unsigned long)Size*((unsigned long)MaxTime/(unsigned long)SnapshotInterval+1UL));
 }
-// Initialize data arrays.
+// Allocate memory for data arrays.
 int CFDTD1DDNG::AllocateMemoryCPU()
 {
 	// Field arrays.
@@ -142,6 +142,7 @@ int CFDTD1DDNG::AllocateMemoryCPU()
 
 	return 0;
 }
+// Initialise CPU data.
 int CFDTD1DDNG::InitialiseCPU()
 {
 	for (unsigned int i=0; i<3*Size; i++)
@@ -210,7 +211,7 @@ int CFDTD1DDNG::InitialiseExHyCPU()
 	}
 	return 0;
 }
-int CFDTD1DDNG::AllocateMemoryGPU ()
+int CFDTD1DDNG::AllocateMemoryGPU()
 {
 	// Device memory allocation
 
@@ -450,7 +451,7 @@ int CFDTD1DDNG::DryRunGPU()
 	dim3 Blocks(BlocksX, BlocksY);
 	dim3 Threads(ThreadsX, ThreadsY);
 
-	cout << "Dry run (GPU) started..." << std::endl;
+	cout << "Dry run (GPU) started..." << endl;
 
 	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
 	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
