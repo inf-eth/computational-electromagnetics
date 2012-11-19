@@ -666,8 +666,6 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n1)\n"; return 1; }
 	status = clSetKernelArg( kernel, 33, sizeof(cl_uint), (void *)&n2);
 	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n2)\n"; return 1; }
-	status = clSetKernelArg( kernel, 34, sizeof(cl_uint), (void *)&flagHalf);
-	if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (JHx)\n"; return 1; }
 
 	// ==========================================================
 
@@ -696,67 +694,61 @@ int CFDTD2D::runCLFDTD2DKernels (bool SaveFields)
 		status = clSetKernelArg( kernel, 30, sizeof(cl_uint), (void *)&n);
 		if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n)\n"; return 1; }
 
-		for ( cl_uint step=0; step < 2; step++)
-		{
-			status = clSetKernelArg( kernel, 31, sizeof(cl_uint), (void *)&n0);
-			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n0)\n"; return 1; }
-			status = clSetKernelArg( kernel, 32, sizeof(cl_uint), (void *)&n1);
-			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n1)\n"; return 1; }
-			status = clSetKernelArg( kernel, 33, sizeof(cl_uint), (void *)&n2);
-			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n2)\n"; return 1; }
-			status = clSetKernelArg( kernel, 34, sizeof(cl_uint), (void *)&flagHalf);
-			if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (flagHalf)\n"; return 1; }
 
-			/* 
-			* Enqueue a kernel run call.
-			*/
-			status = clEnqueueNDRangeKernel(
-				commandQueue,
-				kernel,
-				2,
-				NULL,
-				globalThreads,
-				localThreads,
-				0,
-				NULL,
-				&events[0]);
-			if(status != CL_SUCCESS) 
-			{ 
-				std::cout<<
-					"Error: Enqueueing kernel onto command queue. \
-					(clEnqueueNDRangeKernel)\n";
-				if ( status == CL_INVALID_COMMAND_QUEUE ) std::cout << "CL_INVALID_COMMAND_QUEUE." << std::endl;
-				if ( status == CL_INVALID_PROGRAM_EXECUTABLE ) std::cout << "CL_INVALID_PROGRAM_EXECUTABLE." << std::endl;
-				if ( status == CL_INVALID_KERNEL ) std::cout << "CL_INVALID_KERNEL." << std::endl;
-				if ( status == CL_INVALID_WORK_DIMENSION ) std::cout << "CL_INVALID_WORK_DIMENSION." << std::endl;
-				if ( status == CL_INVALID_CONTEXT ) std::cout << "CL_INVALID_CONTEXT." << std::endl;
-				if ( status == CL_INVALID_KERNEL_ARGS ) std::cout << "CL_INVALID_KERNEL_ARGS." << std::endl;
-				if ( status == CL_INVALID_WORK_GROUP_SIZE ) std::cout << "CL_INVALID_WORK_GROUP_SIZE." << std::endl;
-				if ( status == CL_INVALID_WORK_ITEM_SIZE ) std::cout << "CL_INVALID_WORK_ITEM_SIZE." << std::endl;
-				if ( status == CL_INVALID_GLOBAL_OFFSET ) std::cout << "CL_INVALID_GLOBAL_OFFSET." << std::endl;
-				return 1;
-			}
+		status = clSetKernelArg( kernel, 31, sizeof(cl_uint), (void *)&n0);
+		if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n0)\n"; return 1; }
+		status = clSetKernelArg( kernel, 32, sizeof(cl_uint), (void *)&n1);
+		if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n1)\n"; return 1; }
+		status = clSetKernelArg( kernel, 33, sizeof(cl_uint), (void *)&n2);
+		if(status != CL_SUCCESS) { std::cout<<"Error: Setting kernel argument. (n2)\n"; return 1; }
 
-			/* wait for the kernel call to finish execution */
-			status = clWaitForEvents(1, &events[0]);
-			if(status != CL_SUCCESS) 
-			{ 
-				std::cout<<
-					"Error: Waiting for kernel run to finish. \
-					(clWaitForEvents)\n";
-				return 1;
-			}
-
-			clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START,
-				sizeof(cl_ulong), &startTime, NULL);
-			clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END,
-				sizeof(cl_ulong), &endTime, NULL);
-			kernelExecTimeNs = 1e-3*(endTime-startTime);
-			kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
-
-			flagHalf = !flagHalf;
+		/* 
+		* Enqueue a kernel run call.
+		*/
+		status = clEnqueueNDRangeKernel(
+			commandQueue,
+			kernel,
+			2,
+			NULL,
+			globalThreads,
+			localThreads,
+			0,
+			NULL,
+			&events[0]);
+		if(status != CL_SUCCESS) 
+		{ 
+			std::cout<<
+				"Error: Enqueueing kernel onto command queue. \
+				(clEnqueueNDRangeKernel)\n";
+			if ( status == CL_INVALID_COMMAND_QUEUE ) std::cout << "CL_INVALID_COMMAND_QUEUE." << std::endl;
+			if ( status == CL_INVALID_PROGRAM_EXECUTABLE ) std::cout << "CL_INVALID_PROGRAM_EXECUTABLE." << std::endl;
+			if ( status == CL_INVALID_KERNEL ) std::cout << "CL_INVALID_KERNEL." << std::endl;
+			if ( status == CL_INVALID_WORK_DIMENSION ) std::cout << "CL_INVALID_WORK_DIMENSION." << std::endl;
+			if ( status == CL_INVALID_CONTEXT ) std::cout << "CL_INVALID_CONTEXT." << std::endl;
+			if ( status == CL_INVALID_KERNEL_ARGS ) std::cout << "CL_INVALID_KERNEL_ARGS." << std::endl;
+			if ( status == CL_INVALID_WORK_GROUP_SIZE ) std::cout << "CL_INVALID_WORK_GROUP_SIZE." << std::endl;
+			if ( status == CL_INVALID_WORK_ITEM_SIZE ) std::cout << "CL_INVALID_WORK_ITEM_SIZE." << std::endl;
+			if ( status == CL_INVALID_GLOBAL_OFFSET ) std::cout << "CL_INVALID_GLOBAL_OFFSET." << std::endl;
+			return 1;
 		}
-		
+
+		/* wait for the kernel call to finish execution */
+		status = clWaitForEvents(1, &events[0]);
+		if(status != CL_SUCCESS) 
+		{ 
+			std::cout<<
+				"Error: Waiting for kernel run to finish. \
+				(clWaitForEvents)\n";
+			return 1;
+		}
+
+		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START,
+			sizeof(cl_ulong), &startTime, NULL);
+		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END,
+			sizeof(cl_ulong), &endTime, NULL);
+		kernelExecTimeNs = 1e-3*(endTime-startTime);
+		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
+
 		// Write field snapshot.
 		if (n % tResolution == 0 && SaveFields == true)
 		{
