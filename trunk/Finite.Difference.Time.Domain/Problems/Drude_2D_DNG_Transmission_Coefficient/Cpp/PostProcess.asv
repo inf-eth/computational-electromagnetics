@@ -1,0 +1,39 @@
+% Plots field snapshots as a movie. Taken from appendix of
+% Understanding FDTD, J. B Schneider.
+% Input files are assumed to be in binary format.
+basename = './FieldData/Ex';
+
+fidp = fopen ('./FieldData/Parameters.smp', 'r', 'l');
+if fidp == -1
+    return;
+end
+datap = fread (fidp, 4, 'uint');
+fclose (fidp);
+
+Size = datap(1)
+MaxTime = datap(2)
+SnapshotInterval = datap(3)
+simTime = datap(4)               
+size = [Size 1];    % Spatial size or width w.
+
+fid = fopen ('./FieldData/Exi.fdt', 'r', 'l');
+if fid == -1
+    return;
+end
+dataExi = fread(fid, MaxTime, 'double');
+fclose (fid);
+
+figure(1)
+plot (dataExi);
+
+for i=1:simTime
+    filename = sprintf ('%s%d.fdt', basename, i);
+    fid = fopen (filename, 'r', 'l');
+    if fid == -1
+        return;
+    end
+    data = fread (fid, size, 'double');
+    figure(6)
+    plot (1:Size, data)
+    fclose (fid);
+end
