@@ -1,35 +1,35 @@
 // Field arrays indexing macros.
-#define Ez(i,j,n) Ez_[(i)+XEz*(j)+XEz*YEz*(n)]
-#define Dz(i,j,n) Dz_[(i)+XEz*(j)+XEz*YEz*(n)]
-#define Hx(i,j,n) Hx_[(i)+XHx*(j)+XHx*YHx*(n)]
-#define Bx(i,j,n) Bx_[(i)+XHx*(j)+XHx*YHx*(n)]
-#define Hy(i,j,n) Hy_[(i)+XHy*(j)+XHy*YHy*(n)]
-#define By(i,j,n) By_[(i)+XHy*(j)+XHy*YHy*(n)]
+#define Ez(i,j,n) Ez_[(i)+IEz*(j)+IEz*JEz*(n)]
+#define Dz(i,j,n) Dz_[(i)+IEz*(j)+IEz*JEz*(n)]
+#define Hx(i,j,n) Hx_[(i)+IHx*(j)+IHx*JHx*(n)]
+#define Bx(i,j,n) Bx_[(i)+IHx*(j)+IHx*JHx*(n)]
+#define Hy(i,j,n) Hy_[(i)+IHy*(j)+IHy*JHy*(n)]
+#define By(i,j,n) By_[(i)+IHy*(j)+IHy*JHy*(n)]
 // Drude parameter arrays indexing macros.
-#define einf(i,j) einf_[(i)+XHx*(j)]
-#define uinf(i,j) uinf_[(i)+XHx*(j)]
-#define wpesq(i,j) wpesq_[(i)+XHx*(j)]
-#define wpmsq(i,j) wpmsq_[(i)+XHx*(j)]
-#define ge(i,j) ge_[(i)+XHx*(j)]
-#define gm(i,j) gm_[(i)+XHx*(j)]
+#define einf(i,j) einf_[(i)+IHx*(j)]
+#define uinf(i,j) uinf_[(i)+IHx*(j)]
+#define wpesq(i,j) wpesq_[(i)+IHx*(j)]
+#define wpmsq(i,j) wpmsq_[(i)+IHx*(j)]
+#define ge(i,j) ge_[(i)+IHx*(j)]
+#define gm(i,j) gm_[(i)+IHx*(j)]
 // Auxiliary scalar arrays indexing macros.
-#define ae0(i,j) ae0_[(i)+XHx*(j)]
-#define ae(i,j) ae_[(i)+XHx*(j)]
-#define be(i,j) be_[(i)+XHx*(j)]
-#define ce(i,j) ce_[(i)+XHx*(j)]
-#define de(i,j) de_[(i)+XHx*(j)]
-#define ee(i,j) ee_[(i)+XHx*(j)]
-#define am0(i,j) am0_[(i)+XHx*(j)]
-#define am(i,j) am_[(i)+XHx*(j)]
-#define bm(i,j) bm_[(i)+XHx*(j)]
-#define cm(i,j) cm_[(i)+XHx*(j)]
-#define dm(i,j) dm_[(i)+XHx*(j)]
-#define em(i,j) em_[(i)+XHx*(j)]
+#define ae0(i,j) ae0_[(i)+IHx*(j)]
+#define ae(i,j) ae_[(i)+IHx*(j)]
+#define be(i,j) be_[(i)+IHx*(j)]
+#define ce(i,j) ce_[(i)+IHx*(j)]
+#define de(i,j) de_[(i)+IHx*(j)]
+#define ee(i,j) ee_[(i)+IHx*(j)]
+#define am0(i,j) am0_[(i)+IHx*(j)]
+#define am(i,j) am_[(i)+IHx*(j)]
+#define bm(i,j) bm_[(i)+IHx*(j)]
+#define cm(i,j) cm_[(i)+IHx*(j)]
+#define dm(i,j) dm_[(i)+IHx*(j)]
+#define em(i,j) em_[(i)+IHx*(j)]
 // PML arrays indexing macros.
-#define PsiEzX(i,j) PsiEzX_[(i)+XEz*(j)]
-#define PsiEzY(i,j) PsiEzY_[(i)+XEz*(j)]
-#define PsiHyX(i,j) PsiHyX_[(i)+XHy*(j)]
-#define PsiHxY(i,j) PsiHxY_[(i)+XHx*(j)]
+#define PsiEzX(i,j) PsiEzX_[(i)+IEz*(j)]
+#define PsiEzY(i,j) PsiEzY_[(i)+IEz*(j)]
+#define PsiHyX(i,j) PsiHyX_[(i)+IHy*(j)]
+#define PsiHxY(i,j) PsiHxY_[(i)+IHx*(j)]
 
 #include <FDTD2DDNG.h>
 #include <cmath>
@@ -41,8 +41,8 @@
 using namespace std;
 
 CFDTD2DDNG::CFDTD2DDNG(
-						unsigned int pSizeX,
-						unsigned int pSizeY,
+						unsigned int pI,
+						unsigned int pJ,
 						unsigned int pPMLw,
 						unsigned int MaxTime,
 						unsigned int pSnapshotResolution,
@@ -53,13 +53,13 @@ CFDTD2DDNG::CFDTD2DDNG(
 						unsigned int pSourceLocationY):
 
 							// Simulation parameters.
-							SizeX(pSizeX),
-							SizeY(pSizeY),
+							I(pI),
+							J(pJ),
 							PMLw(pPMLw),
-							SlabLeft(SizeY/3+PMLw),
-							SlabRight(2*SizeY/3+PMLw),
-							MaxTime(4*SizeY),
-							PulseWidth(SizeY/8),
+							SlabLeft(J/3+PMLw),
+							SlabRight(2*J/3+PMLw),
+							MaxTime(4*J),
+							PulseWidth(J/8),
 							td(PulseWidth),
 							SnapshotResolution(pSnapshotResolution),
 							SnapshotInterval(pSnapshotInterval),
@@ -84,9 +84,9 @@ CFDTD2DDNG::CFDTD2DDNG(
 							fp(f),
 							dr(PulseWidth*dt*2),
 							// Data array sizes.
-							XEz(SizeX), YEz(SizeY+2*PMLw),
-							XHx(SizeX), YHx(SizeY+2*PMLw+1),
-							XHy(SizeX), YHy(SizeY+2*PMLw),
+							IEz(I), JEz(J+2*PMLw),
+							IHx(I), JHx(J+2*PMLw+1),
+							IHy(I), JHy(J+2*PMLw),
 							// Data arrays.
 							Ez_(NULL), Dz_(NULL), Hx_(NULL), Bx_(NULL), Hy_(NULL), By_(NULL),
 							// Incident and transmitted fields.
@@ -134,8 +134,8 @@ CFDTD2DDNG::CFDTD2DDNG(
 	parametersfile.write((char*)&k0, sizeof(PRECISION));
 	parametersfile.write((char*)&y1, sizeof(PRECISION));
 	parametersfile.write((char*)&y2, sizeof(PRECISION));
-	parametersfile.write((char*)&SizeX, sizeof(unsigned int));
-	parametersfile.write((char*)&SizeY, sizeof(unsigned int));
+	parametersfile.write((char*)&I, sizeof(unsigned int));
+	parametersfile.write((char*)&J, sizeof(unsigned int));
 	parametersfile.write((char*)&PMLw, sizeof(unsigned int));
 	parametersfile.write((char*)&MaxTime, sizeof(unsigned int));
 	parametersfile.write((char*)&SnapshotResolution, sizeof(unsigned int));
@@ -145,8 +145,8 @@ CFDTD2DDNG::CFDTD2DDNG(
 	parametersfile.close();
 
 	// Printing simulation parameters.
-	cout << "SizeX      = " << SizeX << endl;
-	cout << "SizeY      = " << SizeY << endl;
+	cout << "I      = " << I << endl;
+	cout << "J      = " << J << endl;
 	cout << "PMLw       = " << PMLw << endl;
 	cout << "MaxTime    = " << MaxTime << endl;
 	cout << "frequency  = " << f << " Hz (" << f/1e9 << " GHz)" << endl;
@@ -157,21 +157,21 @@ CFDTD2DDNG::CFDTD2DDNG(
 }
 unsigned long CFDTD2DDNG::SimSize()
 {
-	return (unsigned long)sizeof(*this)+(unsigned long)sizeof(PRECISION)*(8UL*(unsigned long)XEz*(unsigned long)YEz+7UL*(unsigned long)XHy*(unsigned long)YHy+25UL*(unsigned long)XHx*(unsigned long)YHx+5UL*(unsigned long)MaxTime);
+	return (unsigned long)sizeof(*this)+(unsigned long)sizeof(PRECISION)*(8UL*(unsigned long)IEz*(unsigned long)JEz+7UL*(unsigned long)IHy*(unsigned long)JHy+25UL*(unsigned long)IHx*(unsigned long)JHx+5UL*(unsigned long)MaxTime);
 }
 unsigned long CFDTD2DDNG::HDDSpace()
 {
-	return (unsigned long)sizeof(PRECISION)*(5UL*(unsigned long)MaxTime+(unsigned long)XEz*(unsigned long)YEz*((unsigned long)MaxTime/(unsigned long)SnapshotInterval+1UL));
+	return (unsigned long)sizeof(PRECISION)*(5UL*(unsigned long)MaxTime+(unsigned long)IEz*(unsigned long)JEz*((unsigned long)MaxTime/(unsigned long)SnapshotInterval+1UL));
 }
 int CFDTD2DDNG::AllocateMemoryCPU()
 {
 	// Field arrays.
-	Ez_ = new PRECISION[XEz*YEz*3];
-	Dz_ = new PRECISION[XEz*YEz*3];
-	Hx_ = new PRECISION[XHx*YHx*3];
-	Bx_ = new PRECISION[XHx*YHx*3];
-	Hy_ = new PRECISION[XHy*YHy*3];
-	By_ = new PRECISION[XHy*YHy*3];
+	Ez_ = new PRECISION[IEz*JEz*3];
+	Dz_ = new PRECISION[IEz*JEz*3];
+	Hx_ = new PRECISION[IHx*JHx*3];
+	Bx_ = new PRECISION[IHx*JHx*3];
+	Hy_ = new PRECISION[IHy*JHy*3];
+	By_ = new PRECISION[IHy*JHy*3];
 	// Incident and transmitted fields.
 	Ezi = new PRECISION[MaxTime];
 	Ezt = new PRECISION[MaxTime];
@@ -180,52 +180,52 @@ int CFDTD2DDNG::AllocateMemoryCPU()
 	Ezy1 = new PRECISION[MaxTime];
 	Ezy2 = new PRECISION[MaxTime];
 	// Drude parameter arrays.
-	einf_ = new PRECISION[XHx*YHx];
-	uinf_ = new PRECISION[XHx*YHx];
-	wpesq_ = new PRECISION[XHx*YHx];
-	wpmsq_ = new PRECISION[XHx*YHx];
-	ge_ = new PRECISION[XHx*YHx];
-	gm_ = new PRECISION[XHx*YHx];
+	einf_ = new PRECISION[IHx*JHx];
+	uinf_ = new PRECISION[IHx*JHx];
+	wpesq_ = new PRECISION[IHx*JHx];
+	wpmsq_ = new PRECISION[IHx*JHx];
+	ge_ = new PRECISION[IHx*JHx];
+	gm_ = new PRECISION[IHx*JHx];
 	// Auxiliary field scalars.
-	ae0_ = new PRECISION[XHx*YHx];
-	ae_ = new PRECISION[XHx*YHx];
-	be_ = new PRECISION[XHx*YHx];
-	ce_ = new PRECISION[XHx*YHx];
-	de_ = new PRECISION[XHx*YHx];
-	ee_ = new PRECISION[XHx*YHx];
-	am0_ = new PRECISION[XHx*YHx];
-	am_ = new PRECISION[XHx*YHx];
-	bm_ = new PRECISION[XHx*YHx];
-	cm_ = new PRECISION[XHx*YHx];
-	dm_ = new PRECISION[XHx*YHx];
-	em_ = new PRECISION[XHx*YHx];
+	ae0_ = new PRECISION[IHx*JHx];
+	ae_ = new PRECISION[IHx*JHx];
+	be_ = new PRECISION[IHx*JHx];
+	ce_ = new PRECISION[IHx*JHx];
+	de_ = new PRECISION[IHx*JHx];
+	ee_ = new PRECISION[IHx*JHx];
+	am0_ = new PRECISION[IHx*JHx];
+	am_ = new PRECISION[IHx*JHx];
+	bm_ = new PRECISION[IHx*JHx];
+	cm_ = new PRECISION[IHx*JHx];
+	dm_ = new PRECISION[IHx*JHx];
+	em_ = new PRECISION[IHx*JHx];
 	// PML arrays.
-	PsiEzX_ = new PRECISION[XEz*YEz];
-	PsiEzY_ = new PRECISION[XEz*YEz];
-	PsiHyX_ = new PRECISION[XHy*YHy];
-	PsiHxY_ = new PRECISION[XHx*YHx];
+	PsiEzX_ = new PRECISION[IEz*JEz];
+	PsiEzY_ = new PRECISION[IEz*JEz];
+	PsiHyX_ = new PRECISION[IHy*JHy];
+	PsiHxY_ = new PRECISION[IHx*JHx];
 
 	return 0;
 }
 int CFDTD2DDNG::InitialiseCPU()
 {
-	for (unsigned int i=0; i<XHx; i++)
+	for (unsigned int i=0; i<IHx; i++)
 	{
-		for (unsigned int j=0; j<YHx; j++)
+		for (unsigned int j=0; j<JHx; j++)
 		{
-			for (unsigned int k=0; k<3; k++)
+			for (unsigned int n=0; n<3; n++)
 			{
-				if (i<XEz && j<YEz)
+				if (i<IEz && j<JEz)
 				{
-					Ez(i,j,k) = 0.;
-					Dz(i,j,k) = 0.;
+					Ez(i,j,n) = 0.;
+					Dz(i,j,n) = 0.;
 				}
-				Hx(i,j,k) = 0.;
-				Bx(i,j,k) = 0.;
-				if (i<XHy && j<YHy)
+				Hx(i,j,n) = 0.;
+				Bx(i,j,n) = 0.;
+				if (i<IHy && j<JHy)
 				{
-					Hy(i,j,k) = 0.;
-					By(i,j,k) = 0.;
+					Hy(i,j,n) = 0.;
+					By(i,j,n) = 0.;
 				}
 			}
 			// Parameteric and auxiliary arrays.
@@ -262,13 +262,13 @@ int CFDTD2DDNG::InitialiseCPU()
 			dm(i,j) = (-1.*u0/4.)*wpmsq(i,j)*am0(i,j);
 			em(i,j) = (1./(2.*dt))*u0*uinf(i,j)*gm(i,j)*am0(i,j);
 			// PML Psi arrays.
-			if (i<XEz && j<YEz)
+			if (i<IEz && j<JEz)
 			{
 				PsiEzX(i,j) = 0.;
 				PsiEzY(i,j) = 0.;
 			}
 			PsiHxY(i,j) = 0.;
-			if (i<XHy && j<YHy)
+			if (i<IHy && j<JHy)
 				PsiHyX(i,j) = 0.;
 		}
 	}
@@ -285,33 +285,33 @@ int CFDTD2DDNG::InitialiseCPU()
 }
 int CFDTD2DDNG::InitialiseForSimulationCPU()
 {
-	for (unsigned int i=0; i<XHx; i++)
+	for (unsigned int i=0; i<IHx; i++)
 	{
-		for (unsigned int j=0; j<YHx; j++)
+		for (unsigned int j=0; j<JHx; j++)
 		{
-			for (unsigned int k=0; k<3; k++)
+			for (unsigned int n=0; n<3; n++)
 			{
-				if (i<XEz && j<YEz)
+				if (i<IEz && j<JEz)
 				{
-					Ez(i,j,k) = 0.;
-					Dz(i,j,k) = 0.;
+					Ez(i,j,n) = 0.;
+					Dz(i,j,n) = 0.;
 				}
-				Hx(i,j,k) = 0.;
-				Bx(i,j,k) = 0.;
-				if (i<XHy && j<YHy)
+				Hx(i,j,n) = 0.;
+				Bx(i,j,n) = 0.;
+				if (i<IHy && j<JHy)
 				{
-					Hy(i,j,k) = 0.;
-					By(i,j,k) = 0.;
+					Hy(i,j,n) = 0.;
+					By(i,j,n) = 0.;
 				}
 			}
 			// PML Psi arrays.
-			if (i<XEz && j<YEz)
+			if (i<IEz && j<JEz)
 			{
 				PsiEzX(i,j) = 0.;
 				PsiEzY(i,j) = 0.;
 			}
 			PsiHxY(i,j) = 0.;
-			if (i<XHy && j<YHy)
+			if (i<IHy && j<JHy)
 				PsiHyX(i,j) = 0.;
 		}
 	}

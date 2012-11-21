@@ -5,8 +5,8 @@ class CFDTD2DDNG
 {
 private:
 	// Simulation parameters.
-	const unsigned int SizeX;
-	const unsigned int SizeY;
+	const unsigned int I;
+	const unsigned int J;
 	const unsigned int PMLw;
 	const unsigned int SlabLeft;
 	const unsigned int SlabRight;
@@ -40,9 +40,9 @@ private:
 	const PRECISION dr; // Ricker wavelet delay.
 
 	// Data array sizes.
-	const unsigned int XEz, YEz;
-	const unsigned int XHx, YHx;
-	const unsigned int XHy, YHy;
+	const unsigned int IEz, JEz;
+	const unsigned int IHx, JHx;
+	const unsigned int IHy, JHy;
 
 	// Data arrays.
 	PRECISION *Ez_;
@@ -101,8 +101,8 @@ private:
 
 public:
 	CFDTD2DDNG(
-				unsigned int=512,	// SizeX
-				unsigned int=512,	// SizeY
+				unsigned int=512,	// I
+				unsigned int=512,	// J
 				unsigned int=64,	// PMLw
 				unsigned int=4*512,	// MaxTime
 				unsigned int=1,		// Snapshot resolution
