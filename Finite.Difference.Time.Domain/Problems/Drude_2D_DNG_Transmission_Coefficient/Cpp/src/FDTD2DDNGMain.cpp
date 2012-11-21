@@ -5,8 +5,8 @@ using namespace std;
 int main()
 {
 	CFDTD2DDNG FDTD2DDNGSim(
-							512,	// I
-							512,	// J
+							256,	// I
+							256,	// J
 							64,		// PMLw
 							4*512,	// MaxTime
 							1,		// Snapshot resolution
