@@ -5,16 +5,16 @@ using namespace std;
 int main()
 {
 	CFDTD2DDNG FDTD2DDNGSim(
-						1512,	// SizeX
-						1512,	// SizeY
-						64,		// PMLw
-						4*512,	// MaxTime
-						1,		// Snapshot resolution
-						10,		// Snapshot interval
-						1,		// Source choice
-						1,		// Source is plane wave?
-						256,	// Source location X
-						50+5);	// Source location Y
+							512,	// I
+							512,	// J
+							64,		// PMLw
+							4*512,	// MaxTime
+							1,		// Snapshot resolution
+							10,		// Snapshot interval
+							1,		// Source choice
+							1,		// Source is plane wave?
+							256,	// Source location X
+							50+5);	// Source location Y
 
 	// ================== CPU Simulation ================
 	FDTD2DDNGSim.StartTimer();
