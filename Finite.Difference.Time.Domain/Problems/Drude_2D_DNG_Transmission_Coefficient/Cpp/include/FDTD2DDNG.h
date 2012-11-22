@@ -83,6 +83,7 @@ private:
 	PRECISION *PsiHyX_, *PsiHxY_;
 
 	// PML parameters.
+	const PRECISION kappe, kappm;
 	const PRECISION kappex, kappey, kappmx, kappmy;
 	const PRECISION aex, aey, amx, amy;
 	const PRECISION sigex, sigey, sigmx, sigmy;
@@ -110,7 +111,7 @@ public:
 				unsigned int=1,		// Source choice
 				unsigned int=1,		// Source is plane wave?
 				unsigned int=256,	// Source location X
-				unsigned int=50+5);	// Source location Y
+				unsigned int=64+5);	// Source location Y
 
 	// Space calculations.
 	unsigned long SimSize();
