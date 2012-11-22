@@ -108,11 +108,12 @@ CFDTD2DDNG::CFDTD2DDNG(
 							PsiEzX_(NULL), PsiEzY_(NULL),
 							PsiHyX_(NULL), PsiHxY_(NULL),
 							// PML parameters.
+							kappe(1.), kappm(1.),
 							kappex(1.), kappey(kappex), kappmx(kappex), kappmy(kappex),
 							aex(0.0004), aey(aex), amx(aex), amy(aex),
 							sigex(0.), sigey(0.045), sigmx(0.), sigmy(u0/e0*sigey),
-							bex(exp(-1*(aex/e0+sigex/(kappex*e0))*dt)), bey(exp(-1*(aey/e0+sigey/(kappey*e0))*dt)), bmx(exp(-1*(amx/u0+sigmx/(kappmx*u0))*dt)), bmy(exp(-1*(amy/u0+sigmy/(kappmy*u0))*dt)),
-							Cex((bex-1)*sigex/(sigex*kappex+pow(kappex, 2)*aex)), Cey((bey-1)*sigey/(sigey*kappey+pow(kappey, 2)*aey)), Cmx((bmx-1)*sigmx/(sigmx*kappmx+pow(kappmx, 2)*amx)), Cmy((bmy-1)*sigmy/(sigmy*kappmy+pow(kappmy, 2)*amy)),
+							bex(exp(-1.*(aex/e0+sigex/(kappex*e0))*dt)), bey(exp(-1.*(aey/e0+sigey/(kappey*e0))*dt)), bmx(exp(-1.*(amx/u0+sigmx/(kappmx*u0))*dt)), bmy(exp(-1.*(amy/u0+sigmy/(kappmy*u0))*dt)),
+							Cex((bex-1.)*sigex/(sigex*kappex+pow(kappe, 2)*aex)), Cey((bey-1.)*sigey/(sigey*kappey+pow(kappe, 2)*aey)), Cmx((bmx-1.)*sigmx/(sigmx*kappmx+pow(kappm, 2)*amx)), Cmy((bmy-1.)*sigmy/(sigmy*kappmy+pow(kappm, 2)*amy)),
 							// Snapshot frame number.
 							frame(0),
 							// Time indices.
@@ -243,10 +244,10 @@ int CFDTD2DDNG::InitialiseCPU()
 			{
 				einf(i,j) = 1.;
 				uinf(i,j) = 1.;
-				wpesq(i,j) = 2.*pow(w, 2);;
-				wpmsq(i,j) = 2.*pow(w, 2);;
-				ge(i,j) = w/32.;
-				gm(i,j) = w/32.;
+				wpesq(i,j) = 0.*2.*pow(w, 2);;
+				wpmsq(i,j) = 0.*2.*pow(w, 2);;
+				ge(i,j) = 0.*w/32.;
+				gm(i,j) = 0.*w/32.;
 			}
 			// Auxiliary scalars.
 			ae0(i,j) = (4.*pow(dt,2))/(e0*(4.*einf(i,j)+pow(dt,2)*wpesq(i,j)+2.*dt*einf(i,j)*ge(i,j)));
@@ -359,8 +360,10 @@ int CFDTD2DDNG::DryRunCPU()
 			for (unsigned int j=0; j<JHy; j++)
 			{
 				PsiHyX(i,j) = (Cmx/delta)*(Ez(i+1,j,n0)-Ez(i,j,n0)) + bmx*PsiHyX(i,j);
-				PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
+				if (i==0)
+					PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
 			}
+
 			// By in normal space.
 			for (unsigned int j=PMLw; j<JHy-PMLw; j++)
 			{
@@ -447,9 +450,9 @@ int CFDTD2DDNG::DryRunCPU()
 		// ====================== Source ======================
 		if (SourcePlane == 1)
 		{
+			unsigned int j=SourceLocationY;
 			for (unsigned int i=0; i<IEz; i++)
 			{
-				unsigned int j=SourceLocationY;
 				if (SourceChoice == 1)
 					Ez(i,j,nf) += exp(-1.*pow(((PRECISION)n-(PRECISION)td)/((PRECISION)PulseWidth/4.),2)) * Sc;
 				else if (SourceChoice == 2)
@@ -488,6 +491,7 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 	string basename = "FieldData/Ez";
 	string filename;
 	fstream snapshot;
+	frame = 0U;
 
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
@@ -505,7 +509,7 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 			for (unsigned int j=1+PMLw; j<JHx-PMLw-1; j++)
 			{
 				Bx(i,j,nf) = Bx(i,j,n0) - (Ez(i,j,n0) - Ez(i,j-1,n0)) * dt/delta;
-				Hx(i,j,nf) = am(i,j)*(Bx(i,j,nf)-2*Bx(i,j,n0)+Bx(i,j,np))+bm(i,j)*(Bx(i,j,nf)-Bx(i,j,np))+cm(i,j)*(2*Hx(i,j,n0)-Hx(i,j,np))+dm(i,j)*(2*Hx(i,j,n0)+Hx(i,j,np))+em(i,j)*Hx(i,j,np);
+				Hx(i,j,nf) = am(i,j)*(Bx(i,j,nf)-2.*Bx(i,j,n0)+Bx(i,j,np))+bm(i,j)*(Bx(i,j,nf)-Bx(i,j,np))+cm(i,j)*(2.*Hx(i,j,n0)-Hx(i,j,np))+dm(i,j)*(2.*Hx(i,j,n0)+Hx(i,j,np))+em(i,j)*Hx(i,j,np);
 			}
 			// Bx in lower PML.
 			for (unsigned int j=1; j<PMLw+1; j++)
@@ -528,31 +532,41 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 			for (unsigned int j=0; j<JHy; j++)
 			{
 				PsiHyX(i,j) = (Cmx/delta)*(Ez(i+1,j,n0)-Ez(i,j,n0)) + bmx*PsiHyX(i,j);
-				PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
+				if (i==0)
+					PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
 			}
 			// By in normal space.
 			for (unsigned int j=PMLw; j<JHy-PMLw; j++)
 			{
 				By(i,j,nf) = By(i,j,n0) + (Ez(i+1,j,n0) - Ez(i,j,n0)) * dt/delta;
-				Hy(i,j,nf) = am(i,j)*(By(i,j,nf)-2*By(i,j,n0)+By(i,j,np))+bm(i,j)*(By(i,j,nf)-By(i,j,np))+cm(i,j)*(2*Hy(i,j,n0)-Hy(i,j,np))+dm(i,j)*(2*Hy(i,j,n0)+Hy(i,j,np))+em(i,j)*Hy(i,j,np);
-				By(IHy-1,j,nf) = By(IHy-1,j,n0) + (Ez(0,j,n0) - Ez(IHy-1,j,n0)) * dt/delta; // PBC
-				Hy(IHy-1,j,nf) = am(IHy-1,j)*(By(IHy-1,j,nf)-2*By(IHy-1,j,n0)+By(IHy-1,j,np))+bm(IHy-1,j)*(By(IHy-1,j,nf)-By(IHy-1,j,np))+cm(IHy-1,j)*(2*Hy(IHy-1,j,n0)-Hy(IHy-1,j,np))+dm(IHy-1,j)*(2*Hy(IHy-1,j,n0)+Hy(IHy-1,j,np))+em(IHy-1,j)*Hy(IHy-1,j,np); // PBC
+				Hy(i,j,nf) = am(i,j)*(By(i,j,nf)-2.*By(i,j,n0)+By(i,j,np))+bm(i,j)*(By(i,j,nf)-By(i,j,np))+cm(i,j)*(2.*Hy(i,j,n0)-Hy(i,j,np))+dm(i,j)*(2.*Hy(i,j,n0)+Hy(i,j,np))+em(i,j)*Hy(i,j,np);
+				if (i==0)
+				{
+					By(IHy-1,j,nf) = By(IHy-1,j,n0) + (Ez(0,j,n0) - Ez(IHy-1,j,n0)) * dt/delta; // PBC
+					Hy(IHy-1,j,nf) = am(IHy-1,j)*(By(IHy-1,j,nf)-2.*By(IHy-1,j,n0)+By(IHy-1,j,np))+bm(IHy-1,j)*(By(IHy-1,j,nf)-By(IHy-1,j,np))+cm(IHy-1,j)*(2.*Hy(IHy-1,j,n0)-Hy(IHy-1,j,np))+dm(IHy-1,j)*(2.*Hy(IHy-1,j,n0)+Hy(IHy-1,j,np))+em(IHy-1,j)*Hy(IHy-1,j,np); // PBC
+				}
 			}
 			// By in Lower PML.
 			for (unsigned int j=0; j<PMLw; j++)
 			{
 				By(i,j,nf) = By(i,j,n0) + dt*((1./kappmx)*(Ez(i+1,j,n0) - Ez(i,j,n0)) * 1./delta + PsiHyX(i,j));
 				Hy(i,j,nf) = By(i,j,nf)/(u0*uinf(i,j));
-				By(IHy-1,j,nf) = By(IHy-1,j,n0) + dt*((1./kappmx)*(Ez(0,j,n0) - Ez(IHy-1,j,n0)) * 1./delta + PsiHyX(IHy-1,j)); // PBC
-				Hy(IHy-1,j,nf) = By(IHy-1,j,nf)/(u0*uinf(IHy-1,j)); // PBC
+				if (i==0)
+				{
+					By(IHy-1,j,nf) = By(IHy-1,j,n0) + dt*((1./kappmx)*(Ez(0,j,n0) - Ez(IHy-1,j,n0)) * 1./delta + PsiHyX(IHy-1,j)); // PBC
+					Hy(IHy-1,j,nf) = By(IHy-1,j,nf)/(u0*uinf(IHy-1,j)); // PBC
+				}
 			}
 			// By in upper PML.
 			for (unsigned int j=JHy-PMLw; j<JHy; j++)
 			{
 				By(i,j,nf) = By(i,j,n0) + dt*((1./kappmx)*(Ez(i+1,j,n0) - Ez(i,j,n0)) * 1./delta + PsiHyX(i,j));
 				Hy(i,j,nf) = By(i,j,nf)/(u0*uinf(i,j));
-				By(IHy-1,j,nf) = By(IHy-1,j,n0) + dt*((1./kappmx)*(Ez(0,j,n0) - Ez(IHy-1,j,n0)) * 1./delta + PsiHyX(IHy-1,j)); // PBC
-				Hy(IHy-1,j,nf) = By(IHy-1,j,nf)/(u0*uinf(IHy-1,j)); // PBC
+				if (i==0)
+				{
+					By(IHy-1,j,nf) = By(IHy-1,j,n0) + dt*((1./kappmx)*(Ez(0,j,n0) - Ez(IHy-1,j,n0)) * 1./delta + PsiHyX(IHy-1,j)); // PBC
+					Hy(IHy-1,j,nf) = By(IHy-1,j,nf)/(u0*uinf(IHy-1,j)); // PBC
+				}
 			}
 		}
 
@@ -563,42 +577,54 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 			for (unsigned int j=0; j<JEz; j++)
 			{
 				PsiEzX(i,j) = (Cex/delta)*(Hy(i,j,nf)-Hy(i-1,j,nf)) + bex*PsiEzX(i,j);
-				PsiEzX(0,j) = (Cex/delta)*(Hy(0,j,nf)-Hy(IEz-1,j,nf)) + bex*PsiEzX(0,j); // PBC
 				PsiEzY(i,j) = (Cey/delta)*(-Hx(i,j+1,nf)+Hx(i,j,nf)) + bey*PsiEzY(i,j);
-				PsiEzY(0,j) = (Cey/delta)*(-Hx(0,j+1,nf)+Hx(0,j,nf)) + bey*PsiEzY(0,j); // PBC
+				if (i==1)
+				{
+					PsiEzX(0,j) = (Cex/delta)*(Hy(0,j,nf)-Hy(IEz-1,j,nf)) + bex*PsiEzX(0,j); // PBC
+					PsiEzY(0,j) = (Cey/delta)*(-Hx(0,j+1,nf)+Hx(0,j,nf)) + bey*PsiEzY(0,j); // PBC
+				}
 			}
 			// Dz in normal space.
 			for (unsigned int j=PMLw; j<JEz-PMLw; j++)
 			{
 				Dz(i,j,nf) = Dz(i,j,n0) + (Hy(i,j,nf)-Hy(i-1,j,nf)-Hx(i,j+1,nf)+Hx(i,j,nf)) * dt/delta;
-				Ez(i,j,nf) = ae(i,j)*(Dz(i,j,nf)-2*Dz(i,j,n0)+Dz(i,j,np))+be(i,j)*(Dz(i,j,nf)-Dz(i,j,np))+ce(i,j)*(2*Ez(i,j,n0)-Ez(i,j,np))+de(i,j)*(2*Ez(i,j,n0)+Ez(i,j,np))+ee(i,j)*Ez(i,j,np);
-				Dz(0,j,nf) = Dz(0,j,n0) + (Hy(0,j,nf)-Hy(IEz-1,j,nf)-Hx(0,j+1,nf)+Hx(0,j,nf)) * dt/delta; // PBC
-				Ez(0,j,nf) = ae(0,j)*(Dz(0,j,nf)-2*Dz(0,j,n0)+Dz(0,j,np))+be(0,j)*(Dz(0,j,nf)-Dz(0,j,np))+ce(0,j)*(2*Ez(0,j,n0)-Ez(0,j,np))+de(0,j)*(2*Ez(0,j,n0)+Ez(0,j,np))+ee(0,j)*Ez(0,j,np); // PBC
+				Ez(i,j,nf) = ae(i,j)*(Dz(i,j,nf)-2.*Dz(i,j,n0)+Dz(i,j,np))+be(i,j)*(Dz(i,j,nf)-Dz(i,j,np))+ce(i,j)*(2.*Ez(i,j,n0)-Ez(i,j,np))+de(i,j)*(2.*Ez(i,j,n0)+Ez(i,j,np))+ee(i,j)*Ez(i,j,np);
+				if (i==1)
+				{
+					Dz(0,j,nf) = Dz(0,j,n0) + (Hy(0,j,nf)-Hy(IEz-1,j,nf)-Hx(0,j+1,nf)+Hx(0,j,nf)) * dt/delta; // PBC
+					Ez(0,j,nf) = ae(0,j)*(Dz(0,j,nf)-2.*Dz(0,j,n0)+Dz(0,j,np))+be(0,j)*(Dz(0,j,nf)-Dz(0,j,np))+ce(0,j)*(2.*Ez(0,j,n0)-Ez(0,j,np))+de(0,j)*(2.*Ez(0,j,n0)+Ez(0,j,np))+ee(0,j)*Ez(0,j,np); // PBC
+				}
 			}
 			// Dz in lower PML.
 			for (unsigned int j=0; j<PMLw; j++)
 			{
 				Dz(i,j,nf) = Dz(i,j,n0) + dt*(((1./kappex)*(Hy(i,j,nf)-Hy(i-1,j,nf))+(1./kappey)*(-Hx(i,j+1,nf)+Hx(i,j,nf))) * 1./delta + PsiEzX(i,j) + PsiEzY(i,j));
 				Ez(i,j,nf) = Dz(i,j,nf)/(e0*einf(i,j));
-				Dz(0,j,nf) = Dz(0,j,n0) + dt*(((1./kappex)*(Hy(0,j,nf)-Hy(IEz-1,j,nf))+(1./kappey)*(-Hx(0,j+1,nf)+Hx(0,j,nf))) * 1./delta + PsiEzX(0,j) + PsiEzY(0,j)); // PBC
-				Ez(0,j,nf) = Dz(0,j,nf)/(e0*einf(0,j)); // PBC
+				if (i==1)
+				{
+					Dz(0,j,nf) = Dz(0,j,n0) + dt*(((1./kappex)*(Hy(0,j,nf)-Hy(IEz-1,j,nf))+(1./kappey)*(-Hx(0,j+1,nf)+Hx(0,j,nf))) * 1./delta + PsiEzX(0,j) + PsiEzY(0,j)); // PBC
+					Ez(0,j,nf) = Dz(0,j,nf)/(e0*einf(0,j)); // PBC
+				}
 			}
 			// Dz in upper PML.
 			for (unsigned int j=JEz-PMLw; j<JEz; j++)
 			{
 				Dz(i,j,nf) = Dz(i,j,n0) + dt*(((1./kappex)*(Hy(i,j,nf)-Hy(i-1,j,nf))+(1./kappey)*(-Hx(i,j+1,nf)+Hx(i,j,nf))) * 1./delta + PsiEzX(i,j) + PsiEzY(i,j));
 				Ez(i,j,nf) = Dz(i,j,nf)/(e0*einf(i,j));
-				Dz(0,j,nf) = Dz(0,j,n0) + dt*(((1./kappex)*(Hy(0,j,nf)-Hy(IEz-1,j,nf))+(1./kappey)*(-Hx(0,j+1,nf)+Hx(0,j,nf))) * 1./delta + PsiEzX(0,j) + PsiEzY(0,j)); // PBC
-				Ez(0,j,nf) = Dz(0,j,nf)/(e0*einf(0,j)); // PBC
+				if (i==1)
+				{
+					Dz(0,j,nf) = Dz(0,j,n0) + dt*(((1./kappex)*(Hy(0,j,nf)-Hy(IEz-1,j,nf))+(1./kappey)*(-Hx(0,j+1,nf)+Hx(0,j,nf))) * 1./delta + PsiEzX(0,j) + PsiEzY(0,j)); // PBC
+					Ez(0,j,nf) = Dz(0,j,nf)/(e0*einf(0,j)); // PBC
+				}
 			}
 		}
 
 		// ====================== Source ======================
 		if (SourcePlane == 1)
 		{
+			unsigned int j=SourceLocationY;
 			for (unsigned int i=0; i<IEz; i++)
 			{
-				unsigned int j=SourceLocationY;
 				if (SourceChoice == 1)
 					Ez(i,j,nf) += exp(-1.*pow(((PRECISION)n-(PRECISION)td)/((PRECISION)PulseWidth/4.),2)) * Sc;
 				else if (SourceChoice == 2)

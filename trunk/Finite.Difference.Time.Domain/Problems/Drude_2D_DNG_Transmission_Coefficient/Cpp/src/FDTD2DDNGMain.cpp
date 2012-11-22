@@ -8,13 +8,13 @@ int main()
 							256,	// I
 							256,	// J
 							64,		// PMLw
-							4*512,	// MaxTime
+							4*256,	// MaxTime
 							1,		// Snapshot resolution
 							10,		// Snapshot interval
 							1,		// Source choice
 							1,		// Source is plane wave?
-							256,	// Source location X
-							50+5);	// Source location Y
+							128,	// Source location X
+							64+5);	// Source location Y
 
 	// ================== CPU Simulation ================
 	FDTD2DDNGSim.StartTimer();
