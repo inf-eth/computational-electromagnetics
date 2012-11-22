@@ -91,12 +91,12 @@ CFDTD2DDNG::CFDTD2DDNG(
 							Ez_(NULL), Dz_(NULL), Hx_(NULL), Bx_(NULL), Hy_(NULL), By_(NULL),
 							// Incident and transmitted fields.
 							Ezi(NULL), Ezt(NULL), Eztt(NULL),
-							x1(SlabLeft+1),
+							x1(SlabLeft),
 							// Refractive index.
 							Y1(SlabLeft+5),
 							y1((PRECISION)Y1*delta),
 							Y2(SlabLeft+6),
-							y2((PRECISION)Y1*delta),
+							y2((PRECISION)Y2*delta),
 							Ezy1(NULL),
 							Ezy2(NULL),
 							// Drude material parameters.
@@ -244,10 +244,10 @@ int CFDTD2DDNG::InitialiseCPU()
 			{
 				einf(i,j) = 1.;
 				uinf(i,j) = 1.;
-				wpesq(i,j) = 0.*2.*pow(w, 2);;
-				wpmsq(i,j) = 0.*2.*pow(w, 2);;
-				ge(i,j) = 0.*w/32.;
-				gm(i,j) = 0.*w/32.;
+				wpesq(i,j) = 2.*pow(w, 2);;
+				wpmsq(i,j) = 2.*pow(w, 2);;
+				ge(i,j) = w/32.;
+				gm(i,j) = w/32.;
 			}
 			// Auxiliary scalars.
 			ae0(i,j) = (4.*pow(dt,2))/(e0*(4.*einf(i,j)+pow(dt,2)*wpesq(i,j)+2.*dt*einf(i,j)*ge(i,j)));
@@ -336,19 +336,19 @@ int CFDTD2DDNG::DryRunCPU()
 			// Bx in normal space.
 			for (unsigned int j=1+PMLw; j<JHx-PMLw-1; j++)
 			{
-				Bx(i,j,nf) = Bx(i,j,n0) - (Ez(i,j,n0) - Ez(i,j-1,n0)) * dt/delta;
+				Bx(i,j,nf) = Bx(i,j,n0) + (-Ez(i,j,n0) + Ez(i,j-1,n0)) * dt/delta;
 				Hx(i,j,nf) = Bx(i,j,nf)/(u0*uinf(i,j));
 			}
 			// Bx in lower PML.
 			for (unsigned int j=1; j<PMLw+1; j++)
 			{
-				Bx(i,j,nf) = Bx(i,j,n0) - dt*((1./kappmy)*(Ez(i,j,n0) - Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
+				Bx(i,j,nf) = Bx(i,j,n0) + dt*((1./kappmy)*(-Ez(i,j,n0) + Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
 				Hx(i,j,nf) = Bx(i,j,nf)/(u0*uinf(i,j));
 			}
 			// Bx in upper PML.
 			for (unsigned int j=JHx-PMLw-1; j<JHx-1; j++)
 			{
-				Bx(i,j,nf) = Bx(i,j,n0) - dt*((1./kappmy)*(Ez(i,j,n0) - Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
+				Bx(i,j,nf) = Bx(i,j,n0) + dt*((1./kappmy)*(-Ez(i,j,n0) + Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
 				Hx(i,j,nf) = Bx(i,j,nf)/(u0*uinf(i,j));
 			}
 		}
@@ -363,7 +363,6 @@ int CFDTD2DDNG::DryRunCPU()
 				if (i==0)
 					PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
 			}
-
 			// By in normal space.
 			for (unsigned int j=PMLw; j<JHy-PMLw; j++)
 			{
@@ -476,7 +475,7 @@ int CFDTD2DDNG::DryRunCPU()
 
 			Dz(i,j,nf) = e0*Ez(i,j,nf);
 		}
-		Ezi[n] = Ez(IEz/2,SlabLeft+1,nf); // Incident field.
+		Ezi[n] = Ez(IEz/2,x1,nf); // Incident field.
 
 		np = (np+1)%3;
 		n0 = (n0+1)%3;
@@ -508,19 +507,19 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 			// Bx in normal space.
 			for (unsigned int j=1+PMLw; j<JHx-PMLw-1; j++)
 			{
-				Bx(i,j,nf) = Bx(i,j,n0) - (Ez(i,j,n0) - Ez(i,j-1,n0)) * dt/delta;
+				Bx(i,j,nf) = Bx(i,j,n0) + (-Ez(i,j,n0) + Ez(i,j-1,n0)) * dt/delta;
 				Hx(i,j,nf) = am(i,j)*(Bx(i,j,nf)-2.*Bx(i,j,n0)+Bx(i,j,np))+bm(i,j)*(Bx(i,j,nf)-Bx(i,j,np))+cm(i,j)*(2.*Hx(i,j,n0)-Hx(i,j,np))+dm(i,j)*(2.*Hx(i,j,n0)+Hx(i,j,np))+em(i,j)*Hx(i,j,np);
 			}
 			// Bx in lower PML.
 			for (unsigned int j=1; j<PMLw+1; j++)
 			{
-				Bx(i,j,nf) = Bx(i,j,n0) - dt*((1./kappmy)*(Ez(i,j,n0) - Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
+				Bx(i,j,nf) = Bx(i,j,n0) + dt*((1./kappmy)*(-Ez(i,j,n0) + Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
 				Hx(i,j,nf) = Bx(i,j,nf)/(u0*uinf(i,j));
 			}
 			// Bx in upper PML.
 			for (unsigned int j=JHx-PMLw-1; j<JHx-1; j++)
 			{
-				Bx(i,j,nf) = Bx(i,j,n0) - dt*((1./kappmy)*(Ez(i,j,n0) - Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
+				Bx(i,j,nf) = Bx(i,j,n0) + dt*((1./kappmy)*(-Ez(i,j,n0) + Ez(i,j-1,n0)) * 1./delta + PsiHxY(i,j));
 				Hx(i,j,nf) = Bx(i,j,nf)/(u0*uinf(i,j));
 			}
 		}
