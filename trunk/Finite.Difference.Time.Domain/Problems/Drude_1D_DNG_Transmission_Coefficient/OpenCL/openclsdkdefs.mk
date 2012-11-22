@@ -281,7 +281,7 @@ endif
 # Compiler and Runtime
 #RUNTINE_BIN = $(DEPTH)/bin/$(CPU_ARCH)
 RUNTINE_BIN = bin/$(CPU_ARCH)
-INCLUDEDIRS = $(AMDAPPSDKROOT)/samples/opencl/SDKUtil/include
+INCLUDEDIRS = $(AMDAPPSDKROOT)/samples/opencl/SDKUtil/include .
 OPENCL_INCLUDEDIRS = "$(AMDAPPSDKROOT)/include" 
 CAL_INCLUDEDIRS = "$(AMDAPPSDKROOT)/include/CAL"
 OPENCL_LIBDIRS = "$(AMDAPPSDKROOT)/lib/$(CPU_ARCH)"
