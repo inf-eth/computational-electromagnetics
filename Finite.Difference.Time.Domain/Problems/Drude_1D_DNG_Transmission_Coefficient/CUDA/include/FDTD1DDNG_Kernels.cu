@@ -7,7 +7,7 @@
 #include <FDTD1DDNG.hpp>
 
 // Dry run kernel.
-template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_DryRun(
+template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_DryRun_M(
 							const unsigned int Size,
 							const unsigned int PulseWidth,
 							const unsigned int td,
@@ -44,7 +44,34 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 	if (i == Size-1)
 		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
 
-	__syncthreads();
+}
+template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_DryRun_E(
+							const unsigned int Size,
+							const unsigned int PulseWidth,
+							const unsigned int td,
+							const unsigned int SourceLocation,
+							const unsigned int SourceChoice,
+							const PRECISION e0,
+							const PRECISION u0,
+							const PRECISION dt,
+							const PRECISION dz,
+							const PRECISION Sc,
+							// Frequency, wavelength, wave number.
+							const PRECISION f,
+							const PRECISION fp,
+							const PRECISION dr,
+							// Data arrays.
+							PRECISION *Ex_, PRECISION *Hy_,
+							// Incident field.
+							PRECISION *Exi,
+							const unsigned int x1,
+							// Time indices.
+							const unsigned int n,
+							const unsigned int np,
+							const unsigned int n0,
+							const unsigned int nf)
+{
+	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
 
 	if (i != 0)
 		Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
@@ -77,9 +104,8 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 	if (i == x1)
 		Exi[n] = Ex(i,nf);
 }
-
 // Simulation kernel.
-template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_Simulation(
+template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_Simulation_M(
 							const unsigned int Size,
 							const unsigned int PulseWidth,
 							const unsigned int td,
@@ -130,8 +156,44 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
 		By(i,nf) = u0*Hy(i,nf);
 	}
-
-	__syncthreads();
+}
+template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKernel_Simulation_E(
+							const unsigned int Size,
+							const unsigned int PulseWidth,
+							const unsigned int td,
+							const unsigned int SourceLocation,
+							const unsigned int SourceChoice,
+							const PRECISION e0,
+							const PRECISION u0,
+							const PRECISION dt,
+							const PRECISION dz,
+							const PRECISION Sc,
+							// Frequency, wavelength, wave number.
+							const PRECISION f,
+							const PRECISION fp,
+							const PRECISION dr,
+							// Data arrays.
+							PRECISION *Ex_, PRECISION *Dx_, PRECISION *Hy_, PRECISION *By_,
+							// Drude material parameters.
+							PRECISION *einf, PRECISION *uinf, PRECISION *wpesq, PRECISION *wpmsq, PRECISION *ge, PRECISION *gm,
+							// Drude scalars.
+							PRECISION *ae0, PRECISION *ae, PRECISION *be, PRECISION *ce, PRECISION *de, PRECISION *ee,
+							PRECISION *am0, PRECISION *am, PRECISION *bm, PRECISION *cm, PRECISION *dm, PRECISION *em,
+							// Incident field.
+							PRECISION *Ext,
+							PRECISION *Extt,
+							PRECISION *Exz1,
+							PRECISION *Exz2,
+							const unsigned int x1,
+							const unsigned int Z1,
+							const unsigned int Z2,
+							// Time indices.
+							const unsigned int n,
+							const unsigned int np,
+							const unsigned int n0,
+							const unsigned int nf)
+{
+	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
 
 	if (i != 0)
 	{

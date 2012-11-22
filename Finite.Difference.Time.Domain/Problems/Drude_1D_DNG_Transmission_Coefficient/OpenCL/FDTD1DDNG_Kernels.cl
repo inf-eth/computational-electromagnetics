@@ -14,7 +14,7 @@
 #endif
 
 // Number of const uint or double arguments does NOT have any significant impact on performance.
-__kernel void FDTD1DDNGKernel_DryRun(
+__kernel void FDTD1DDNGKernel_DryRun_M(
 							const unsigned int Size,
 							const unsigned int PulseWidth,
 							const unsigned int td,
@@ -50,8 +50,34 @@ __kernel void FDTD1DDNGKernel_DryRun(
 	// ABC
 	if (i == Size-1)
 		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
-
-	barrier(CLK_GLOBAL_MEM_FENCE|CLK_LOCAL_MEM_FENCE);
+}
+__kernel void FDTD1DDNGKernel_DryRun_E(
+							const unsigned int Size,
+							const unsigned int PulseWidth,
+							const unsigned int td,
+							const unsigned int SourceLocation,
+							const unsigned int SourceChoice,
+							const PRECISION e0,
+							const PRECISION u0,
+							const PRECISION dt,
+							const PRECISION dz,
+							const PRECISION Sc,
+							// Frequency, wavelength, wave number.
+							const PRECISION f,
+							const PRECISION fp,
+							const PRECISION dr,
+							// Data arrays.
+							__global PRECISION *Ex_, __global PRECISION *Hy_,
+							// Incident field.
+							__global PRECISION *Exi,
+							const unsigned int x1,
+							// Time indices.
+							const unsigned int n,
+							const unsigned int np,
+							const unsigned int n0,
+							const unsigned int nf)
+{
+	unsigned int i = get_global_id(0);
 
 	if (i != 0)
 		Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
@@ -85,7 +111,7 @@ __kernel void FDTD1DDNGKernel_DryRun(
 		Exi[n] = Ex(i,nf);
 }
 // Simulation kernel
-__kernel void FDTD1DDNGKernel_Simulation(
+__kernel void FDTD1DDNGKernel_Simulation_M(
 							const unsigned int Size,
 							const unsigned int PulseWidth,
 							const unsigned int td,
@@ -136,7 +162,44 @@ __kernel void FDTD1DDNGKernel_Simulation(
 		Hy(i,nf) = Hy(i-1,n0) + (Sc-1)/(Sc+1)*(Hy(i-1,nf)-Hy(i,n0));
 		By(i,nf) = u0*Hy(i,nf);
 	}
-	barrier(CLK_GLOBAL_MEM_FENCE|CLK_LOCAL_MEM_FENCE);
+}
+__kernel void FDTD1DDNGKernel_Simulation_E(
+							const unsigned int Size,
+							const unsigned int PulseWidth,
+							const unsigned int td,
+							const unsigned int SourceLocation,
+							const unsigned int SourceChoice,
+							const PRECISION e0,
+							const PRECISION u0,
+							const PRECISION dt,
+							const PRECISION dz,
+							const PRECISION Sc,
+							// Frequency, wavelength, wave number.
+							const PRECISION f,
+							const PRECISION fp,
+							const PRECISION dr,
+							// Data arrays.
+							__global PRECISION *Ex_, __global PRECISION *Dx_, __global PRECISION *Hy_, __global PRECISION *By_,
+							// Drude material parameters.
+							__global PRECISION *einf, __global PRECISION *uinf, __global PRECISION *wpesq, __global PRECISION *wpmsq, __global PRECISION *ge, __global PRECISION *gm,
+							// Drude scalars.
+							__global PRECISION *ae0, __global PRECISION *ae, __global PRECISION *be, __global PRECISION *ce, __global PRECISION *de, __global PRECISION *ee,
+							__global PRECISION *am0, __global PRECISION *am, __global PRECISION *bm, __global PRECISION *cm, __global PRECISION *dm, __global PRECISION *em,
+							// Incident field.
+							__global PRECISION *Ext,
+							__global PRECISION *Extt,
+							__global PRECISION *Exz1,
+							__global PRECISION *Exz2,
+							const unsigned int x1,
+							const unsigned int Z1,
+							const unsigned int Z2,
+							// Time indices.
+							const unsigned int n,
+							const unsigned int np,
+							const unsigned int n0,
+							const unsigned int nf)
+{
+	unsigned int i = get_global_id(0);
 
 	if (i != 0)
 	{

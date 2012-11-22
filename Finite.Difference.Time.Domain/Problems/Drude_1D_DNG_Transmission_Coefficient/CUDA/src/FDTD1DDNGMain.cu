@@ -13,10 +13,10 @@ int main(int argc, char * argv[])
 	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;
 
 	// ================== CPU Simulation ================
-	FDTD1DDNGSim.StartTimer();
+	/*FDTD1DDNGSim.StartTimer();
 	FDTD1DDNGSim.CompleteRunCPU(true);
 	FDTD1DDNGSim.StopTimer();
-	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;
+	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;*/
 
 	return 0;
 }
