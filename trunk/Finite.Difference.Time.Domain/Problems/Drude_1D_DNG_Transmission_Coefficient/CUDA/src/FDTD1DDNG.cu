@@ -468,7 +468,32 @@ int CFDTD1DDNG::DryRunGPU()
 		sdkStartTimer(&Timer);
 
 		// Kernel call.
-		FDTD1DDNGKernel_DryRun <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
+		FDTD1DDNGKernel_DryRun_M <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
+											Size,
+											PulseWidth,
+											td,
+											SourceLocation,
+											SourceChoice,
+											e0,
+											u0,
+											dt,
+											dz,
+											Sc,
+											f,
+											fp,
+											dr,
+											d_Ex_,
+											d_Hy_,
+											d_Exi,
+											x1,
+											n,
+											np,
+											n0,
+											nf);
+
+		getLastCudaError("Kernel execution failed");
+		checkCudaErrors(cudaThreadSynchronize());
+		FDTD1DDNGKernel_DryRun_E <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
 											Size,
 											PulseWidth,
 											td,
@@ -541,7 +566,34 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		sdkStartTimer(&Timer);
 
 		// Kernel call.
-		FDTD1DDNGKernel_Simulation <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
+		FDTD1DDNGKernel_Simulation_M <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
+											Size,
+											PulseWidth,
+											td,
+											SourceLocation,
+											SourceChoice,
+											e0,
+											u0,
+											dt,
+											dz,
+											Sc,
+											f,
+											fp,
+											dr,
+											d_Ex_, d_Dx_, d_Hy_, d_By_,
+											d_einf, d_uinf, d_wpesq, d_wpmsq, d_ge, d_gm,
+											d_ae0, d_ae, d_be, d_ce, d_de, d_ee,
+											d_am0, d_am, d_bm, d_cm, d_dm, d_em,
+											d_Ext, d_Extt, d_Exz1, d_Exz2,
+											x1, Z1, Z2,
+											n,
+											np,
+											n0,
+											nf);
+
+		getLastCudaError("Kernel execution failed");
+		checkCudaErrors(cudaThreadSynchronize());
+		FDTD1DDNGKernel_Simulation_E <ThreadsX, ThreadsY> <<<Blocks, Threads>>>(
 											Size,
 											PulseWidth,
 											td,

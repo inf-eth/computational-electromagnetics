@@ -117,8 +117,10 @@ private:
 	cl_program program;
 
 	// Dry run and simulation kernel handles.
-	cl_kernel DryRun_kernel;
-	cl_kernel Simulation_kernel;
+	cl_kernel DryRun_kernel_M;
+	cl_kernel DryRun_kernel_E;
+	cl_kernel Simulation_kernel_M;
+	cl_kernel Simulation_kernel_E;
 
 public:
 	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
