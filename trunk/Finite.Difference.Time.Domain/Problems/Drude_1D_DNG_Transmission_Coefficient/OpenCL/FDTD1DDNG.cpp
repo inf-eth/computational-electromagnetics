@@ -473,7 +473,8 @@ int CFDTD1DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n % (MaxTime/1024U) == 0)
+			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// Calculation of Hy using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
@@ -524,7 +525,8 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n % (MaxTime/1024U) == 0)
+			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// Calculation of By using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
