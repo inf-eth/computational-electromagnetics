@@ -2,22 +2,22 @@ clc
 clear all
 
 % Simulation parameters.
-I = 512; % No. of spatial steps in i direction.
-J = 512; % No. of spatial steps in j direction.
-PMLw = 50; % Width of PML layer.
+I = 256; % No. of spatial steps in i direction.
+J = 256; % No. of spatial steps in j direction.
+PMLw = 64; % Width of PML layer.
 SlabLeft = round(J/3+PMLw); % Location of left end of Slab.
 SlabRight = round(2*J/3+PMLw); % Location of right end of Slab
-MaxTime = 6*J; % No. of time steps
+MaxTime = 4; % No. of time steps
 PulseWidth = round(J/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
 SnapshotInterval = 16; % Amount of time delay between snaps.
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
-SourceChoice = 2;
-SourcePlane = 0; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
+SourceChoice = 1;
+SourcePlane = 1; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
 SourceLocationX = I/2; % X Location of source. Only used for an omni-source.
-SourceLocationY = PMLw+72; % Y Location of source.
+SourceLocationY = PMLw+6; % Y Location of source.
 
 % Constants.
 c = 3e8;
@@ -30,7 +30,7 @@ delta = 3e-3;
 Sc = c * dt/delta
 
 l = PulseWidth*delta;
-f = 2*c/l
+f = c/l
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
@@ -106,6 +106,8 @@ PsiHxY = zeros(IHx, JHx);
 kapp = 1;
 a = 0.0004;
 sig = 0.045;
+kappe = 1.5;
+kappm = 1.5;
 % Electric.
 kappex = kapp;
 kappey = kapp;
@@ -115,8 +117,8 @@ sigex = 0;
 sigey = sig;
 bex = exp(-1*(aex/e0+sigex/(kappex*e0))*dt);
 bey = exp(-1*(aey/e0+sigey/(kappey*e0))*dt);
-Cex = (bex-1)*sigex/(sigex*kappex+kappex^2*aex);
-Cey = (bey-1)*sigey/(sigey*kappey+kappey^2*aey);
+Cex = (bex-1)*sigex/(sigex*kappex+kappe^2*aex);
+Cey = (bey-1)*sigey/(sigey*kappey+kappe^2*aey);
 % Magnetic.
 kappmx = kapp;
 kappmy = kapp;
@@ -126,8 +128,8 @@ sigmx = 0;
 sigmy = u0/e0*sig;
 bmx = exp(-1*(amx/u0+sigmx/(kappmx*u0))*dt);
 bmy = exp(-1*(amy/u0+sigmy/(kappmy*u0))*dt);
-Cmx = (bmx-1)*sigmx/(sigmx*kappmx+kappmx^2*amx);
-Cmy = (bmy-1)*sigmy/(sigmy*kappmy+kappmy^2*amy);
+Cmx = (bmx-1)*sigmx/(sigmx*kappmx+kappm^2*amx);
+Cmy = (bmy-1)*sigmy/(sigmy*kappmy+kappm^2*amy);
 
 EzSnapshots = zeros(IEz/SnapshotResolution, (JEz)/SnapshotResolution, MaxTime/SnapshotInterval); % Data for plotting.
 frame = 1;
@@ -489,7 +491,7 @@ set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-axis([-1 1 -2 2])
+ylim([-2 2])
 axis 'auto i'
 grid on
 subplot(212)
@@ -498,7 +500,7 @@ set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('1-|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-axis([-1 1 -2 2])
+ylim([-2 2])
 axis 'auto i'
 grid on
 

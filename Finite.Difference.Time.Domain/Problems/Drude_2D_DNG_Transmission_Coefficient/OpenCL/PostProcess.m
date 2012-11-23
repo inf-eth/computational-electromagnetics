@@ -63,11 +63,11 @@ Ezy2 = fread(fid, MaxTime, Precision);
 fclose (fid);
 
 % Postprocessing.
-Fs = 1/dt;                    % Sampling frenuency
+Fs = 1/dt;                    % Sampling frequency
 T = dt;                       % Sample time
 L = length(Ezi);              % Length of signal
 t = (0:L-1)*T;                % Time vector
-fspan = 100;                  % Points to plot in frenuency domain
+fspan = 100;                  % Points to plot in frequency domain
 
 figure(1)
 subplot(211)
@@ -134,12 +134,12 @@ grid on
 figure(4)
 subplot(211)
 TAU = abs(EZT(1:NFFT/2+1)./EZI(1:NFFT/2+1));
-plot(f(1:fspan), TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
+plot(f(1:fspan), TAU(1:fspan)', 'LineWidth', 2.0, 'Color', 'b')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-axis([-1 1 -2 2])
+ylim([-2 2])
 axis 'auto i'
 grid on
 subplot(212)
@@ -148,7 +148,7 @@ set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('1-|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-axis([-1 1 -2 2])
+ylim([-2 2])
 axis 'auto i'
 grid on
 
