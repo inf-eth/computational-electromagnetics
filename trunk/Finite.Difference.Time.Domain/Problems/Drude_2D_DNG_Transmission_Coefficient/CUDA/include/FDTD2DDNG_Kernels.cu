@@ -100,7 +100,6 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD2DDNGKer
 	// PsiHyX arrays.
 	if (i<IHy-1)
 	{
-
 		if (j<JHy)
 		{
 			PsiHyX(i,j) = (Cmx/delta)*(Ez(i+1,j,n0)-Ez(i,j,n0)) + bmx*PsiHyX(i,j);
