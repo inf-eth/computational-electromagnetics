@@ -500,7 +500,7 @@ int CFDTD2DDNG::InitialiseCLKernelsGPU()
 	size_t sourceSize[] = {strlen(source)};
 
 	program = clCreateProgramWithSource( context, 1, &source, sourceSize, &status);
-	SafeCall(status, "Error: Loading Binary into cl_program (clCreateProgramWithBinary)\n");
+	SafeCall(status, "Error: Loading Binary into cl_program (clCreateProgramWithBinary)");
 
 	/* create a cl program executable for all the devices specified */
 	status = clBuildProgram(program, 1, devices, NULL, NULL, NULL);
@@ -522,10 +522,10 @@ int CFDTD2DDNG::InitialiseCLKernelsGPU()
 			return -1;
 		}
 
-		cout << " \n\t\t\tBUILD LOG\n";
-		cout << " ************************************************\n";
+		cout << endl << " \t\t\tBUILD LOG" << endl;
+		cout << " ************************************************" << endl;
 		cout << buildLog << std::endl;
-		cout << " ************************************************\n";
+		cout << " ************************************************" << endl;
 		delete []buildLog;
 	}
 
