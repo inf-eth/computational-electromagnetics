@@ -378,7 +378,30 @@ int CFDTD1DDNG::InitialiseCLKernelsGPU()
 	clSafeCall(status, "Error: Loading Binary into cl_program (clCreateProgramWithBinary)\n");
 
 	/* create a cl program executable for all the devices specified */
-	clSafeCall(clBuildProgram(program, 1, devices, NULL, NULL, NULL), "Error: Building Program (clBuildProgram)\n");
+	status = clBuildProgram(program, 1, devices, NULL, NULL, NULL);
+	if(status == CL_BUILD_PROGRAM_FAILURE)
+	{
+		cl_int logStatus;
+		char *buildLog = NULL;
+		size_t buildLogSize = 0;
+		logStatus = clGetProgramBuildInfo (program, devices[0], CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, &buildLogSize);
+		clSafeCall(logStatus, "clGetProgramBuildInfo failed.");
+		buildLog = new char[buildLogSize];
+		clSafeCall(!buildLog, "Failed to allocate host memory. (buildLog)");
+		memset(buildLog, 0, buildLogSize);
+		logStatus = clGetProgramBuildInfo (program, devices[0], CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, NULL);
+		if (logStatus != CL_SUCCESS)
+		{
+			cout << "clGetProgramBuildInfo failed." << endl;
+			free(buildLog);
+			return -1;
+		}
+		cout << " \n\t\t\tBUILD LOG\n";
+		cout << " ************************************************\n";
+		cout << buildLog << std::endl;
+		cout << " ************************************************\n";
+		delete []buildLog;
+	}
 
 	// Attach kernel objects to respective kernel functions.
 	DryRun_kernel_M = clCreateKernel(program, "FDTD1DDNGKernel_DryRun_M", &status);
