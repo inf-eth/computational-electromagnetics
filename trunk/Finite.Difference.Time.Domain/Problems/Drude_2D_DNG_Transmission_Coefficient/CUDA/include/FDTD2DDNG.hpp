@@ -162,7 +162,7 @@ public:
 	int DryRunCPU();
 	int RunSimulationCPU(bool=true);
 	int DryRunGPU();
-	int RunSimulationGPU(bool=true);//int runFDTD1DDNGKernels(bool=true);
+	int RunSimulationGPU(bool=true);
 
 	// Complete Runs on CPU and GPU.
 	int CompleteRunCPU(bool=true);
