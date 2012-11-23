@@ -32,6 +32,7 @@
 #define PsiHxY(i,j) PsiHxY_[(i)+IHx*(j)]
 
 #include <FDTD2DDNG.hpp>
+#include <cstring>
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
