@@ -103,13 +103,12 @@ __kernel void FDTD2DDNGKernel_DryRun_M(
 	}
 
 	// ========================== By and Hy ==========================
-	// PsiHyX arrays.
 	if (i<IHy-1)
 	{
+		// PsiHyX array.
 		if (j<JHy)
-		{
 			PsiHyX(i,j) = (Cmx/delta)*(Ez(i+1,j,n0)-Ez(i,j,n0)) + bmx*PsiHyX(i,j);
-		}
+
 		// By in normal space.
 		if (j>PMLw-1 && j<JHy-PMLw)
 		{
@@ -131,10 +130,10 @@ __kernel void FDTD2DDNGKernel_DryRun_M(
 	}
 	else
 	{
+		// PsiHyX array.
 		if (j<JHy)
-		{
 			PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
-		}
+
 		// By in normal space.
 		if (j>PMLw-1 && j<JHy-PMLw)
 		{
@@ -347,9 +346,8 @@ __kernel void FDTD2DDNGKernel_Simulation_M(
 	{
 		// PsiHyX arrays.
 		if (j<JHy)
-		{
 			PsiHyX(i,j) = (Cmx/delta)*(Ez(i+1,j,n0)-Ez(i,j,n0)) + bmx*PsiHyX(i,j);
-		}
+
 		// By in normal space.
 		if (j>PMLw-1 && j<JHy-PMLw)
 		{
@@ -371,11 +369,10 @@ __kernel void FDTD2DDNGKernel_Simulation_M(
 	}
 	else
 	{
-		// PsiHyX arrays.
+		// PsiHyX array.
 		if (j<JHy)
-		{
 			PsiHyX(IHy-1,j) = (Cmx/delta)*(Ez(0,j,n0)-Ez(IHy-1,j,n0)) + bmx*PsiHyX(IHy-1,j); // PBC
-		}
+
 		// By in normal space.
 		if (j>PMLw-1 && j<JHy-PMLw)
 		{
