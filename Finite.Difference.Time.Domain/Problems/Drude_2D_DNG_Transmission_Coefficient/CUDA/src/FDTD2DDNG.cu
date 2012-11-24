@@ -816,20 +816,24 @@ int CFDTD2DDNG::DryRunGPU()
 	// Total local threads in a block. Can be thought of as Block dimensions.
 	const unsigned int ThreadsX = 16;
 	const unsigned int ThreadsY = 16;
+	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
 
 	// Total blocks in simulation grid. Can be thought of as no. of blocks in grid.
-	// Size should be divisible by 256.
+	// I and (J+2*PMLw) should be divisible by ThreadsX and ThreadsY.
+	if (I % ThreadsX != 0 || (J+2*PMLw) % ThreadsY != 0)
+	{
+		cout << "Error: 'I' and '(J+2*PMLw)' should be divisible by block dimensions (ThreadsX and ThreadsY), respectively." << endl;
+		return -1;
+	}
 	unsigned int BlocksX = I/ThreadsX;
 	unsigned int BlocksY = (J+2*PMLw)/ThreadsY;
+	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
 
 	// Kernel parameters.
 	dim3 Blocks(BlocksX, BlocksY);
 	dim3 Threads(ThreadsX, ThreadsY);
 
 	cout << "Dry run (GPU) started..." << endl;
-
-	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
-	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
 
 	StopWatchInterface *Timer = 0;
 	sdkCreateTimer(&Timer);
@@ -930,20 +934,24 @@ int CFDTD2DDNG::RunSimulationGPU(bool SaveFields)
 	// Total local threads in a block. Can be thought of as Block dimensions.
 	const unsigned int ThreadsX = 16;
 	const unsigned int ThreadsY = 16;
-	
+	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
+
 	// Total blocks in simulation grid. Can be thought of as no. of blocks in grid.
-	// Size should be divisible by 256.
+	// I and (J+2*PMLw) should be divisible by ThreadsX and ThreadsY.
+	if (I % ThreadsX != 0 || (J+2*PMLw) % ThreadsY != 0)
+	{
+		cout << "Error: 'I' and '(J+2*PMLw)' should be divisible by block dimensions (ThreadsX and ThreadsY), respectively." << endl;
+		return -1;
+	}
 	unsigned int BlocksX = I/ThreadsX;
 	unsigned int BlocksY = (J+2*PMLw)/ThreadsY;
+	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
 
 	// Kernel parameters.
 	dim3 Blocks(BlocksX, BlocksY);
 	dim3 Threads(ThreadsX, ThreadsY);
 
 	cout << "Simulation (GPU) started..." << endl;
-
-	cout << "Block dimensions: " << ThreadsX << "x" << ThreadsY << endl;
-	cout << "Grid dimensions: " << BlocksX << "x" << BlocksY << endl;
 
 	StopWatchInterface *Timer = 0;
 	sdkCreateTimer(&Timer);
@@ -1096,6 +1104,9 @@ int CFDTD2DDNG::CompleteRunCPU(bool SaveFields)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
+	if (HDDSpace() > 2147483648UL)
+		cout << "Warning: Space required for field data storage exceeds 2GB. Consider increasing snapshot interval." << endl;
+
 	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
 	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 	SafeCall(DryRunCPU(), "Error: Dry run (CPU).");
@@ -1109,6 +1120,9 @@ int CFDTD2DDNG::CompleteRunGPU(bool SaveFields)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
+	if (HDDSpace() > 2147483648UL)
+		cout << "Warning: Space required for field data storage exceeds 2GB. Consider increasing snapshot interval." << endl;
+
 	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
 	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 

@@ -119,8 +119,7 @@ CFDTD2DDNG::CFDTD2DDNG(
 							// Time indices.
 							nf(2), n0(1), np(0),
 							// Timer variables.
-							tStart(0LL), tEnd(0LL),
-							cpu(true)
+							tStart(0LL), tEnd(0LL)
 {
 	// Creating directory and writing simulation parameters.
 #if defined __linux__ || defined __CYGWIN__
@@ -322,7 +321,7 @@ int CFDTD2DDNG::InitialiseForSimulationCPU()
 
 	return 0;
 }
-int CFDTD2DDNG::InitialiseCL()
+int CFDTD2DDNG::InitialiseCL(bool pCPU)
 {
 	cl_int status = 0;
 	size_t deviceListSize;
@@ -372,9 +371,9 @@ int CFDTD2DDNG::InitialiseCL()
 	/////////////////////////////////////////////////////////////////
 	cl_device_type type;
 
-	if (cpu == true)
+	if (pCPU == true)
 	{
-		std::cout << "Running on CPU (GPU emulation)..." << std::endl;
+		std::cout << "Running on CPU with GPU emulation..." << std::endl;
 		type = CL_DEVICE_TYPE_CPU;
 	}
 	else
@@ -1251,10 +1250,19 @@ int CFDTD2DDNG::DryRunGPU()
 	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), (void*)&maxDims, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
 	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxDims, (void*)maxWorkItemSizes, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
 
-	globalThreads[0] = I;
-	globalThreads[1] = J+2*PMLw;
 	localThreads[0]  = 16;
 	localThreads[1]  = 16;
+	cout << "Local threads (work-group dimensions): " << localThreads[0] << "x" << localThreads[1] << endl;
+	// I and (J+2*PMLw) should be divisible by localThreads[0] and localThreads[1].
+	if (I % localThreads[0] != 0 || (J+2*PMLw) % localThreads[1] != 0)
+	{
+		cout << "Error: 'I' and '(J+2*PMLw)' should be divisible by work-group dimensions (localThreads[0] and localThreads[1]), respectively." << endl;
+		return -1;
+	}
+
+	globalThreads[0] = I;
+	globalThreads[1] = J+2*PMLw;
+	cout << "Global threads: " << globalThreads[0] << "x" << globalThreads[1] << endl;
 
 	std::cout << "Max dimensions: " << maxDims << std::endl;
 	std::cout << "Device maxWorkGroupSize = " << maxWorkGroupSize << std::endl;
@@ -1274,8 +1282,6 @@ int CFDTD2DDNG::DryRunGPU()
 	nf = 2;
 
 	cout << "Dry run (GPU) started..." << endl;
-	cout << "Global threads: " << globalThreads[0] << "x" << globalThreads[1] << endl;
-	cout << "Local threads: " << localThreads[0] << "x" << localThreads[1] << endl;
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
@@ -1368,10 +1374,19 @@ int CFDTD2DDNG::RunSimulationGPU(bool SaveFields)
 	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), (void*)&maxDims, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
 	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxDims, (void*)maxWorkItemSizes, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
 
-	globalThreads[0] = I;
-	globalThreads[1] = J+2*PMLw;
 	localThreads[0]  = 16;
 	localThreads[1]  = 16;
+	cout << "Local threads (work-group dimensions): " << localThreads[0] << "x" << localThreads[1] << endl;
+	// I and (J+2*PMLw) should be divisible by localThreads[0] and localThreads[1].
+	if (I % localThreads[0] != 0 || (J+2*PMLw) % localThreads[1] != 0)
+	{
+		cout << "Error: 'I' and '(J+2*PMLw)' should be divisible by work-group dimensions (localThreads[0] and localThreads[1]), respectively." << endl;
+		return -1;
+	}
+
+	globalThreads[0] = I;
+	globalThreads[1] = J+2*PMLw;
+	cout << "Global threads: " << globalThreads[0] << "x" << globalThreads[1] << endl;
 
 	std::cout << "Max dimensions: " << maxDims << std::endl;
 	std::cout << "Device maxWorkGroupSize = " << maxWorkGroupSize << std::endl;
@@ -1397,8 +1412,6 @@ int CFDTD2DDNG::RunSimulationGPU(bool SaveFields)
 	frame = 0U;
 
 	cout << "Simulation run (GPU) started..." << endl;
-	cout << "Global threads: " << globalThreads[0] << "x" << globalThreads[1] << endl;
-	cout << "Local threads: " << localThreads[0] << "x" << localThreads[1] << endl;
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
@@ -1534,6 +1547,9 @@ int CFDTD2DDNG::CompleteRunCPU(bool SaveFields)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
+	if (HDDSpace() > 2147483648UL)
+		cout << "Warning: Space required for field data storage exceeds 2GB. Consider increasing snapshot interval." << endl;
+
 	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
 	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 	SafeCall(DryRunCPU(), "Error: Dry run (CPU).");
@@ -1543,14 +1559,17 @@ int CFDTD2DDNG::CompleteRunCPU(bool SaveFields)
 
 	return 0;
 }
-int CFDTD2DDNG::CompleteRunGPU(bool SaveFields)
+int CFDTD2DDNG::CompleteRunGPU(bool SaveFields, bool CPUFlag)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
+	if (HDDSpace() > 2147483648UL)
+		cout << "Warning: Space required for field data storage exceeds 2GB. Consider increasing snapshot interval." << endl;
+
 	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
 	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 
-	SafeCall(InitialiseCL(), "Error: Initialiasing CL.");
+	SafeCall(InitialiseCL(CPUFlag), "Error: Initialiasing CL.");
 	SafeCall(AllocateMemoryGPU(), "Error: Allocating memory on GPU.");
 	SafeCall(InitialiseCLKernelsGPU(), "Error: Copying data from CPU to GPU.");
 	SafeCall(DryRunGPU(), "Error: Dry run (GPU).");
