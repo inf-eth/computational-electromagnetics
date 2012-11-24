@@ -345,12 +345,9 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 			char pbuff[100];
 			SafeCall(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, sizeof(pbuff), pbuff, NULL), "Error: Getting Platform Info.(clGetPlatformInfo)");
 
-			platform = platforms[i];
-			std::cout << "Device" << i << " = " << pbuff << std::endl;
+			cout << "Platform " << i << " = " << pbuff << endl;
 			if(!strcmp(pbuff, "Advanced Micro Devices, Inc."))
-			{
-				break;
-			}
+				platform = platforms[i];
 		}
 		delete platforms;
 	}
@@ -397,6 +394,29 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 	/* Now, get the device list data */
 	SafeCall(clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceListSize, devices, NULL), "Error: Getting Context Info (device list, clGetContextInfo)");
 
+	char platformVendor[1024];
+	SafeCall(clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, sizeof(platformVendor), platformVendor, NULL), "clGetPlatformInfo failed");
+	cout << "Selected Platform Vendor : " << platformVendor << endl;
+
+	// Get number of devices available 
+	cl_device_type deviceType;
+	cl_uint deviceCount = 0;
+	SafeCall(clGetDeviceIDs(platform, deviceType, 0, NULL, &deviceCount), "clGetDeviceIDs failed");
+
+	cl_device_id* deviceIds = (cl_device_id*)malloc(sizeof(cl_device_id) * deviceCount);
+	SafeCall(!deviceIds, "Failed to allocate memory(deviceIds)");
+
+	// Get device ids
+	SafeCall(clGetDeviceIDs(platform, deviceType, deviceCount, deviceIds, NULL), "clGetDeviceIDs failed");
+
+	// Print device index and device names
+	for(cl_uint i = 0; i < deviceCount; ++i)
+	{
+		char deviceName[1024];
+		SafeCall(clGetDeviceInfo(deviceIds[i], CL_DEVICE_NAME, sizeof(deviceName), deviceName, NULL), "clGetDeviceInfo failed");
+		cout << "Device " << i << " : " << deviceName <<" Device ID is "<<deviceIds[i]<< endl;
+	}
+	free(deviceIds);
 	/////////////////////////////////////////////////////////////////
 	// Create an OpenCL command queue
 	/////////////////////////////////////////////////////////////////
