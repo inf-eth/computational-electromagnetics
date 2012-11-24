@@ -136,9 +136,7 @@ private:
 	cl_mem d_PsiHyX_, d_PsiHxY_;
 	// ===========================================================
 
-	// OPENCL related parameters.
-	bool cpu;		// Is OPENCL using CPU or GPU?
-
+	// ========== OPENCL related parameters =========
 	// OPENCL context/device/program
 	cl_context context;
 	cl_device_id *devices;
@@ -150,6 +148,7 @@ private:
 	cl_kernel DryRun_kernel_E;
 	cl_kernel Simulation_kernel_M;
 	cl_kernel Simulation_kernel_E;
+	// ==============================================
 
 public:
 	CFDTD2DDNG(
@@ -171,10 +170,10 @@ public:
 	// Memory allocation and initialisation.
 	int AllocateMemoryCPU();
 	int InitialiseCPU();
-	int InitialiseCL();				// Search and allocate a device.
+	int InitialiseCL(bool=false);		// Search and allocate a device.
 	int InitialiseForSimulationCPU();
 	int AllocateMemoryGPU();
-	int InitialiseCLKernelsGPU();	// Build/attach kernels to respective kernel functions and set arguments.
+	int InitialiseCLKernelsGPU();		// Build/attach kernels to respective kernel functions and set arguments.
 	int InitialiseForSimulationGPU();
 
 	// Simulations.
@@ -185,7 +184,7 @@ public:
 
 	// Complete Runs on CPU and GPU.
 	int CompleteRunCPU(bool=true);
-	int CompleteRunGPU(bool=true);
+	int CompleteRunGPU(bool=true, bool=false);
 
 	// Timing.
 	void StartTimer();

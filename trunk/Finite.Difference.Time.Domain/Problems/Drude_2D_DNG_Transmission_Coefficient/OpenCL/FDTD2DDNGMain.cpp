@@ -5,28 +5,30 @@ using namespace std;
 int main(int argc, char * argv[])
 {
 	CFDTD2DDNG FDTD2DDNGSim(
-							256,	// I
-							256,	// J
+							512,	// I
+							512,	// J
 							64,		// PMLw
 							4*256,	// MaxTime
 							1,		// Snapshot resolution
 							10,		// Snapshot interval
 							1,		// Source choice
 							1,		// Source is plane wave?
-							128,	// Source location X
+							256,	// Source location X
 							64+5);	// Source location Y
 
 	// ================== GPU Simulation ================
 	FDTD2DDNGSim.StartTimer();
-	FDTD2DDNGSim.CompleteRunGPU(true);
+	FDTD2DDNGSim.CompleteRunGPU(
+								true,	// Save fields?
+								true);	// Emulate GPU run on CPU?
 	FDTD2DDNGSim.StopTimer();
-	cout << "Time taken = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;
+	cout << "Total time taken for GPU run = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;
 
 	// ================== CPU Simulation ================
 	/*FDTD2DDNGSim.StartTimer();
 	FDTD2DDNGSim.CompleteRunCPU(true);
 	FDTD2DDNGSim.StopTimer();
-	cout << "Time taken = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;*/
+	cout << "Total time taken for CPU run = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;*/
 
 	return 0;
 }

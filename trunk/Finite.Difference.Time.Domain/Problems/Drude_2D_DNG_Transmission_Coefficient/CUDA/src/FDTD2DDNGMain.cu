@@ -13,20 +13,20 @@ int main(int argc, char * argv[])
 							10,		// Snapshot interval
 							1,		// Source choice
 							1,		// Source is plane wave?
-							128,	// Source location X
+							256,	// Source location X
 							64+5);	// Source location Y
 
 	// ================== GPU Simulation ================
 	FDTD2DDNGSim.StartTimer();
-	FDTD2DDNGSim.CompleteRunGPU(true);
+	FDTD2DDNGSim.CompleteRunGPU(true); // Save field snapshots to hard disk?
 	FDTD2DDNGSim.StopTimer();
-	cout << "Time taken = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;
+	cout << "Total time taken for GPU run = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;
 
 	// ================== CPU Simulation ================
 	/*FDTD1DDNGSim.StartTimer();
 	FDTD1DDNGSim.CompleteRunCPU(true);
 	FDTD1DDNGSim.StopTimer();
-	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;*/
+	cout << "Total time taken for CPU run = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;*/
 
 	return 0;
 }
