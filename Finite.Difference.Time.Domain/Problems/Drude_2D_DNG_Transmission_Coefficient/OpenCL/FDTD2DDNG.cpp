@@ -1624,6 +1624,7 @@ int CFDTD2DDNG::CompleteRunGPU(bool SaveFields)
 	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 
 	SafeCall(InitialiseCL(), "Error: Initialiasing CL.");
+	StartTimer();
 	SafeCall(AllocateMemoryGPU(), "Error: Allocating memory on GPU.");
 	SafeCall(InitialiseCLKernelsGPU(), "Error: Copying data from CPU to GPU.");
 	SafeCall(DryRunGPU(), "Error: Dry run (GPU).");
