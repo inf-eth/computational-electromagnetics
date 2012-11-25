@@ -23,7 +23,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 							const PRECISION fp,
 							const PRECISION dr,
 							// Data arrays.
-							PRECISION *Ex_, PRECISION *Hy_,
+							const PRECISION *Ex_, PRECISION *Hy_,
 							// Incident field.
 							PRECISION *Exi,
 							const unsigned int x1,
@@ -31,9 +31,9 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 							const unsigned int n,
 							const unsigned int np,
 							const unsigned int n0,
-							const unsigned int nf)
+							unsigned int nf)
 {
-	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
+	const unsigned int i = BlockX*blockIdx.x+threadIdx.x;
 
 	if (i != Size-1) // Normal update equation.
 		Hy(i,nf) = Hy(i,n0) + (Ex(i,n0)-Ex(i+1,n0))*dt/(u0*dz);
@@ -61,7 +61,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 							const PRECISION fp,
 							const PRECISION dr,
 							// Data arrays.
-							PRECISION *Ex_, PRECISION *Hy_,
+							PRECISION *Ex_, const PRECISION *Hy_,
 							// Incident field.
 							PRECISION *Exi,
 							const unsigned int x1,
@@ -71,7 +71,7 @@ template <unsigned int BlockX, unsigned int BlockY> __global__ void FDTD1DDNGKer
 							const unsigned int n0,
 							const unsigned int nf)
 {
-	unsigned int i = BlockX*blockIdx.x+threadIdx.x;
+	const unsigned int i = BlockX*blockIdx.x+threadIdx.x;
 
 	if (i != 0)
 		Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);

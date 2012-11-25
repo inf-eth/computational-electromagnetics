@@ -170,7 +170,7 @@ public:
 	// Memory allocation and initialisation.
 	int AllocateMemoryCPU();
 	int InitialiseCPU();
-	int InitialiseCL(bool=false);		// Search and allocate a device.
+	int InitialiseCL();		// Search and allocate a device.
 	int InitialiseForSimulationCPU();
 	int AllocateMemoryGPU();
 	int InitialiseCLKernelsGPU();		// Build/attach kernels to respective kernel functions and set arguments.
@@ -184,7 +184,7 @@ public:
 
 	// Complete Runs on CPU and GPU.
 	int CompleteRunCPU(bool=true);
-	int CompleteRunGPU(bool=true, bool=false);
+	int CompleteRunGPU(bool=true);
 
 	// Timing.
 	void StartTimer();

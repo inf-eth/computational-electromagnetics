@@ -107,9 +107,7 @@ private:
 	cl_mem d_am0, d_am, d_bm, d_cm, d_dm, d_em;
 	// ===========================================================
 
-	// OPENCL related parameters.
-	bool cpu;		// Is OPENCL using CPU or GPU?
-
+	// ============ OPENCL related parameters ===========
 	// OPENCL context/device/program
 	cl_context context;
 	cl_device_id *devices;
@@ -121,6 +119,7 @@ private:
 	cl_kernel DryRun_kernel_E;
 	cl_kernel Simulation_kernel_M;
 	cl_kernel Simulation_kernel_E;
+	// ==================================================
 
 public:
 	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
@@ -155,7 +154,7 @@ public:
 
 	std::string convertToString(const char * filename);
 
-	int clSafeCall(cl_int, const char []=NULL);
+	int SafeCall(cl_int, const char []=NULL);
 
 	int CleanupCPU();
 	int CleanupCL();
