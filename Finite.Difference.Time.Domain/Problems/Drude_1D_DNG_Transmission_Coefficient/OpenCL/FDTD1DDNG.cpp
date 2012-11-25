@@ -61,8 +61,7 @@ CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigne
 							// Time indices.
 							nf(2), n0(1), np(0),
 							// Timer variables.
-							tStart(0LL), tEnd(0LL),
-							cpu(true)
+							tStart(0LL), tEnd(0LL)
 {
 	// Creating directory and writing simulation parameters.
 #if defined __linux__ || defined __CYGWIN__
@@ -221,31 +220,51 @@ int CFDTD1DDNG::InitialiseCL()
 
 	cl_uint numPlatforms;
 	cl_platform_id platform = NULL;
-	clSafeCall(clGetPlatformIDs(0, NULL, &numPlatforms), "Error: Getting Platforms. (clGetPlatformsIDs)");
+	SafeCall(clGetPlatformIDs(0, NULL, &numPlatforms), "Error: Getting Platforms. (clGetPlatformsIDs)");
 
+	char AMDPlatform[] = "Advanced Micro Devices, Inc.";
+	char nVidiaPlatform[] = "NVIDIA Corporation";
+	char *SelectedPlatform = NULL;
+
+	char choice = '0';
+	cout << "Choose a platform: " << endl;
+	cout << "[1] Advanced Micro Devices, Inc. (default)" << endl;
+	cout << "[2] NVIDIA Corporation" << endl;
+	cout << ">>";
+	cin >> choice;
+
+	if (choice == '1')
+		SelectedPlatform = AMDPlatform;
+	else if (choice == '2')
+		SelectedPlatform = nVidiaPlatform;
+	else
+	{
+		cout << "Reverting to default platform..." << endl;
+		SelectedPlatform = AMDPlatform;
+	}
+
+	cout << "Detecting platforms..." << endl;
+	cout << "Available platforms are: " << endl;
 	if(numPlatforms > 0)
 	{
 		cl_platform_id* platforms = new cl_platform_id[numPlatforms];
-		clSafeCall(clGetPlatformIDs(numPlatforms, platforms, NULL), "Error: Getting Platform Ids. (clGetPlatformsIDs)");
+		SafeCall(clGetPlatformIDs(numPlatforms, platforms, NULL), "Error: Getting Platform Ids. (clGetPlatformsIDs)");
 
 		for(unsigned int i=0; i < numPlatforms; ++i)
 		{
 			char pbuff[100];
-			clSafeCall(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, sizeof(pbuff), pbuff, NULL), "Error: Getting Platform Info.(clGetPlatformInfo)");
+			SafeCall(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, sizeof(pbuff), pbuff, NULL), "Error: Getting Platform Info.(clGetPlatformInfo)");
 
-			platform = platforms[i];
-			std::cout << "Device" << i << " = " << pbuff << std::endl;
-			if(!strcmp(pbuff, "Advanced Micro Devices, Inc."))
-			{
-				break;
-			}
+			cout << "Platform " << i << " : " << pbuff << endl;
+			if(!strcmp(pbuff, SelectedPlatform))
+				platform = platforms[i];
 		}
 		delete platforms;
 	}
 
 	if(NULL == platform)
 	{
-		std::cout << "NULL platform found so Exiting Application." << std::endl;
+		std::cout << "Selected platform not found so Exiting Application." << std::endl;
 		return 1;
 	}
 
@@ -259,37 +278,71 @@ int CFDTD1DDNG::InitialiseCL()
 	/////////////////////////////////////////////////////////////////
 	cl_device_type type;
 
-	if (cpu == true)
+	cout << "Emulate GPU run on CPU?" << endl;
+	cout << "[1] Yes" << endl;
+	cout << "[2] No (default)" << endl;
+	cout << ">>";
+	cin >> choice;
+
+	if (choice == '1')
 	{
-		std::cout << "Running on CPU (GPU emulation)..." << std::endl;
+		if(!strcmp(AMDPlatform, SelectedPlatform))
+			cout << "Running on CPU with GPU emulation..." << endl;
+		else
+			cout << "Warning: Selected platform does not support GPU emulation on CPU." << endl;
+
 		type = CL_DEVICE_TYPE_CPU;
 	}
 	else
 	{
-		std::cout << "Running on GPU..." << std::endl;
+		cout << "Running on GPU..." << endl;
 		type = CL_DEVICE_TYPE_GPU;
 	}
 
 	context = clCreateContextFromType(cps, type, NULL, NULL, &status);
-	clSafeCall(status, "Error: Creating Context. (clCreateContextFromType)");
+	SafeCall(status, "Error: Creating Context. (clCreateContextFromType)");
 
 	/* First, get the size of device list data */
-	clSafeCall(clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &deviceListSize), "Error: Getting Context Info (device list size, clGetContextInfo)");
+	SafeCall(clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &deviceListSize), "Error: Getting Context Info (device list size, clGetContextInfo)");
 
 	/////////////////////////////////////////////////////////////////
 	// Detect OpenCL devices
 	/////////////////////////////////////////////////////////////////
 	devices = new cl_device_id[deviceListSize/sizeof(cl_device_id)];
-	clSafeCall(!devices, "Error: No devices found.");
+	SafeCall(!devices, "Error: No devices found.");
 
 	/* Now, get the device list data */
-	clSafeCall(clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceListSize, devices, NULL), "Error: Getting Context Info (device list, clGetContextInfo)");
+	SafeCall(clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceListSize, devices, NULL), "Error: Getting Context Info (device list, clGetContextInfo)");
 
+	char platformVendor[1024];
+	SafeCall(clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, sizeof(platformVendor), platformVendor, NULL), "clGetPlatformInfo failed");
+	cout << "Selected Platform Vendor : " << platformVendor << endl;
+
+	// Get number of devices available 
+	cl_uint deviceCount = 0;
+	SafeCall(clGetDeviceIDs(platform, type, 0, NULL, &deviceCount), "clGetDeviceIDs failed");
+
+	cl_device_id* deviceIds = (cl_device_id*)malloc(sizeof(cl_device_id) * deviceCount);
+	SafeCall(!deviceIds, "Failed to allocate memory(deviceIds)");
+
+	// Get device ids
+	SafeCall(clGetDeviceIDs(platform, type, deviceCount, deviceIds, NULL), "clGetDeviceIDs failed");
+
+	cout << "Available devices are: " << endl;
+	// Print device index and device names
+	for(cl_uint i = 0; i < deviceCount; ++i)
+	{
+		char deviceName[1024];
+		SafeCall(clGetDeviceInfo(deviceIds[i], CL_DEVICE_NAME, sizeof(deviceName), deviceName, NULL), "clGetDeviceInfo failed");
+		cout << "Device " << i << " : " << deviceName <<" Device ID is "<<deviceIds[i]<< endl;
+	}
+	free(deviceIds);
 	/////////////////////////////////////////////////////////////////
 	// Create an OpenCL command queue
 	/////////////////////////////////////////////////////////////////
+	cout << "Running on Device 0..." << endl;
 	commandQueue = clCreateCommandQueue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
-	clSafeCall(status, "Creating Command Queue. (clCreateCommandQueue)");
+	SafeCall(status, "Creating Command Queue. (clCreateCommandQueue)");
 
 	return 0;
 }
@@ -302,64 +355,64 @@ int CFDTD1DDNG::AllocateMemoryGPU()
 	/////////////////////////////////////////////////////////////////
 	// Fields.
 	d_Ex_ = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size*3, Ex_, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Ex_");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Ex_");
 	d_Dx_ = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size*3, Dx_, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Dx_");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Dx_");
 	d_Hy_ = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size*3, Hy_, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Hy_");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Hy_");
 	d_By_ = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size*3, By_, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for By_");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for By_");
 	// Incident and transmitted fields.
 	d_Exi = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*MaxTime, Exi, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Exi");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Exi");
 	d_Ext = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*MaxTime, Ext, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Ext");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Ext");
 	d_Extt = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*MaxTime, Extt, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Extt");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Extt");
 	// Refractive Index.
 	d_Exz1 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*MaxTime, Exz1, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Exz1");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Exz1");
 	d_Exz2 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*MaxTime, Exz2, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Exz2");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Exz2");
 	// Drude material parameters.
 	d_einf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, einf, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for einf");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for einf");
 	d_uinf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, uinf, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for uinf");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for uinf");
 	d_wpesq = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, wpesq, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for wpesq");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for wpesq");
 	d_wpmsq = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, wpmsq, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for wpmsq");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for wpmsq");
 	d_ge = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, ge, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ge");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ge");
 	d_gm = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, gm, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for gm");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for gm");
 	// Auxiliary field scalars.
 	d_ae0 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, ae0, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ae0");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ae0");
 	d_ae = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, ae, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ae");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ae");
 	d_be = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, be, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for be");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for be");
 	d_ce = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, ce, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ce");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ce");
 	d_de = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, de, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for de");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for de");
 	d_ee = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, ee, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ee");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ee");
 
 	d_am0 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, am0, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ae0");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for ae0");
 	d_am = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, am, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for am");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for am");
 	d_bm = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, bm, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for bm");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for bm");
 	d_cm = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, cm, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for cm");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for cm");
 	d_dm = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, dm, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for dm");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for dm");
 	d_em = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size, em, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for em");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for em");
 
 	return 0;
 }
@@ -375,7 +428,7 @@ int CFDTD1DDNG::InitialiseCLKernelsGPU()
 	size_t sourceSize[] = {strlen(source)};
 
 	program = clCreateProgramWithSource( context, 1, &source, sourceSize, &status);
-	clSafeCall(status, "Error: Loading Binary into cl_program (clCreateProgramWithBinary)\n");
+	SafeCall(status, "Error: Loading Binary into cl_program (clCreateProgramWithBinary)\n");
 
 	/* create a cl program executable for all the devices specified */
 	status = clBuildProgram(program, 1, devices, NULL, NULL, NULL);
@@ -385,9 +438,9 @@ int CFDTD1DDNG::InitialiseCLKernelsGPU()
 		char *buildLog = NULL;
 		size_t buildLogSize = 0;
 		logStatus = clGetProgramBuildInfo (program, devices[0], CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, &buildLogSize);
-		clSafeCall(logStatus, "clGetProgramBuildInfo failed.");
+		SafeCall(logStatus, "clGetProgramBuildInfo failed.");
 		buildLog = new char[buildLogSize];
-		clSafeCall(!buildLog, "Failed to allocate host memory. (buildLog)");
+		SafeCall(!buildLog, "Failed to allocate host memory. (buildLog)");
 		memset(buildLog, 0, buildLogSize);
 		logStatus = clGetProgramBuildInfo (program, devices[0], CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, NULL);
 		if (logStatus != CL_SUCCESS)
@@ -405,137 +458,137 @@ int CFDTD1DDNG::InitialiseCLKernelsGPU()
 
 	// Attach kernel objects to respective kernel functions.
 	DryRun_kernel_M = clCreateKernel(program, "FDTD1DDNGKernel_DryRun_M", &status);
-	clSafeCall(status, "Error: Creating dry run Kernel from program. (clCreateKernel)");
+	SafeCall(status, "Error: Creating dry run Kernel from program. (clCreateKernel)");
 	DryRun_kernel_E = clCreateKernel(program, "FDTD1DDNGKernel_DryRun_E", &status);
-	clSafeCall(status, "Error: Creating dry run Kernel from program. (clCreateKernel)");
+	SafeCall(status, "Error: Creating dry run Kernel from program. (clCreateKernel)");
 	Simulation_kernel_M = clCreateKernel(program, "FDTD1DDNGKernel_Simulation_M", &status);
-	clSafeCall(status, "Error: Creating simulation Kernel from program. (clCreateKernel)");
+	SafeCall(status, "Error: Creating simulation Kernel from program. (clCreateKernel)");
 	Simulation_kernel_E = clCreateKernel(program, "FDTD1DDNGKernel_Simulation_E", &status);
-	clSafeCall(status, "Error: Creating simulation Kernel from program. (clCreateKernel)");
+	SafeCall(status, "Error: Creating simulation Kernel from program. (clCreateKernel)");
 
 	// ====== Set appropriate arguments to the Dry Run kernel ======
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 14, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 15, sizeof(cl_mem), (void *)&d_Exi), "Error: Setting kernel argument d_Exi");
-	clSafeCall(clSetKernelArg(DryRun_kernel_M, 16, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'x1'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 14, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 15, sizeof(cl_mem), (void *)&d_Exi), "Error: Setting kernel argument d_Exi");
+	SafeCall(clSetKernelArg(DryRun_kernel_M, 16, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'x1'");
 
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 14, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 15, sizeof(cl_mem), (void *)&d_Exi), "Error: Setting kernel argument d_Exi");
-	clSafeCall(clSetKernelArg(DryRun_kernel_E, 16, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'x1'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 14, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 15, sizeof(cl_mem), (void *)&d_Exi), "Error: Setting kernel argument d_Exi");
+	SafeCall(clSetKernelArg(DryRun_kernel_E, 16, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'x1'");
 
 	// ====== Set appropriate arguments to the Simulation kernel ======
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 14, sizeof(cl_mem), (void *)&d_Dx_), "Error: Setting kernel argument d_Dx_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 16, sizeof(cl_mem), (void *)&d_By_), "Error: Setting kernel argument d_By_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 17, sizeof(cl_mem), (void *)&d_einf), "Error: Setting kernel argument d_einf");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 18, sizeof(cl_mem), (void *)&d_uinf), "Error: Setting kernel argument d_uinf");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 19, sizeof(cl_mem), (void *)&d_wpesq), "Error: Setting kernel argument d_wpesq");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 20, sizeof(cl_mem), (void *)&d_wpmsq), "Error: Setting kernel argument d_wpmsq");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 21, sizeof(cl_mem), (void *)&d_ge), "Error: Setting kernel argument d_ge");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 22, sizeof(cl_mem), (void *)&d_gm), "Error: Setting kernel argument d_gm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 23, sizeof(cl_mem), (void *)&d_ae0), "Error: Setting kernel argument d_ae0");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 24, sizeof(cl_mem), (void *)&d_ae), "Error: Setting kernel argument d_ae");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 25, sizeof(cl_mem), (void *)&d_be), "Error: Setting kernel argument d_be");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 26, sizeof(cl_mem), (void *)&d_ce), "Error: Setting kernel argument d_ce");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 27, sizeof(cl_mem), (void *)&d_de), "Error: Setting kernel argument d_de");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 28, sizeof(cl_mem), (void *)&d_ee), "Error: Setting kernel argument d_ee");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 29, sizeof(cl_mem), (void *)&d_am0), "Error: Setting kernel argument d_am0");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 30, sizeof(cl_mem), (void *)&d_am), "Error: Setting kernel argument d_am");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 31, sizeof(cl_mem), (void *)&d_bm), "Error: Setting kernel argument d_bm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 32, sizeof(cl_mem), (void *)&d_cm), "Error: Setting kernel argument d_cm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 33, sizeof(cl_mem), (void *)&d_dm), "Error: Setting kernel argument d_dm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 34, sizeof(cl_mem), (void *)&d_em), "Error: Setting kernel argument d_em");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 35, sizeof(cl_mem), (void *)&d_Ext), "Error: Setting kernel argument d_Ext");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 36, sizeof(cl_mem), (void *)&d_Extt), "Error: Setting kernel argument d_Extt");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 37, sizeof(cl_mem), (void *)&d_Exz1), "Error: Setting kernel argument d_Exz1");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 38, sizeof(cl_mem), (void *)&d_Exz2), "Error: Setting kernel argument d_Exz2");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 39, sizeof(unsigned int), (void *)&x1), "Error: Setting kernel argument 'x1'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 40, sizeof(unsigned int), (void *)&Z1), "Error: Setting kernel argument 'Z1'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 41, sizeof(unsigned int), (void *)&Z2), "Error: Setting kernel argument 'Z2'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 14, sizeof(cl_mem), (void *)&d_Dx_), "Error: Setting kernel argument d_Dx_");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 16, sizeof(cl_mem), (void *)&d_By_), "Error: Setting kernel argument d_By_");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 17, sizeof(cl_mem), (void *)&d_einf), "Error: Setting kernel argument d_einf");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 18, sizeof(cl_mem), (void *)&d_uinf), "Error: Setting kernel argument d_uinf");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 19, sizeof(cl_mem), (void *)&d_wpesq), "Error: Setting kernel argument d_wpesq");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 20, sizeof(cl_mem), (void *)&d_wpmsq), "Error: Setting kernel argument d_wpmsq");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 21, sizeof(cl_mem), (void *)&d_ge), "Error: Setting kernel argument d_ge");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 22, sizeof(cl_mem), (void *)&d_gm), "Error: Setting kernel argument d_gm");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 23, sizeof(cl_mem), (void *)&d_ae0), "Error: Setting kernel argument d_ae0");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 24, sizeof(cl_mem), (void *)&d_ae), "Error: Setting kernel argument d_ae");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 25, sizeof(cl_mem), (void *)&d_be), "Error: Setting kernel argument d_be");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 26, sizeof(cl_mem), (void *)&d_ce), "Error: Setting kernel argument d_ce");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 27, sizeof(cl_mem), (void *)&d_de), "Error: Setting kernel argument d_de");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 28, sizeof(cl_mem), (void *)&d_ee), "Error: Setting kernel argument d_ee");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 29, sizeof(cl_mem), (void *)&d_am0), "Error: Setting kernel argument d_am0");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 30, sizeof(cl_mem), (void *)&d_am), "Error: Setting kernel argument d_am");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 31, sizeof(cl_mem), (void *)&d_bm), "Error: Setting kernel argument d_bm");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 32, sizeof(cl_mem), (void *)&d_cm), "Error: Setting kernel argument d_cm");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 33, sizeof(cl_mem), (void *)&d_dm), "Error: Setting kernel argument d_dm");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 34, sizeof(cl_mem), (void *)&d_em), "Error: Setting kernel argument d_em");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 35, sizeof(cl_mem), (void *)&d_Ext), "Error: Setting kernel argument d_Ext");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 36, sizeof(cl_mem), (void *)&d_Extt), "Error: Setting kernel argument d_Extt");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 37, sizeof(cl_mem), (void *)&d_Exz1), "Error: Setting kernel argument d_Exz1");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 38, sizeof(cl_mem), (void *)&d_Exz2), "Error: Setting kernel argument d_Exz2");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 39, sizeof(unsigned int), (void *)&x1), "Error: Setting kernel argument 'x1'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 40, sizeof(unsigned int), (void *)&Z1), "Error: Setting kernel argument 'Z1'");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 41, sizeof(unsigned int), (void *)&Z2), "Error: Setting kernel argument 'Z2'");
 
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 14, sizeof(cl_mem), (void *)&d_Dx_), "Error: Setting kernel argument d_Dx_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 16, sizeof(cl_mem), (void *)&d_By_), "Error: Setting kernel argument d_By_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 17, sizeof(cl_mem), (void *)&d_einf), "Error: Setting kernel argument d_einf");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 18, sizeof(cl_mem), (void *)&d_uinf), "Error: Setting kernel argument d_uinf");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 19, sizeof(cl_mem), (void *)&d_wpesq), "Error: Setting kernel argument d_wpesq");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 20, sizeof(cl_mem), (void *)&d_wpmsq), "Error: Setting kernel argument d_wpmsq");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 21, sizeof(cl_mem), (void *)&d_ge), "Error: Setting kernel argument d_ge");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 22, sizeof(cl_mem), (void *)&d_gm), "Error: Setting kernel argument d_gm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 23, sizeof(cl_mem), (void *)&d_ae0), "Error: Setting kernel argument d_ae0");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 24, sizeof(cl_mem), (void *)&d_ae), "Error: Setting kernel argument d_ae");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 25, sizeof(cl_mem), (void *)&d_be), "Error: Setting kernel argument d_be");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 26, sizeof(cl_mem), (void *)&d_ce), "Error: Setting kernel argument d_ce");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 27, sizeof(cl_mem), (void *)&d_de), "Error: Setting kernel argument d_de");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 28, sizeof(cl_mem), (void *)&d_ee), "Error: Setting kernel argument d_ee");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 29, sizeof(cl_mem), (void *)&d_am0), "Error: Setting kernel argument d_am0");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 30, sizeof(cl_mem), (void *)&d_am), "Error: Setting kernel argument d_am");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 31, sizeof(cl_mem), (void *)&d_bm), "Error: Setting kernel argument d_bm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 32, sizeof(cl_mem), (void *)&d_cm), "Error: Setting kernel argument d_cm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 33, sizeof(cl_mem), (void *)&d_dm), "Error: Setting kernel argument d_dm");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 34, sizeof(cl_mem), (void *)&d_em), "Error: Setting kernel argument d_em");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 35, sizeof(cl_mem), (void *)&d_Ext), "Error: Setting kernel argument d_Ext");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 36, sizeof(cl_mem), (void *)&d_Extt), "Error: Setting kernel argument d_Extt");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 37, sizeof(cl_mem), (void *)&d_Exz1), "Error: Setting kernel argument d_Exz1");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 38, sizeof(cl_mem), (void *)&d_Exz2), "Error: Setting kernel argument d_Exz2");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 39, sizeof(unsigned int), (void *)&x1), "Error: Setting kernel argument 'x1'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 40, sizeof(unsigned int), (void *)&Z1), "Error: Setting kernel argument 'Z1'");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 41, sizeof(unsigned int), (void *)&Z2), "Error: Setting kernel argument 'Z2'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 0, sizeof(unsigned int), (void *)&Size), "Error: Setting kernel argument 'Size'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 1, sizeof(unsigned int), (void *)&PulseWidth), "Error: Setting kernel argument 'PulseWidth'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 2, sizeof(unsigned int), (void *)&td), "Error: Setting kernel argument 'td'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 3, sizeof(unsigned int), (void *)&SourceLocation), "Error: Setting kernel argument 'SourceLocation'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 4, sizeof(unsigned int), (void *)&SourceChoice), "Error: Setting kernel argument 'SourceChoice'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 5, sizeof(PRECISION), (void *)&e0), "Error: Setting kernel argument 'e0'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 6, sizeof(PRECISION), (void *)&u0), "Error: Setting kernel argument 'u0'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 7, sizeof(PRECISION), (void *)&dt), "Error: Setting kernel argument 'dt'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 8, sizeof(PRECISION), (void *)&dz), "Error: Setting kernel argument 'dz'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 9, sizeof(PRECISION), (void *)&Sc), "Error: Setting kernel argument 'Sc'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 10, sizeof(PRECISION), (void *)&f), "Error: Setting kernel argument 'f'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 11, sizeof(PRECISION), (void *)&fp), "Error: Setting kernel argument 'fp'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 12, sizeof(PRECISION), (void *)&dr), "Error: Setting kernel argument 'dr'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 14, sizeof(cl_mem), (void *)&d_Dx_), "Error: Setting kernel argument d_Dx_");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 16, sizeof(cl_mem), (void *)&d_By_), "Error: Setting kernel argument d_By_");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 17, sizeof(cl_mem), (void *)&d_einf), "Error: Setting kernel argument d_einf");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 18, sizeof(cl_mem), (void *)&d_uinf), "Error: Setting kernel argument d_uinf");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 19, sizeof(cl_mem), (void *)&d_wpesq), "Error: Setting kernel argument d_wpesq");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 20, sizeof(cl_mem), (void *)&d_wpmsq), "Error: Setting kernel argument d_wpmsq");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 21, sizeof(cl_mem), (void *)&d_ge), "Error: Setting kernel argument d_ge");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 22, sizeof(cl_mem), (void *)&d_gm), "Error: Setting kernel argument d_gm");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 23, sizeof(cl_mem), (void *)&d_ae0), "Error: Setting kernel argument d_ae0");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 24, sizeof(cl_mem), (void *)&d_ae), "Error: Setting kernel argument d_ae");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 25, sizeof(cl_mem), (void *)&d_be), "Error: Setting kernel argument d_be");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 26, sizeof(cl_mem), (void *)&d_ce), "Error: Setting kernel argument d_ce");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 27, sizeof(cl_mem), (void *)&d_de), "Error: Setting kernel argument d_de");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 28, sizeof(cl_mem), (void *)&d_ee), "Error: Setting kernel argument d_ee");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 29, sizeof(cl_mem), (void *)&d_am0), "Error: Setting kernel argument d_am0");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 30, sizeof(cl_mem), (void *)&d_am), "Error: Setting kernel argument d_am");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 31, sizeof(cl_mem), (void *)&d_bm), "Error: Setting kernel argument d_bm");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 32, sizeof(cl_mem), (void *)&d_cm), "Error: Setting kernel argument d_cm");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 33, sizeof(cl_mem), (void *)&d_dm), "Error: Setting kernel argument d_dm");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 34, sizeof(cl_mem), (void *)&d_em), "Error: Setting kernel argument d_em");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 35, sizeof(cl_mem), (void *)&d_Ext), "Error: Setting kernel argument d_Ext");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 36, sizeof(cl_mem), (void *)&d_Extt), "Error: Setting kernel argument d_Extt");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 37, sizeof(cl_mem), (void *)&d_Exz1), "Error: Setting kernel argument d_Exz1");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 38, sizeof(cl_mem), (void *)&d_Exz2), "Error: Setting kernel argument d_Exz2");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 39, sizeof(unsigned int), (void *)&x1), "Error: Setting kernel argument 'x1'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 40, sizeof(unsigned int), (void *)&Z1), "Error: Setting kernel argument 'Z1'");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 41, sizeof(unsigned int), (void *)&Z2), "Error: Setting kernel argument 'Z2'");
 
 	return 0;
 }
@@ -543,18 +596,18 @@ int CFDTD1DDNG::ReinitialiseExHyGPU()
 {
 	int status;
 
-	clSafeCall(clReleaseMemObject(d_Ex_), "Error: clReleaseMemObject() cannot release memory input buffer for d_Ex_");
-	clSafeCall(clReleaseMemObject(d_Hy_), "Error: clReleaseMemObject() cannot release memory input buffer for d_Hy_");
+	SafeCall(clReleaseMemObject(d_Ex_), "Error: clReleaseMemObject() cannot release memory input buffer for d_Ex_");
+	SafeCall(clReleaseMemObject(d_Hy_), "Error: clReleaseMemObject() cannot release memory input buffer for d_Hy_");
 
 	d_Ex_ = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size*3, Ex_, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Ex_");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Ex_");
 	d_Hy_ = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sizeof(PRECISION)*Size*3, Hy_, &status);
-	clSafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Hy_");
+	SafeCall(status, "Error: clCreateBuffer() cannot creae input buffer for Hy_");
 
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_M, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
-	clSafeCall(clSetKernelArg(Simulation_kernel_E, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
+	SafeCall(clSetKernelArg(Simulation_kernel_M, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 13, sizeof(cl_mem), (void *)&d_Ex_), "Error: Setting kernel argument d_Ex_");
+	SafeCall(clSetKernelArg(Simulation_kernel_E, 15, sizeof(cl_mem), (void *)&d_Hy_), "Error: Setting kernel argument d_Hy_");
 
 	return 0;
 }
@@ -563,7 +616,7 @@ int CFDTD1DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
+		if (n % (MaxTime/256U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// Calculation of Hy using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
@@ -615,7 +668,7 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
+		if (n % (MaxTime/256U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// Calculation of By using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
@@ -712,9 +765,9 @@ int CFDTD1DDNG::DryRunGPU()
 
 
 	// Query device capabilities. Maximum work item dimensions and the maximmum work item sizes
-	clSafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), (void*)&maxWorkGroupSize, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
-	clSafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), (void*)&maxDims, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
-	clSafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxDims, (void*)maxWorkItemSizes, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
+	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), (void*)&maxWorkGroupSize, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
+	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), (void*)&maxDims, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
+	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxDims, (void*)maxWorkItemSizes, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
 
 	globalThreads[0] = Size;
 	globalThreads[1] = 1;
@@ -744,13 +797,13 @@ int CFDTD1DDNG::DryRunGPU()
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
+		if (n % (MaxTime/256U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 
-		clSafeCall(clSetKernelArg(DryRun_kernel_M, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
-		clSafeCall(clSetKernelArg(DryRun_kernel_M, 18, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
-		clSafeCall(clSetKernelArg(DryRun_kernel_M, 19, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
-		clSafeCall(clSetKernelArg(DryRun_kernel_M, 20, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
+		SafeCall(clSetKernelArg(DryRun_kernel_M, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
+		SafeCall(clSetKernelArg(DryRun_kernel_M, 18, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
+		SafeCall(clSetKernelArg(DryRun_kernel_M, 19, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
+		SafeCall(clSetKernelArg(DryRun_kernel_M, 20, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
 
 		// Enqueue a Dry Run kernel_M call.
 		status = clEnqueueNDRangeKernel(commandQueue, DryRun_kernel_M, 2, NULL, globalThreads, localThreads, 0, NULL, &events[0]);
@@ -770,17 +823,17 @@ int CFDTD1DDNG::DryRunGPU()
 		}
 
 		// Wait for the Dry Run kernel_M call to finish execution.
-		clSafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
+		SafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
 		kernelExecTimeNs = 1e-3*(endTime-startTime);
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
-		clSafeCall(clSetKernelArg(DryRun_kernel_E, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
-		clSafeCall(clSetKernelArg(DryRun_kernel_E, 18, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
-		clSafeCall(clSetKernelArg(DryRun_kernel_E, 19, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
-		clSafeCall(clSetKernelArg(DryRun_kernel_E, 20, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
+		SafeCall(clSetKernelArg(DryRun_kernel_E, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
+		SafeCall(clSetKernelArg(DryRun_kernel_E, 18, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
+		SafeCall(clSetKernelArg(DryRun_kernel_E, 19, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
+		SafeCall(clSetKernelArg(DryRun_kernel_E, 20, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
 
 		// Enqueue a Dry Run kernel_E call.
 		status = clEnqueueNDRangeKernel(commandQueue, DryRun_kernel_E, 2, NULL, globalThreads, localThreads, 0, NULL, &events[0]);
@@ -800,7 +853,7 @@ int CFDTD1DDNG::DryRunGPU()
 		}
 
 		// Wait for the Dry Run kernel_E call to finish execution.
-		clSafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
+		SafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
@@ -813,7 +866,7 @@ int CFDTD1DDNG::DryRunGPU()
 	}
 	std::cout << "\r" << "Dry run complete!" << std::endl;
 	std::cout << "Dry Run kernel execution time = " << kernelExecTimeNsT/1e6 << "sec (" << kernelExecTimeNsT/1e3 << "ms or " << kernelExecTimeNsT << "us)" << std::endl;
-	clSafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
+	SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
 
 	return 0;
 }
@@ -829,9 +882,9 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 
 	// Query device capabilities. Maximum work item dimensions and the maximmum work item sizes
-	clSafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), (void*)&maxWorkGroupSize, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
-	clSafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), (void*)&maxDims, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
-	clSafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxDims, (void*)maxWorkItemSizes, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
+	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), (void*)&maxWorkGroupSize, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
+	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), (void*)&maxDims, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
+	SafeCall(clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxDims, (void*)maxWorkItemSizes, NULL), "Error: Getting Device Info. (clGetDeviceInfo)");
 
 	globalThreads[0] = Size;
 	globalThreads[1] = 1;
@@ -867,13 +920,13 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
+		if (n % (MaxTime/256U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 
-		clSafeCall(clSetKernelArg(Simulation_kernel_M, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
-		clSafeCall(clSetKernelArg(Simulation_kernel_M, 43, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
-		clSafeCall(clSetKernelArg(Simulation_kernel_M, 44, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
-		clSafeCall(clSetKernelArg(Simulation_kernel_M, 45, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
+		SafeCall(clSetKernelArg(Simulation_kernel_M, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
+		SafeCall(clSetKernelArg(Simulation_kernel_M, 43, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
+		SafeCall(clSetKernelArg(Simulation_kernel_M, 44, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
+		SafeCall(clSetKernelArg(Simulation_kernel_M, 45, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
 
 		// Enqueue a simulation kernel_M call.
 		status = clEnqueueNDRangeKernel(commandQueue, Simulation_kernel_M, 2, NULL, globalThreads, localThreads, 0, NULL, &events[0]);
@@ -893,17 +946,17 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		}
 
 		// Wait for the simulation kernel_M call to finish execution.
-		clSafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
+		SafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
 		kernelExecTimeNs = 1e-3*(endTime-startTime);
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
-		clSafeCall(clSetKernelArg(Simulation_kernel_E, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
-		clSafeCall(clSetKernelArg(Simulation_kernel_E, 43, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
-		clSafeCall(clSetKernelArg(Simulation_kernel_E, 44, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
-		clSafeCall(clSetKernelArg(Simulation_kernel_E, 45, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
+		SafeCall(clSetKernelArg(Simulation_kernel_E, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
+		SafeCall(clSetKernelArg(Simulation_kernel_E, 43, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
+		SafeCall(clSetKernelArg(Simulation_kernel_E, 44, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
+		SafeCall(clSetKernelArg(Simulation_kernel_E, 45, sizeof(unsigned int), (void *)&nf), "Error: Setting kernel argument 'nf'");
 
 		// Enqueue a simulation kernel_E call.
 		status = clEnqueueNDRangeKernel(commandQueue, Simulation_kernel_E, 2, NULL, globalThreads, localThreads, 0, NULL, &events[0]);
@@ -923,7 +976,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		}
 
 		// Wait for the simulation kernel_E call to finish execution.
-		clSafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
+		SafeCall(clWaitForEvents(1, &events[0]), "Error: Waiting for kernel run to finish. (clWaitForEvents)");
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
@@ -940,9 +993,9 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 			snapshot.open(filename.c_str(), std::ios::out|std::ios::binary);
 
 			// Enqueue read buffer.
-			clSafeCall(clEnqueueReadBuffer(commandQueue, d_Ex_, CL_TRUE, 0, sizeof(PRECISION)*Size*3, Ex_, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
+			SafeCall(clEnqueueReadBuffer(commandQueue, d_Ex_, CL_TRUE, 0, sizeof(PRECISION)*Size*3, Ex_, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 			// Wait for the read buffer to finish execution
-			clSafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+			SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
 
 			snapshot.write((char*)&(Ex(0,nf)), sizeof(PRECISION)*Size);
 			snapshot.close();
@@ -954,7 +1007,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 	}
 	std::cout << "\r" << "Simulation complete!" << std::endl;
 	std::cout << "Simulation kernel execution time = " << kernelExecTimeNsT/1e6 << "sec (" << kernelExecTimeNsT/1e3 << "ms or " << kernelExecTimeNsT << "us)" << std::endl;
-	clSafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
+	SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
 
 	// Saving electric field data arrays.
 	if (SaveFields == true)
@@ -965,32 +1018,32 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		parametersfile.close();
 		// Write saved fields to files.
 		snapshot.open("FieldData/Exi.fdt", std::ios::out|std::ios::binary);
-		clSafeCall(clEnqueueReadBuffer(commandQueue, d_Exi, CL_TRUE, 0, sizeof(PRECISION)*Size, Exi, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
-		clSafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clEnqueueReadBuffer(commandQueue, d_Exi, CL_TRUE, 0, sizeof(PRECISION)*Size, Exi, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
+		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
 		snapshot.write((char*)Exi, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Ext.fdt", std::ios::out|std::ios::binary);
-		clSafeCall(clEnqueueReadBuffer(commandQueue, d_Ext, CL_TRUE, 0, sizeof(PRECISION)*Size, Ext, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
-		clSafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clEnqueueReadBuffer(commandQueue, d_Ext, CL_TRUE, 0, sizeof(PRECISION)*Size, Ext, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
+		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
 		snapshot.write((char*)Ext, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Extt.fdt", std::ios::out|std::ios::binary);
-		clSafeCall(clEnqueueReadBuffer(commandQueue, d_Extt, CL_TRUE, 0, sizeof(PRECISION)*Size, Extt, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
-		clSafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clEnqueueReadBuffer(commandQueue, d_Extt, CL_TRUE, 0, sizeof(PRECISION)*Size, Extt, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
+		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
 		snapshot.write((char*)Extt, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Exz1.fdt", std::ios::out|std::ios::binary);
-		clSafeCall(clEnqueueReadBuffer(commandQueue, d_Exz1, CL_TRUE, 0, sizeof(PRECISION)*Size, Exz1, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
-		clSafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clEnqueueReadBuffer(commandQueue, d_Exz1, CL_TRUE, 0, sizeof(PRECISION)*Size, Exz1, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
+		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
 		snapshot.write((char*)Exz1, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Exz2.fdt", std::ios::out|std::ios::binary);
-		clSafeCall(clEnqueueReadBuffer(commandQueue, d_Exz2, CL_TRUE, 0, sizeof(PRECISION)*Size, Exz2, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
-		clSafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clEnqueueReadBuffer(commandQueue, d_Exz2, CL_TRUE, 0, sizeof(PRECISION)*Size, Exz2, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
+		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
 		snapshot.write((char*)Exz2, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 
-		clSafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
+		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 	}
 
 	return 0;
@@ -999,12 +1052,12 @@ int CFDTD1DDNG::CompleteRunCPU(bool SaveFields)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
-	clSafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
-	clSafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
-	clSafeCall(DryRunCPU(), "Error: Dry run (CPU).");
-	clSafeCall(InitialiseExHyCPU(), "Error: Initalising Ex/Hy arrays (CPU).");
-	clSafeCall(RunSimulationCPU(SaveFields), "Error: Running simulation (CPU).");
-	clSafeCall(CleanupCPU(), "Error: Cleaning up CPU.");
+	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
+	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
+	SafeCall(DryRunCPU(), "Error: Dry run (CPU).");
+	SafeCall(InitialiseExHyCPU(), "Error: Initalising Ex/Hy arrays (CPU).");
+	SafeCall(RunSimulationCPU(SaveFields), "Error: Running simulation (CPU).");
+	SafeCall(CleanupCPU(), "Error: Cleaning up CPU.");
 
 	return 0;
 }
@@ -1012,19 +1065,19 @@ int CFDTD1DDNG::CompleteRunGPU(bool SaveFields)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
-	clSafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
-	clSafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
+	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
+	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 
-	clSafeCall(InitialiseCL(), "Error: Initialiasing CL.");
-	clSafeCall(AllocateMemoryGPU(), "Error: Allocating memory on GPU.");
-	clSafeCall(InitialiseCLKernelsGPU(), "Error: Copying data from CPU to GPU.");
-	clSafeCall(DryRunGPU(), "Error: Dry run (GPU).");
-	clSafeCall(InitialiseExHyCPU(), "Error: Initalising Ex/Hy arrays (CPU).");
-	clSafeCall(ReinitialiseExHyGPU(), "Error: Reinitialising Ex/Hy arrays on GPU.");
-	clSafeCall(RunSimulationGPU(SaveFields), "Error: Running simulation on GPU.");
-	clSafeCall(CleanupCPU(), "Error: Cleaning up CPU.");
-	clSafeCall(CleanupCL(), "Error: Cleaning up CL.");
-	clSafeCall(CleanupGPU(), "Error: Cleaning up GPU.");
+	SafeCall(InitialiseCL(), "Error: Initialiasing CL.");
+	SafeCall(AllocateMemoryGPU(), "Error: Allocating memory on GPU.");
+	SafeCall(InitialiseCLKernelsGPU(), "Error: Copying data from CPU to GPU.");
+	SafeCall(DryRunGPU(), "Error: Dry run (GPU).");
+	SafeCall(InitialiseExHyCPU(), "Error: Initalising Ex/Hy arrays (CPU).");
+	SafeCall(ReinitialiseExHyGPU(), "Error: Reinitialising Ex/Hy arrays on GPU.");
+	SafeCall(RunSimulationGPU(SaveFields), "Error: Running simulation on GPU.");
+	SafeCall(CleanupCPU(), "Error: Cleaning up CPU.");
+	SafeCall(CleanupCL(), "Error: Cleaning up CL.");
+	SafeCall(CleanupGPU(), "Error: Cleaning up GPU.");
 
 	return 0;
 }
@@ -1078,7 +1131,7 @@ PRECISION CFDTD1DDNG::GetElapsedTime()
 {
 	return ((PRECISION)(tEnd-tStart))/(1000000.);
 }
-int CFDTD1DDNG::clSafeCall(cl_int Status, const char *Error)
+int CFDTD1DDNG::SafeCall(cl_int Status, const char *Error)
 {
 	if (Status != 0)
 	{
@@ -1134,48 +1187,48 @@ int CFDTD1DDNG::CleanupCPU()
 }
 int CFDTD1DDNG::CleanupCL()
 {
-	clSafeCall(clReleaseKernel(DryRun_kernel_M), "Error: In clReleaseKernel");
-	clSafeCall(clReleaseKernel(DryRun_kernel_E), "Error: In clReleaseKernel");
-	clSafeCall(clReleaseKernel(Simulation_kernel_M), "Error: In clReleaseKernel");
-	clSafeCall(clReleaseKernel(Simulation_kernel_E), "Error: In clReleaseKernel");
-	clSafeCall(clReleaseProgram(program), "Error: In clReleaseProgram");
-	clSafeCall(clReleaseCommandQueue(commandQueue), "Error: In clReleaseCommandQueue");
-	clSafeCall(clReleaseContext(context), "Error: In clReleaseContext");
+	SafeCall(clReleaseKernel(DryRun_kernel_M), "Error: In clReleaseKernel");
+	SafeCall(clReleaseKernel(DryRun_kernel_E), "Error: In clReleaseKernel");
+	SafeCall(clReleaseKernel(Simulation_kernel_M), "Error: In clReleaseKernel");
+	SafeCall(clReleaseKernel(Simulation_kernel_E), "Error: In clReleaseKernel");
+	SafeCall(clReleaseProgram(program), "Error: In clReleaseProgram");
+	SafeCall(clReleaseCommandQueue(commandQueue), "Error: In clReleaseCommandQueue");
+	SafeCall(clReleaseContext(context), "Error: In clReleaseContext");
 
 	return 0;
 }
 int CFDTD1DDNG::CleanupGPU()
 {
-	clSafeCall(clReleaseMemObject(d_Ex_), "Error: clReleaseMemObject() cannot release memory buffer for d_Ex_");
-	clSafeCall(clReleaseMemObject(d_Dx_), "Error: clReleaseMemObject() cannot release memory buffer for d_Dx_");
-	clSafeCall(clReleaseMemObject(d_Hy_), "Error: clReleaseMemObject() cannot release memory buffer for d_Hy_");
-	clSafeCall(clReleaseMemObject(d_By_), "Error: clReleaseMemObject() cannot release memory buffer for d_By_");
+	SafeCall(clReleaseMemObject(d_Ex_), "Error: clReleaseMemObject() cannot release memory buffer for d_Ex_");
+	SafeCall(clReleaseMemObject(d_Dx_), "Error: clReleaseMemObject() cannot release memory buffer for d_Dx_");
+	SafeCall(clReleaseMemObject(d_Hy_), "Error: clReleaseMemObject() cannot release memory buffer for d_Hy_");
+	SafeCall(clReleaseMemObject(d_By_), "Error: clReleaseMemObject() cannot release memory buffer for d_By_");
 
-	clSafeCall(clReleaseMemObject(d_Exi), "Error: clReleaseMemObject() cannot release memory buffer for d_Exi");
-	clSafeCall(clReleaseMemObject(d_Ext), "Error: clReleaseMemObject() cannot release memory buffer for d_Ext");
-	clSafeCall(clReleaseMemObject(d_Extt), "Error: clReleaseMemObject() cannot release memory buffer for d_Extt");
-	clSafeCall(clReleaseMemObject(d_Exz1), "Error: clReleaseMemObject() cannot release memory buffer for d_Exz1");
-	clSafeCall(clReleaseMemObject(d_Exz2), "Error: clReleaseMemObject() cannot release memory buffer for d_Exz2");
+	SafeCall(clReleaseMemObject(d_Exi), "Error: clReleaseMemObject() cannot release memory buffer for d_Exi");
+	SafeCall(clReleaseMemObject(d_Ext), "Error: clReleaseMemObject() cannot release memory buffer for d_Ext");
+	SafeCall(clReleaseMemObject(d_Extt), "Error: clReleaseMemObject() cannot release memory buffer for d_Extt");
+	SafeCall(clReleaseMemObject(d_Exz1), "Error: clReleaseMemObject() cannot release memory buffer for d_Exz1");
+	SafeCall(clReleaseMemObject(d_Exz2), "Error: clReleaseMemObject() cannot release memory buffer for d_Exz2");
 
-	clSafeCall(clReleaseMemObject(d_einf), "Error: clReleaseMemObject() cannot release memory buffer for d_einf");
-	clSafeCall(clReleaseMemObject(d_uinf), "Error: clReleaseMemObject() cannot release memory buffer for d_uinf");
-	clSafeCall(clReleaseMemObject(d_wpesq), "Error: clReleaseMemObject() cannot release memory buffer for d_wpesq");
-	clSafeCall(clReleaseMemObject(d_wpmsq), "Error: clReleaseMemObject() cannot release memory buffer for d_wpmsq");
-	clSafeCall(clReleaseMemObject(d_ge), "Error: clReleaseMemObject() cannot release memory buffer for d_ge");
-	clSafeCall(clReleaseMemObject(d_gm), "Error: clReleaseMemObject() cannot release memory buffer for d_gm");
+	SafeCall(clReleaseMemObject(d_einf), "Error: clReleaseMemObject() cannot release memory buffer for d_einf");
+	SafeCall(clReleaseMemObject(d_uinf), "Error: clReleaseMemObject() cannot release memory buffer for d_uinf");
+	SafeCall(clReleaseMemObject(d_wpesq), "Error: clReleaseMemObject() cannot release memory buffer for d_wpesq");
+	SafeCall(clReleaseMemObject(d_wpmsq), "Error: clReleaseMemObject() cannot release memory buffer for d_wpmsq");
+	SafeCall(clReleaseMemObject(d_ge), "Error: clReleaseMemObject() cannot release memory buffer for d_ge");
+	SafeCall(clReleaseMemObject(d_gm), "Error: clReleaseMemObject() cannot release memory buffer for d_gm");
 
-	clSafeCall(clReleaseMemObject(d_ae0), "Error: clReleaseMemObject() cannot release memory buffer for d_ae0");
-	clSafeCall(clReleaseMemObject(d_ae), "Error: clReleaseMemObject() cannot release memory buffer for d_ae");
-	clSafeCall(clReleaseMemObject(d_be), "Error: clReleaseMemObject() cannot release memory buffer for d_be");
-	clSafeCall(clReleaseMemObject(d_ce), "Error: clReleaseMemObject() cannot release memory buffer for d_ce");
-	clSafeCall(clReleaseMemObject(d_de), "Error: clReleaseMemObject() cannot release memory buffer for d_de");
-	clSafeCall(clReleaseMemObject(d_ee), "Error: clReleaseMemObject() cannot release memory buffer for d_ee");
-	clSafeCall(clReleaseMemObject(d_am0), "Error: clReleaseMemObject() cannot release memory buffer for d_am0");
-	clSafeCall(clReleaseMemObject(d_am), "Error: clReleaseMemObject() cannot release memory buffer for d_am");
-	clSafeCall(clReleaseMemObject(d_bm), "Error: clReleaseMemObject() cannot release memory buffer for d_bm");
-	clSafeCall(clReleaseMemObject(d_cm), "Error: clReleaseMemObject() cannot release memory buffer for d_cm");
-	clSafeCall(clReleaseMemObject(d_dm), "Error: clReleaseMemObject() cannot release memory buffer for d_dm");
-	clSafeCall(clReleaseMemObject(d_em), "Error: clReleaseMemObject() cannot release memory buffer for d_em");
+	SafeCall(clReleaseMemObject(d_ae0), "Error: clReleaseMemObject() cannot release memory buffer for d_ae0");
+	SafeCall(clReleaseMemObject(d_ae), "Error: clReleaseMemObject() cannot release memory buffer for d_ae");
+	SafeCall(clReleaseMemObject(d_be), "Error: clReleaseMemObject() cannot release memory buffer for d_be");
+	SafeCall(clReleaseMemObject(d_ce), "Error: clReleaseMemObject() cannot release memory buffer for d_ce");
+	SafeCall(clReleaseMemObject(d_de), "Error: clReleaseMemObject() cannot release memory buffer for d_de");
+	SafeCall(clReleaseMemObject(d_ee), "Error: clReleaseMemObject() cannot release memory buffer for d_ee");
+	SafeCall(clReleaseMemObject(d_am0), "Error: clReleaseMemObject() cannot release memory buffer for d_am0");
+	SafeCall(clReleaseMemObject(d_am), "Error: clReleaseMemObject() cannot release memory buffer for d_am");
+	SafeCall(clReleaseMemObject(d_bm), "Error: clReleaseMemObject() cannot release memory buffer for d_bm");
+	SafeCall(clReleaseMemObject(d_cm), "Error: clReleaseMemObject() cannot release memory buffer for d_cm");
+	SafeCall(clReleaseMemObject(d_dm), "Error: clReleaseMemObject() cannot release memory buffer for d_dm");
+	SafeCall(clReleaseMemObject(d_em), "Error: clReleaseMemObject() cannot release memory buffer for d_em");
 
 	return 0;
 }

@@ -7,10 +7,10 @@
 #define PI	3.14159265358979323846
 #define PRECISION double
 
-#ifdef KHR_DP_EXTENSION
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-#else
+#ifdef cl_amd_fp64
 #pragma OPENCL EXTENSION cl_amd_fp64 : enable
+#else
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 #endif
 
 // Number of const uint or double arguments does NOT have any significant impact on performance.

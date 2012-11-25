@@ -8,7 +8,7 @@ int main(int argc, char * argv[])
 
 	// ================== GPU Simulation ================
 	FDTD1DDNGSim.StartTimer();
-	FDTD1DDNGSim.CompleteRunGPU(true);
+	FDTD1DDNGSim.CompleteRunGPU(true); // Save field snapshot data to hard disk?
 	FDTD1DDNGSim.StopTimer();
 	cout << "Time taken = " << FDTD1DDNGSim.GetElapsedTime() << " seconds." << endl;
 	/*

@@ -18,9 +18,7 @@ int main(int argc, char * argv[])
 
 	// ================== GPU Simulation ================
 	FDTD2DDNGSim.StartTimer();
-	FDTD2DDNGSim.CompleteRunGPU(
-								true,	// Save fields?
-								true);	// Emulate GPU run on CPU?
+	FDTD2DDNGSim.CompleteRunGPU(true);	// Save field snapshot data to hard disk?
 	FDTD2DDNGSim.StopTimer();
 	cout << "Total time taken for GPU run = " << FDTD2DDNGSim.GetElapsedTime() << " seconds." << endl;
 

@@ -321,7 +321,7 @@ int CFDTD2DDNG::InitialiseForSimulationCPU()
 
 	return 0;
 }
-int CFDTD2DDNG::InitialiseCL(bool pCPU)
+int CFDTD2DDNG::InitialiseCL()
 {
 	cl_int status = 0;
 	size_t deviceListSize;
@@ -335,6 +335,29 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 	cl_platform_id platform = NULL;
 	SafeCall(clGetPlatformIDs(0, NULL, &numPlatforms), "Error: Getting Platforms. (clGetPlatformsIDs)");
 
+	char AMDPlatform[] = "Advanced Micro Devices, Inc.";
+	char nVidiaPlatform[] = "NVIDIA Corporation";
+	char *SelectedPlatform = NULL;
+
+	char choice = '0';
+	cout << "Choose a platform: " << endl;
+	cout << "[1] Advanced Micro Devices, Inc. (default)" << endl;
+	cout << "[2] NVIDIA Corporation" << endl;
+	cout << ">>";
+	cin >> choice;
+
+	if (choice == '1')
+		SelectedPlatform = AMDPlatform;
+	else if (choice == '2')
+		SelectedPlatform = nVidiaPlatform;
+	else
+	{
+		cout << "Reverting to default platform..." << endl;
+		SelectedPlatform = AMDPlatform;
+	}
+
+	cout << "Detecting platforms..." << endl;
+	cout << "Available platforms are: " << endl;
 	if(numPlatforms > 0)
 	{
 		cl_platform_id* platforms = new cl_platform_id[numPlatforms];
@@ -345,8 +368,8 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 			char pbuff[100];
 			SafeCall(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, sizeof(pbuff), pbuff, NULL), "Error: Getting Platform Info.(clGetPlatformInfo)");
 
-			cout << "Platform " << i << " = " << pbuff << endl;
-			if(!strcmp(pbuff, "Advanced Micro Devices, Inc."))
+			cout << "Platform " << i << " : " << pbuff << endl;
+			if(!strcmp(pbuff, SelectedPlatform))
 				platform = platforms[i];
 		}
 		delete platforms;
@@ -354,7 +377,7 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 
 	if(NULL == platform)
 	{
-		std::cout << "NULL platform found so Exiting Application." << std::endl;
+		std::cout << "Selected platform not found so Exiting Application." << std::endl;
 		return 1;
 	}
 
@@ -368,14 +391,24 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 	/////////////////////////////////////////////////////////////////
 	cl_device_type type;
 
-	if (pCPU == true)
+	cout << "Emulate GPU run on CPU?" << endl;
+	cout << "[1] Yes" << endl;
+	cout << "[2] No (default)" << endl;
+	cout << ">>";
+	cin >> choice;
+
+	if (choice == '1')
 	{
-		std::cout << "Running on CPU with GPU emulation..." << std::endl;
+		if(!strcmp(AMDPlatform, SelectedPlatform))
+			cout << "Running on CPU with GPU emulation..." << endl;
+		else
+			cout << "Warning: Selected platform does not support GPU emulation on CPU." << endl;
+
 		type = CL_DEVICE_TYPE_CPU;
 	}
 	else
 	{
-		std::cout << "Running on GPU..." << std::endl;
+		cout << "Running on GPU..." << endl;
 		type = CL_DEVICE_TYPE_GPU;
 	}
 
@@ -399,16 +432,16 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 	cout << "Selected Platform Vendor : " << platformVendor << endl;
 
 	// Get number of devices available 
-	cl_device_type deviceType;
 	cl_uint deviceCount = 0;
-	SafeCall(clGetDeviceIDs(platform, deviceType, 0, NULL, &deviceCount), "clGetDeviceIDs failed");
+	SafeCall(clGetDeviceIDs(platform, type, 0, NULL, &deviceCount), "clGetDeviceIDs failed");
 
 	cl_device_id* deviceIds = (cl_device_id*)malloc(sizeof(cl_device_id) * deviceCount);
 	SafeCall(!deviceIds, "Failed to allocate memory(deviceIds)");
 
 	// Get device ids
-	SafeCall(clGetDeviceIDs(platform, deviceType, deviceCount, deviceIds, NULL), "clGetDeviceIDs failed");
+	SafeCall(clGetDeviceIDs(platform, type, deviceCount, deviceIds, NULL), "clGetDeviceIDs failed");
 
+	cout << "Available devices are: " << endl;
 	// Print device index and device names
 	for(cl_uint i = 0; i < deviceCount; ++i)
 	{
@@ -420,6 +453,7 @@ int CFDTD2DDNG::InitialiseCL(bool pCPU)
 	/////////////////////////////////////////////////////////////////
 	// Create an OpenCL command queue
 	/////////////////////////////////////////////////////////////////
+	cout << "Running on Device 0..." << endl;
 	commandQueue = clCreateCommandQueue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
 	SafeCall(status, "Creating Command Queue. (clCreateCommandQueue)");
 
@@ -880,7 +914,7 @@ int CFDTD2DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
+		if (n % (MaxTime/512U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// ========================== Bx and Hx ==========================
 		for (unsigned int i=0; i<IHx; i++)
@@ -1051,7 +1085,7 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
+		if (n % (MaxTime/512U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 		// ========================== Bx and Hx ==========================
 		for (unsigned int i=0; i<IHx; i++)
@@ -1305,7 +1339,7 @@ int CFDTD2DDNG::DryRunGPU()
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
+		if (n % (MaxTime/512U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 
 		SafeCall(clSetKernelArg(DryRun_kernel_M, 51, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
@@ -1435,7 +1469,7 @@ int CFDTD2DDNG::RunSimulationGPU(bool SaveFields)
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
+		if (n % (MaxTime/512U) == 0)
 			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
 
 		SafeCall(clSetKernelArg(Simulation_kernel_M, 72, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
@@ -1579,7 +1613,7 @@ int CFDTD2DDNG::CompleteRunCPU(bool SaveFields)
 
 	return 0;
 }
-int CFDTD2DDNG::CompleteRunGPU(bool SaveFields, bool CPUFlag)
+int CFDTD2DDNG::CompleteRunGPU(bool SaveFields)
 {
 	cout << "Memory required for simulation = " << SimSize() << " bytes (" << (double)SimSize()/1024UL << "kB/" << (double)SimSize()/1024UL/1024UL << "MB)." << endl;
 	cout << "HDD space required for data storage = " << HDDSpace() << " bytes (" << (double)HDDSpace()/1024UL << "kB/" << (double)HDDSpace()/1024UL/1024UL << "MB)." << endl;
@@ -1589,7 +1623,7 @@ int CFDTD2DDNG::CompleteRunGPU(bool SaveFields, bool CPUFlag)
 	SafeCall(AllocateMemoryCPU(), "Error: Allocating memory on CPU.");
 	SafeCall(InitialiseCPU(), "Error: Initialising data on CPU.");
 
-	SafeCall(InitialiseCL(CPUFlag), "Error: Initialiasing CL.");
+	SafeCall(InitialiseCL(), "Error: Initialiasing CL.");
 	SafeCall(AllocateMemoryGPU(), "Error: Allocating memory on GPU.");
 	SafeCall(InitialiseCLKernelsGPU(), "Error: Copying data from CPU to GPU.");
 	SafeCall(DryRunGPU(), "Error: Dry run (GPU).");
