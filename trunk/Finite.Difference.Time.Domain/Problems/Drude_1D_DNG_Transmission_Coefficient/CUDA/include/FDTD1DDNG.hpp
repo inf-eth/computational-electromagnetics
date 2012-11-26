@@ -141,4 +141,4 @@ public:
 	int CleanupGPU();
 	~CFDTD1DDNG();
 };
-#endif  /* #ifndef FDTD1DDNG_H_ */
+#endif // #ifndef FDTD1DDNG_H_

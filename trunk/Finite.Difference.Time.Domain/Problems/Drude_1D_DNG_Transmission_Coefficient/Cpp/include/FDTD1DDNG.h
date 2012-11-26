@@ -1,3 +1,6 @@
+#ifndef FDTD1DDNG_H_
+#define FDTD1DDNG_H_
+
 // Constants.
 #define c0	299792458.
 #define PI	3.14159265358979323846
@@ -99,3 +102,4 @@ public:
 
 	~CFDTD1DDNG();
 };
+#endif // #ifndef FDTD1DDNG_H_
