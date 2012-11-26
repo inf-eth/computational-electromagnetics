@@ -200,4 +200,4 @@ public:
 	int CleanupGPU();
 	~CFDTD2DDNG ();
 };
-#endif  /* #ifndef FDTD1DDNG_H_ */
+#endif // #ifndef FDTD2DDNG_H_

@@ -1,3 +1,6 @@
+#ifndef FDTD2DDNG_H_
+#define FDTD2DDNG_H_
+
 #define PRECISION double
 #include <Timer.h>
 
@@ -145,3 +148,4 @@ template<typename T> void DeleteArray(T *&ptr)
 		ptr = NULL;
 	}
 }
+#endif // #ifndef FDTD2DDNG_H_
