@@ -8,7 +8,7 @@ int main(int argc, char * argv[])
 							512,	// I
 							512,	// J
 							64,		// PMLw
-							4*256,	// MaxTime
+							4*512,	// MaxTime
 							1,		// Snapshot resolution
 							10,		// Snapshot interval
 							1,		// Source choice

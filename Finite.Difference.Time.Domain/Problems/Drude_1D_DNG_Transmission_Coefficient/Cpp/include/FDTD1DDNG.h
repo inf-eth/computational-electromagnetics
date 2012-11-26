@@ -76,8 +76,9 @@ private:
 	unsigned int nf, n0, np;
 
 	// Timer variables.
-	__int64 tStart;
-	__int64 tEnd;
+	__int64 tStart, tEnd;
+	__int64 tDelta;
+	bool tPaused;
 
 public:
 	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
@@ -98,6 +99,7 @@ public:
 	// Timing.
 	void StartTimer();
 	void StopTimer();
+	void ResetTimer();
 	double GetElapsedTime();
 
 	~CFDTD1DDNG();
