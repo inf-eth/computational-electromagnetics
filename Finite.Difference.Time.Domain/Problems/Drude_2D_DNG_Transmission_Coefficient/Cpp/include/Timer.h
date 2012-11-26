@@ -19,6 +19,9 @@
 // There are a large number of options you can set with gprof. If you're interested,
 // there is more information in the man pages or through Google.
 
+#ifndef TIMER_H_
+#define TIMER_H_
+
 #define NULL 0
 
 #if defined __linux__ || defined __CYGWIN__
@@ -29,3 +32,5 @@
 #endif
 __int64 GetTimeMs64();
 __int64 GetTimeus64();
+
+#endif // #ifndef TIMER_H_
