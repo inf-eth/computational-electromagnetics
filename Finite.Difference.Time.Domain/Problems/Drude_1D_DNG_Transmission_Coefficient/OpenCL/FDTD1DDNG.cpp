@@ -827,7 +827,7 @@ int CFDTD1DDNG::DryRunGPU()
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
-		kernelExecTimeNs = 1e-3*(endTime-startTime);
+		kernelExecTimeNs = (cl_ulong)1e-3*(endTime-startTime);
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
 		SafeCall(clSetKernelArg(DryRun_kernel_E, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
@@ -857,7 +857,7 @@ int CFDTD1DDNG::DryRunGPU()
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
-		kernelExecTimeNs = 1e-3*(endTime-startTime);
+		kernelExecTimeNs = (cl_ulong)1e-3*(endTime-startTime);
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
 		np = (np+1)%3;
@@ -950,7 +950,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
-		kernelExecTimeNs = 1e-3*(endTime-startTime);
+		kernelExecTimeNs = (cl_ulong)1e-3*(endTime-startTime);
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
 		SafeCall(clSetKernelArg(Simulation_kernel_E, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
@@ -980,7 +980,7 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
 		clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
-		kernelExecTimeNs = 1e-3*(endTime-startTime);
+		kernelExecTimeNs = (cl_ulong)1e-3*(endTime-startTime);
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
 		// Saving electric field snapshot.
