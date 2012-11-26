@@ -79,6 +79,8 @@ private:
 	// Timer variables.
 	__int64 tStart;
 	__int64 tEnd;
+	__int64 tDelta;
+	bool tPaused;
 
 	// ====================== Device arrays ======================
 	// Data arrays.
@@ -133,6 +135,7 @@ public:
 	// Timing.
 	void StartTimer();
 	void StopTimer();
+	void ResetTimer();
 	PRECISION GetElapsedTime();
 
 	int SafeCall(int, const char[]=NULL);

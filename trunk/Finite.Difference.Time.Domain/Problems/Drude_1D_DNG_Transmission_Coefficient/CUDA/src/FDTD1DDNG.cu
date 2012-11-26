@@ -64,7 +64,8 @@ CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigne
 							// Time indices.
 							nf(2), n0(1), np(0),
 							// Timer variables.
-							tStart(0LL), tEnd(0LL)
+							tStart(0LL), tEnd(0LL),
+							tDelta(0LL), tPaused(true)
 {
 	// Creating directory and writing simulation parameters.
 #if defined __linux__ || defined __CYGWIN__
@@ -714,15 +715,37 @@ int CFDTD1DDNG::CompleteRunGPU(bool SaveFields)
 // Timing.
 void CFDTD1DDNG::StartTimer()
 {
-	tStart = GetTimeus64();
+	if (tPaused == true)
+	{
+		tStart = GetTimeus64();
+		tPaused = false;
+	}
 }
 void CFDTD1DDNG::StopTimer()
 {
-	tEnd = GetTimeus64();
+	if (tPaused == false)
+	{
+		tEnd = GetTimeus64();
+		tDelta += tEnd - tStart;
+		tStart = tEnd;
+		tPaused = true;
+	}
 }
-PRECISION CFDTD1DDNG::GetElapsedTime()
+void CFDTD1DDNG::ResetTimer()
 {
-	return ((PRECISION)(tEnd-tStart))/(1000000.);
+	if (tPaused == true)
+		tStart = tEnd;
+	else
+		tStart = GetTimeus64();
+
+	tDelta = 0UL;
+}
+double CFDTD1DDNG::GetElapsedTime()
+{
+	if (tPaused == false)
+		tEnd = GetTimeus64();
+
+	return ((double)(tEnd-tStart+tDelta))/(1000000.);
 }
 int CFDTD1DDNG::SafeCall(int Status, const char *Error)
 {
