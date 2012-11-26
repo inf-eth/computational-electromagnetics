@@ -7,9 +7,10 @@ J = 256; % No. of spatial steps in j direction.
 PMLw = 64; % Width of PML layer.
 SlabLeft = round(J/3+PMLw); % Location of left end of Slab.
 SlabRight = round(2*J/3+PMLw); % Location of right end of Slab
-MaxTime = 4; % No. of time steps
+MaxTime = 4*J; % No. of time steps
 PulseWidth = round(J/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
+SaveFields = 1; % 0. No, 1. Yes.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
 SnapshotInterval = 16; % Amount of time delay between snaps.
 % Choice of source.
@@ -36,7 +37,7 @@ w = 2*pi*f;
 k0 = w/c; % Free space wave number.
 % Ricker wavelet parameters.
 if SourceChoice == 3
-    fp = f; % Peak frenuency
+    fp = f; % Peak frequency
     dr = PulseWidth*dt*2; % Delay
 end
 
@@ -131,8 +132,10 @@ bmy = exp(-1*(amy/u0+sigmy/(kappmy*u0))*dt);
 Cmx = (bmx-1)*sigmx/(sigmx*kappmx+kappm^2*amx);
 Cmy = (bmy-1)*sigmy/(sigmy*kappmy+kappm^2*amy);
 
-EzSnapshots = zeros(IEz/SnapshotResolution, (JEz)/SnapshotResolution, MaxTime/SnapshotInterval); % Data for plotting.
-frame = 1;
+if SaveFields == 1
+    EzSnapshots = zeros(IEz/SnapshotResolution, (JEz)/SnapshotResolution, MaxTime/SnapshotInterval); % Data for plotting.
+    frame = 1;
+end
 
 np = 1;
 n0 = 2;
@@ -234,7 +237,7 @@ for n = 0:MaxTime
     
     Ezi(n+1) = Ez(IEz/2,SlabLeft+1,nf); % Incident field is left of slab.
     
-    if (mod(n, SnapshotInterval) == 0)
+    if (SaveFields == 1 && mod(n, SnapshotInterval) == 0)
         EzSnapshots(:,:,n/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(IEz-1)), 1+(0:SnapshotResolution:(JEz-1)), nf);
     end
 
@@ -376,7 +379,7 @@ for n = 0:MaxTime
     Ezy1(n+1) = Ez(IEz/2,Y1,nf);
     Ezy2(n+1) = Ez(IEz/2,Y2, nf);
     
-    if (mod(n, SnapshotInterval) == 0)
+    if (SaveFields == 1 && mod(n, SnapshotInterval) == 0)
         EzSnapshots(:,:,n/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(IEz-1)), 1+(0:SnapshotResolution:(JEz-1)), nf);
     end
     
@@ -386,40 +389,12 @@ for n = 0:MaxTime
 end
 fprintf ( 1, '\rSimulation complete! \n');
 toc
-% Electric field snapshots.
-sizeS=size(EzSnapshots);
-for i=1:(MaxTime/SnapshotInterval)-1
-    
-    figure (6)
-    mesh ( EzSnapshots (:, :, i) );
-    view (4, 4)
-    xlim([0 sizeS(2)])
-    ylim([0 sizeS(1)])
-    zlim([-1 1])
-    %caxis([-0.1 0.6])
-    xlabel ('j-axis')
-    ylabel ('i-axis')
-    %colorbar
-    
-    figure (7)
-    mesh ( EzSnapshots (:, :, i) );
-    view (0, 90)
-    xlim([0 sizeS(2)])
-    ylim([0 sizeS(1)])
-    zlim([-10 10])
-    %caxis([-0.1 0.6])
-    xlabel ('j-axis')
-    ylabel ('i-axis')
-    %colorbar
-    
-end
-
 % Postprocessing.
-Fs = 1/dt;                    % Sampling frenuency
+Fs = 1/dt;                    % Sampling frequency
 T = dt;                       % Sample time
 L = length(Ezi);              % Length of signal
 t = (0:L-1)*T;                % Time vector
-fspan = 100;                  % Points to plot in frenuency domain
+fspan = 100;                  % Points to plot in frequency domain
 
 figure(1)
 subplot(211)
@@ -521,3 +496,33 @@ title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
 grid on
+
+if SaveFields == 1
+    % Electric field snapshots.
+    sizeS=size(EzSnapshots);
+    for i=1:(MaxTime/SnapshotInterval)-1
+
+        figure (6)
+        mesh ( EzSnapshots (:, :, i) );
+        view (4, 4)
+        xlim([0 sizeS(2)])
+        ylim([0 sizeS(1)])
+        zlim([-1 1])
+        %caxis([-0.1 0.6])
+        xlabel ('j-axis')
+        ylabel ('i-axis')
+        %colorbar
+
+        figure (7)
+        mesh ( EzSnapshots (:, :, i) );
+        view (0, 90)
+        xlim([0 sizeS(2)])
+        ylim([0 sizeS(1)])
+        zlim([-10 10])
+        %caxis([-0.1 0.6])
+        xlabel ('j-axis')
+        ylabel ('i-axis')
+        %colorbar
+
+    end
+end
