@@ -9,6 +9,7 @@ MaxTime = 4*SIZE; % No. of time steps
 PulseWidth = round(SIZE/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 source = 10; % Location of source
+SaveFields = 1; % 0. No, 1. Yes.
 SnapshotInterval = 32; % Amount of time delay between snaps.
 
 % Choice of source.
@@ -82,8 +83,10 @@ cm = (u0/dt^2)*uinf.*am0;
 dm = (-1*u0/4).*wpmsq.*am0;
 em = (1/(2*dt))*u0*uinf.*gm.*am0;
 
-ExSnapshots = zeros(SIZE, MaxTime/SnapshotInterval); % Data for plotting.
-frame = 1;
+if SaveFields == 1
+    ExSnapshots = zeros(SIZE, MaxTime/SnapshotInterval); % Data for plotting.
+    frame = 1;
+end
 
 n1 = 1;
 n2 = 2;
@@ -162,7 +165,7 @@ for q = 0:MaxTime
     end
     Dx(source,n2) = e0*Ex(source,n2);
 
-    if mod(q,SnapshotInterval) == 0
+    if (SaveFields == 1 && mod(q,SnapshotInterval) == 0)
         ExSnapshots(:,frame) = Ex(:,n2);
         frame=frame+1;
     end
@@ -288,19 +291,21 @@ xlabel('Frequency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
 ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
 grid on
 
-% Simulation animation.
-for i=1:frame-1
-    figure (6)
-    % Scatterer boundaries.
-    hold off
-    plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
-    hold on
-    plot([SlabRight SlabRight], [-1 1], 'Color', 'r');
-    plot(ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
-    set(gca, 'FontSize', 10, 'FontWeight', 'b')
-    axis([0 SIZE -1 1])
-    title('Time Domain Simulation', 'FontSize', 12, 'FontWeight', 'b')
-    xlabel('Spatial step (k)', 'FontSize', 11, 'FontWeight', 'b')
-    ylabel('Electric field (Ex)', 'FontSize', 11, 'FontWeight', 'b')
-    grid on
+if SaveFields == 1
+    % Simulation animation.
+    for i=1:frame-1
+        figure (6)
+        % Scatterer boundaries.
+        hold off
+        plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
+        hold on
+        plot([SlabRight SlabRight], [-1 1], 'Color', 'r');
+        plot(ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
+        set(gca, 'FontSize', 10, 'FontWeight', 'b')
+        axis([0 SIZE -1 1])
+        title('Time Domain Simulation', 'FontSize', 12, 'FontWeight', 'b')
+        xlabel('Spatial step (k)', 'FontSize', 11, 'FontWeight', 'b')
+        ylabel('Electric field (Ex)', 'FontSize', 11, 'FontWeight', 'b')
+        grid on
+    end
 end
