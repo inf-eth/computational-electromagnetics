@@ -616,8 +616,9 @@ int CFDTD1DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		// Calculation of Hy using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
@@ -668,8 +669,9 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		// Calculation of By using update difference equation for Hy. This is time step n.
 		for (unsigned int i=0; i<Size-1; i++)
 		{
@@ -797,8 +799,8 @@ int CFDTD1DDNG::DryRunGPU()
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
 
 		SafeCall(clSetKernelArg(DryRun_kernel_M, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
 		SafeCall(clSetKernelArg(DryRun_kernel_M, 18, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
@@ -920,8 +922,8 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
 
 		SafeCall(clSetKernelArg(Simulation_kernel_M, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
 		SafeCall(clSetKernelArg(Simulation_kernel_M, 43, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");

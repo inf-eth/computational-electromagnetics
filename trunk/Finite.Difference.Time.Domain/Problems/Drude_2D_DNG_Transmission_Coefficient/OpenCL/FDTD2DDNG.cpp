@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 using namespace std;
 
 CFDTD2DDNG::CFDTD2DDNG(
@@ -914,8 +915,9 @@ int CFDTD2DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/512U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		// ========================== Bx and Hx ==========================
 		for (unsigned int i=0; i<IHx; i++)
 		{
@@ -1085,8 +1087,9 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/512U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		// ========================== Bx and Hx ==========================
 		for (unsigned int i=0; i<IHx; i++)
 		{
@@ -1339,8 +1342,8 @@ int CFDTD2DDNG::DryRunGPU()
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/512U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
 
 		SafeCall(clSetKernelArg(DryRun_kernel_M, 51, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
 		SafeCall(clSetKernelArg(DryRun_kernel_M, 52, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
@@ -1469,8 +1472,8 @@ int CFDTD2DDNG::RunSimulationGPU(bool SaveFields)
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/512U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
 
 		SafeCall(clSetKernelArg(Simulation_kernel_M, 72, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
 		SafeCall(clSetKernelArg(Simulation_kernel_M, 73, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
