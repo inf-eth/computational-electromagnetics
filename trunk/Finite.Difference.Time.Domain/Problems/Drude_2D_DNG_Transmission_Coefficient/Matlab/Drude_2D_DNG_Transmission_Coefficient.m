@@ -142,13 +142,13 @@ n0 = 2;
 nf = 3;
 linecount = 0;
 % Outer loop for time-stepping.
-fprintf ( 1, '\rDry run started! \n');
+fprintf ( 1, 'Dry run started! \n');
 tic
 % Test loop for incident field in free space.
 for n = 0:MaxTime
     
     % Progress indicator.
-    if mod(n,2) == 0
+    if mod(n,SnapshotInterval) == 0
         fprintf(1, repmat('\b',1,linecount));
         linecount = fprintf(1, '%g %%', (n*100)/MaxTime );
     end
@@ -246,7 +246,8 @@ for n = 0:MaxTime
     n0 = mod(n0, 3)+1;
     nf = mod(nf, 3)+1;
 end
-fprintf ( 1, '\rDry run complete! \n');
+fprintf(1, repmat('\b',1,linecount));
+fprintf ( 1, 'Dry run complete! \n');
 toc
 % Reinitialization of fields for actual simulation.
 Ez = zeros(IEz, JEz, 3); % z-component of E-field
@@ -268,7 +269,7 @@ tic
 for n = 0:MaxTime
     
     % Progress indicator.
-    if mod(n,2) == 0
+    if mod(n,SnapshotInterval) == 0
         fprintf(1, repmat('\b',1,linecount));
         linecount = fprintf(1, '%g %%', (n*100)/MaxTime );
     end
@@ -387,7 +388,8 @@ for n = 0:MaxTime
     n0 = mod(n0, 3)+1;
     nf = mod(nf, 3)+1;
 end
-fprintf ( 1, '\rSimulation complete! \n');
+fprintf(1, repmat('\b',1,linecount));
+fprintf ( 1, 'Simulation complete! \n');
 toc
 % Postprocessing.
 Fs = 1/dt;                    % Sampling frequency
