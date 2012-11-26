@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <FDTD2DDNG_Kernels.cu>
 #include <helper_cuda.h>
 #include <helper_functions.h> // helper functions for SDK examples
@@ -438,8 +439,9 @@ int CFDTD2DDNG::DryRunCPU()
 	cout << "Dry run (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		// ========================== Bx and Hx ==========================
 		for (unsigned int i=0; i<IHx; i++)
 		{
@@ -609,8 +611,9 @@ int CFDTD2DDNG::RunSimulationCPU(bool SaveFields)
 	cout << "Simulation (CPU) started..." << endl;
 	for (unsigned int n=0; n<MaxTime; n++)
 	{
-		if (n % (MaxTime/256U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		// ========================== Bx and Hx ==========================
 		for (unsigned int i=0; i<IHx; i++)
 		{
@@ -841,8 +844,9 @@ int CFDTD2DDNG::DryRunGPU()
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		sdkStartTimer(&Timer);
 
 		// Kernel call.
@@ -965,8 +969,9 @@ int CFDTD2DDNG::RunSimulationGPU(bool SaveFields)
 
 	for (unsigned int n=0;n<MaxTime; n++)
 	{
-		if (n % (MaxTime/1024U) == 0)
-			cout << "\r\t\t\r" << n*100/(MaxTime-1) << "%";
+		if (n%SnapshotInterval == 0)
+			cout << "\r" << setprecision(4) << (float)n*100/(MaxTime-1) << "%  " << flush;
+
 		sdkStartTimer(&Timer);
 
 		// Kernel call.

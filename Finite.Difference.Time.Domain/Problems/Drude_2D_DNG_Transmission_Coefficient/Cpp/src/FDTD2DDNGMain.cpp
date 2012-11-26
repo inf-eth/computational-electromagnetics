@@ -10,7 +10,7 @@ int main()
 							64,		// PMLw
 							4*256,	// MaxTime
 							1,		// Snapshot resolution
-							10,		// Snapshot interval
+							1,		// Snapshot interval
 							1,		// Source choice
 							1,		// Source is plane wave?
 							128,	// Source location X
