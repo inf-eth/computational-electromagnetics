@@ -22,7 +22,9 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
+#ifndef NULL
 #define NULL 0
+#endif
 
 #if defined __linux__ || defined __CYGWIN__
 #define __int64 long long
