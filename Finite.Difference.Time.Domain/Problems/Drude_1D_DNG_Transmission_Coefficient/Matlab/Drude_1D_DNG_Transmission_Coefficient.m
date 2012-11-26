@@ -95,6 +95,13 @@ linecount = 0;
 tic
 % Test loop for incident field in free space.
 for q = 0:MaxTime
+    
+    % Progress indicator.
+    if mod(q,SnapshotInterval) == 0
+        fprintf(1, repmat('\b',1,linecount));
+        linecount = fprintf(1, '%g %%', (q*100)/MaxTime );
+    end
+    
     % Calculation of Hy using update difference equation for Hy. This is time step q.
     Hy(1:SIZE-1,n2) = Hy(1:SIZE-1,n1) + ( ( Ex(1:SIZE-1,n1) - Ex(2:SIZE,n1) ) * dt/(u0*dz) );
         
@@ -122,16 +129,21 @@ for q = 0:MaxTime
     n1 = n2;
     n2 = temp;
 end
+fprintf(1, repmat('\b',1,linecount));
+fprintf ( 1, 'Dry run complete! \n');
 % Reinitialization of fields for actual simulation.
 Ex = zeros(SIZE, 3); % x-component of E-field
 Hy = zeros(SIZE, 3); % y-component of H-field
+linecount = 0;
 % Actual simulation with scatterer.
 fprintf ( 1, 'Simulation started... \n');
 for q = 0:MaxTime
     
     % Progress indicator.
-    fprintf(1, repmat('\b',1,linecount));
-    linecount = fprintf(1, '%g %%', (q*100)/MaxTime );
+    if mod(q,SnapshotInterval) == 0
+        fprintf(1, repmat('\b',1,linecount));
+        linecount = fprintf(1, '%g %%', (q*100)/MaxTime );
+    end
     
     % Storing past fields.
     Ex(:,3) = Ex(:,n2);
@@ -181,7 +193,8 @@ for q = 0:MaxTime
     n1 = n2;
     n2 = temp;
 end
-fprintf ( 1, '\nSimulation complete! \n');
+fprintf(1, repmat('\b',1,linecount));
+fprintf ( 1, 'Simulation complete! \n');
 toc
 % Postprocessing.
 Fs = 1/dt;                    % Sampling frequency
