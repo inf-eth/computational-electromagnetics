@@ -81,7 +81,7 @@ private:
 	bool tPaused;
 
 public:
-	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
+	CFDTD1DDNG(unsigned int=4U*1024U, unsigned int=4U*4096U, unsigned int=10U, unsigned int=16U, unsigned int=1U);
 
 	// Space calculations.
 	unsigned long SimSize();

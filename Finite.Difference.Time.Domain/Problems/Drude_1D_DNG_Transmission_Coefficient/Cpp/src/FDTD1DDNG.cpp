@@ -14,10 +14,10 @@
 #include <iomanip>
 using namespace std;
 
-CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
+CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pMaxTime, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
 							// Simulation parameters.
 							Size(pSize),
-							MaxTime(4*Size),
+							MaxTime(pMaxTime),
 							PulseWidth(Size/8),
 							td(PulseWidth),
 							SourceLocation(pSourceLocation),
