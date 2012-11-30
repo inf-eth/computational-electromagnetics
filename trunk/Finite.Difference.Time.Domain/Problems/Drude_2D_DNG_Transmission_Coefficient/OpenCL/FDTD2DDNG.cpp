@@ -346,9 +346,10 @@ int CFDTD2DDNG::InitialiseCL()
 	cout << "[1] Advanced Micro Devices, Inc. (default)" << endl;
 	cout << "[2] NVIDIA Corporation" << endl;
 	cout << ">>";
-	StopTimer();
-	cin >> choice;
-	StartTimer();
+	//StopTimer();
+	//cin >> choice;
+	//StartTimer();
+	choice = '1';
 
 	if (choice == '1')
 		SelectedPlatform = AMDPlatform;
@@ -399,9 +400,10 @@ int CFDTD2DDNG::InitialiseCL()
 	cout << "[1] Yes" << endl;
 	cout << "[2] No (default)" << endl;
 	cout << ">>";
-	StopTimer();
-	cin >> choice;
-	StartTimer();
+	//StopTimer();
+	//cin >> choice;
+	//StartTimer();
+	choice = '1';
 
 	if (choice == '1')
 	{
