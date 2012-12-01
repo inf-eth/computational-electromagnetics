@@ -16,10 +16,10 @@
 #include <string>
 using namespace std;
 
-CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pMaxTime, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
+CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
 							// Simulation parameters.
 							Size(pSize),
-							MaxTime(pMaxTime),
+							MaxTime(4*Size),
 							PulseWidth(Size/8),
 							td(PulseWidth),
 							SourceLocation(pSourceLocation),
@@ -232,10 +232,9 @@ int CFDTD1DDNG::InitialiseCL()
 	cout << "[1] Advanced Micro Devices, Inc. (default)" << endl;
 	cout << "[2] NVIDIA Corporation" << endl;
 	cout << ">>";
-	//StopTimer();
-	//cin >> choice;
-	//StartTimer();
-	choice = '1';
+	StopTimer();
+	cin >> choice;
+	StartTimer();
 
 	if (choice == '1')
 		SelectedPlatform = AMDPlatform;
@@ -286,10 +285,9 @@ int CFDTD1DDNG::InitialiseCL()
 	cout << "[1] Yes" << endl;
 	cout << "[2] No (default)" << endl;
 	cout << ">>";
-	//StopTimer();
-	//cin >> choice;
-	//StartTimer();
-	choice = '1';
+	StopTimer();
+	cin >> choice;
+	StartTimer();
 
 	if (choice == '1')
 	{
