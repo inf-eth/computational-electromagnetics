@@ -19,10 +19,10 @@
 #include <helper_functions.h> // helper functions for SDK examples
 using namespace std;
 
-CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pMaxTime, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
+CFDTD1DDNG::CFDTD1DDNG(unsigned int pSize, unsigned int pSourceLocation, unsigned int pSnapshotInterval, unsigned int pSourceChoice):
 							// Simulation parameters.
 							Size(pSize),
-							MaxTime(pMaxTime),
+							MaxTime(4*Size),
 							PulseWidth(Size/8),
 							td(PulseWidth),
 							SourceLocation(pSourceLocation),

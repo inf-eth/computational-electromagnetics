@@ -1,26 +1,25 @@
 clc
 clear all
-NN = [25 50 100 200 300 400 500 750 1000 1500 2000 2500 3000 3500 4000 4500 5000];
-for nn=1:length(NN)
+
 % Simulation parameters.
-I = 512; % No. of spatial steps in i direction.
-J = 512; % No. of spatial steps in j direction.
-PMLw = 0; % Width of PML layer.
+I = 256; % No. of spatial steps in i direction.
+J = 256; % No. of spatial steps in j direction.
+PMLw = 64; % Width of PML layer.
 SlabLeft = round(J/3+PMLw); % Location of left end of Slab.
 SlabRight = round(2*J/3+PMLw); % Location of right end of Slab
-MaxTime = NN(nn); % No. of time steps
+MaxTime = 4*J; % No. of time steps
 PulseWidth = round(J/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
-SaveFields = 0; % 0. No, 1. Yes.
+SaveFields = 1; % 0. No, 1. Yes.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
-SnapshotInterval = 128; % Amount of time delay between snaps.
+SnapshotInterval = 16; % Amount of time delay between snaps.
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
 SourceChoice = 1;
 SourcePlane = 1; % Is the source a plane wave. 0. = Omni 1. Plane-wave.
 SourceLocationX = I/2; % X Location of source. Only used for an omni-source.
 SourceLocationY = PMLw+6; % Y Location of source.
-tic
+
 % Constants.
 c = 3e8;
 pi = 3.141592654;
@@ -29,11 +28,11 @@ u0 = (1e-7)*4*pi;
 
 dt = 0.5e-11;
 delta = 3e-3;
-Sc = c * dt/delta;
+Sc = c * dt/delta
 
 l = PulseWidth*delta;
-f = c/l;
-fmax = 1/(2*dt);
+f = c/l
+fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
 % Ricker wavelet parameters.
@@ -144,7 +143,7 @@ nf = 3;
 linecount = 0;
 % Outer loop for time-stepping.
 fprintf ( 1, 'Dry run started! \n');
-%tic
+tic
 % Test loop for incident field in free space.
 for n = 0:MaxTime
     
@@ -249,7 +248,7 @@ for n = 0:MaxTime
 end
 fprintf(1, repmat('\b',1,linecount));
 fprintf ( 1, 'Dry run complete! \n');
-%toc
+toc
 % Reinitialization of fields for actual simulation.
 Ez = zeros(IEz, JEz, 3); % z-component of E-field
 Dz = zeros(IEz, JEz, 3); % z-component of D
@@ -265,7 +264,7 @@ n0 = 2;
 nf = 3;
 linecount = 0;
 % Outer loop for time-stepping.
-%tic
+tic
 % Test loop for incident field in free space.
 for n = 0:MaxTime
     
@@ -391,145 +390,141 @@ for n = 0:MaxTime
 end
 fprintf(1, repmat('\b',1,linecount));
 fprintf ( 1, 'Simulation complete! \n');
-El = toc;
-FID = fopen('2DTemporalTimes.txt', 'a');
-fprintf (FID, '%4.3f ', El);
-fclose (FID);
+toc
+% Postprocessing.
+Fs = 1/dt;                    % Sampling frequency
+T = dt;                       % Sample time
+L = length(Ezi);              % Length of signal
+t = (0:L-1)*T;                % Time vector
+fspan = 100;                  % Points to plot in frequency domain
+
+figure(1)
+subplot(211)
+plot(Fs*t, Ezi, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Incident Field', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(2)
+subplot(211)
+plot(Fs*t, Ezt, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(3)
+subplot(211)
+plot(Fs*t, Eztt, 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmitted Field Beyond Slab', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+
+NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
+% Incident and Transmitted fields.
+EZI = fft(Ezi,NFFT)/L;
+EZT = fft(Ezt,NFFT)/L;
+EZTT = fft(Eztt,NFFT)/L;
+% Refractive index calculations.
+EZY1 = fft(Ezy1,NFFT)/L;
+EZY2 = fft(Ezy2,NFFT)/L;
+f = Fs/2*linspace(0,1,NFFT/2+1);
+
+% Plot single-sided amplitude spectrum.
+figure(1)
+subplot(212)
+EZIp = 2*abs(EZI(1:NFFT/2+1));
+plot(f(1:fspan), EZIp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Ezi(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(2)
+subplot(212)
+EZTp = 2*abs(EZT(1:NFFT/2+1));
+plot(f(1:fspan), EZTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Ezt(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZT(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+figure(3)
+subplot(212)
+EZTTp = 2*abs(EZTT(1:NFFT/2+1));
+plot(f(1:fspan), EZTTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Single-Sided Amplitude Spectrum of Eztt(t)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZT(f)|', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+
+% Transmission Coefficient.
+figure(4)
+subplot(211)
+TAU = abs(EZT(1:NFFT/2+1)./EZI(1:NFFT/2+1));
+plot(f(1:fspan), TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+ylim([-2 2])
+axis 'auto i'
+grid on
+subplot(212)
+plot(f(1:fspan), 1-TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('1-|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
+ylim([-2 2])
+axis 'auto i'
+grid on
+
+% Refractive Index calculations.
+nFDTD = (1/(1i*k0*(y1-y2))).*log(EZY2(1:NFFT/2+1)./EZY1(1:NFFT/2+1));
+figure(5)
+subplot(211)
+plot(f(1:fspan), real(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'b');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Refractive index re(n)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11)
+ylabel('re(n)', 'FontSize', 11)
+grid on
+subplot(212)
+plot(f(1:fspan), imag(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'r');
+set(gca, 'FontSize', 10, 'FontWeight', 'b')
+title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
+xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
+ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
+grid on
+
+if SaveFields == 1
+    % Electric field snapshots.
+    sizeS=size(EzSnapshots);
+    for i=1:(MaxTime/SnapshotInterval)-1
+
+        figure (6)
+        mesh ( EzSnapshots (:, :, i) );
+        view (4, 4)
+        xlim([0 sizeS(2)])
+        ylim([0 sizeS(1)])
+        zlim([-1 1])
+        %caxis([-0.1 0.6])
+        xlabel ('j-axis')
+        ylabel ('i-axis')
+        %colorbar
+
+        figure (7)
+        mesh ( EzSnapshots (:, :, i) );
+        view (0, 90)
+        xlim([0 sizeS(2)])
+        ylim([0 sizeS(1)])
+        zlim([-10 10])
+        %caxis([-0.1 0.6])
+        xlabel ('j-axis')
+        ylabel ('i-axis')
+        %colorbar
+
+    end
 end
-% % Postprocessing.
-% Fs = 1/dt;                    % Sampling frequency
-% T = dt;                       % Sample time
-% L = length(Ezi);              % Length of signal
-% t = (0:L-1)*T;                % Time vector
-% fspan = 100;                  % Points to plot in frequency domain
-% 
-% figure(1)
-% subplot(211)
-% plot(Fs*t, Ezi, 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Incident Field', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(2)
-% subplot(211)
-% plot(Fs*t, Ezt, 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(3)
-% subplot(211)
-% plot(Fs*t, Eztt, 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Transmitted Field Beyond Slab', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('time step (n)', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% 
-% NFFT = 2^nextpow2(L); % Next power of 2 from length of Exi
-% % Incident and Transmitted fields.
-% EZI = fft(Ezi,NFFT)/L;
-% EZT = fft(Ezt,NFFT)/L;
-% EZTT = fft(Eztt,NFFT)/L;
-% % Refractive index calculations.
-% EZY1 = fft(Ezy1,NFFT)/L;
-% EZY2 = fft(Ezy2,NFFT)/L;
-% f = Fs/2*linspace(0,1,NFFT/2+1);
-% 
-% % Plot single-sided amplitude spectrum.
-% figure(1)
-% subplot(212)
-% EZIp = 2*abs(EZI(1:NFFT/2+1));
-% plot(f(1:fspan), EZIp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Single-Sided Amplitude Spectrum of Ezi(t)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(2)
-% subplot(212)
-% EZTp = 2*abs(EZT(1:NFFT/2+1));
-% plot(f(1:fspan), EZTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Single-Sided Amplitude Spectrum of Ezt(t)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EZT(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% figure(3)
-% subplot(212)
-% EZTTp = 2*abs(EZTT(1:NFFT/2+1));
-% plot(f(1:fspan), EZTTp(1:fspan), 'LineWidth', 2.0, 'Color', 'r')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Single-Sided Amplitude Spectrum of Eztt(t)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EZT(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% 
-% % Transmission Coefficient.
-% figure(4)
-% subplot(211)
-% TAU = abs(EZT(1:NFFT/2+1)./EZI(1:NFFT/2+1));
-% plot(f(1:fspan), TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Transmission Coefficient', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% ylim([-2 2])
-% axis 'auto i'
-% grid on
-% subplot(212)
-% plot(f(1:fspan), 1-TAU(1:fspan), 'LineWidth', 2.0, 'Color', 'b')
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Reflection Coefficient', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('1-|EZT(f)/EZI(f)|', 'FontSize', 11, 'FontWeight', 'b')
-% ylim([-2 2])
-% axis 'auto i'
-% grid on
-% 
-% % Refractive Index calculations.
-% nFDTD = (1/(1i*k0*(y1-y2))).*log(EZY2(1:NFFT/2+1)./EZY1(1:NFFT/2+1));
-% figure(5)
-% subplot(211)
-% plot(f(1:fspan), real(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'b');
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Refractive index re(n)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11)
-% ylabel('re(n)', 'FontSize', 11)
-% grid on
-% subplot(212)
-% plot(f(1:fspan), imag(nFDTD(1:fspan)), 'LineWidth', 2.0, 'Color', 'r');
-% set(gca, 'FontSize', 10, 'FontWeight', 'b')
-% title('Refractive index im(n)', 'FontSize', 12, 'FontWeight', 'b')
-% xlabel('Frenuency (Hz)', 'FontSize', 11, 'FontWeight', 'b')
-% ylabel('im(n)', 'FontSize', 11, 'FontWeight', 'b')
-% grid on
-% 
-% if SaveFields == 1
-%     % Electric field snapshots.
-%     sizeS=size(EzSnapshots);
-%     for i=1:(MaxTime/SnapshotInterval)-1
-% 
-%         figure (6)
-%         mesh ( EzSnapshots (:, :, i) );
-%         view (4, 4)
-%         xlim([0 sizeS(2)])
-%         ylim([0 sizeS(1)])
-%         zlim([-1 1])
-%         %caxis([-0.1 0.6])
-%         xlabel ('j-axis')
-%         ylabel ('i-axis')
-%         %colorbar
-% 
-%         figure (7)
-%         mesh ( EzSnapshots (:, :, i) );
-%         view (0, 90)
-%         xlim([0 sizeS(2)])
-%         ylim([0 sizeS(1)])
-%         zlim([-10 10])
-%         %caxis([-0.1 0.6])
-%         xlabel ('j-axis')
-%         ylabel ('i-axis')
-%         %colorbar
-% 
-%     end
-% end
