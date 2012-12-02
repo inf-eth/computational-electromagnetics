@@ -6,6 +6,4 @@ function return_val = wpmsquaredc(i, j, w)
 sinwdt = sin(w*pdt/2);
 coswdt = cos(w*pdt/2);
 
-%return_val = (2*sinwdt*(-2*(urr(i, j)-1)*sinwdt))/((dt^2)*(coswdt^2));
-return_val = 0;
-
+return_val = (2*sinwdt*(-2*(urr(i, j)-1)*sinwdt))/((pdt^2)*(coswdt^2));

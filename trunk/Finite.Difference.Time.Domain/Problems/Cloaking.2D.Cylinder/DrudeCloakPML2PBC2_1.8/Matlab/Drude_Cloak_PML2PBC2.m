@@ -9,7 +9,7 @@ PMLw = pPMLw; % Width of PML layer.
 % Cylinder dimensions.
 ra = pra; % Inner radius of cylinder.
 rb = prb; % Outer radius of cylinder.
-MaxTime = 4*J; % No. of time steps
+MaxTime = 12*J; % No. of time steps
 PulseWidth = 4*round(J/8); % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 SaveFields = 1; % 0. No, 1. Yes.
@@ -37,7 +37,7 @@ x0 = px0;
 y0 = py0;
 
 l = PulseWidth*delta;
-f = 3e9;%c/l
+f = 2e9;%c/l
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
