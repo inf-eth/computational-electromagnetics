@@ -22,6 +22,7 @@ e0 = (1e-9) / (36*pi);
 u0 = (1e-7) * 4 * pi;
 DT = delta / ( 2 * Cl );
 TwoPIFDeltaT = 2 * pi * f * DT;
+Sc=Cl*DT/delta
 % Data arrays.
 CHx = zeros ( IHx, JHx ); % Conductance
 CHy = zeros ( IHy, JHy ); % Conductance
@@ -55,6 +56,8 @@ for i=1:IEz
         RaEz ( i, j ) = ( 1 - ( s(i, j-0.5) * DT )/( e0 * er( i, j-0.5 ) ) );
     end
 end
+figure(5)
+surf(REz);
 fprintf ( 1, 'done.\n' );
 % ############ Initialization Complete ##############
 % ########### 2. Now running the Simulation #############
