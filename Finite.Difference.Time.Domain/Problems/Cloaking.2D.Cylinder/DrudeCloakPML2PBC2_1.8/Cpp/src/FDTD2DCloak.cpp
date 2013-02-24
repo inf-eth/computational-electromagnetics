@@ -146,7 +146,7 @@ CFDTD2DCloak::CFDTD2DCloak(
 }
 unsigned long CFDTD2DCloak::SimSize()
 {
-	return (unsigned long)sizeof(*this)+(unsigned long)sizeof(PRECISION)*(8UL*(unsigned long)IEz*(unsigned long)JEz+7UL*(unsigned long)IHy*(unsigned long)JHy+25UL*(unsigned long)IHx*(unsigned long)JHx+5UL*(unsigned long)MaxTime);
+	return (unsigned long)sizeof(*this)+(unsigned long)sizeof(PRECISION)*(14UL*(unsigned long)IEz*(unsigned long)JEz+19UL*(unsigned long)IHy*(unsigned long)JHy+19UL*(unsigned long)IHx*(unsigned long)JHx+5UL*(unsigned long)MaxTime);
 }
 unsigned long CFDTD2DCloak::HDDSpace()
 {
@@ -543,10 +543,8 @@ int CFDTD2DCloak::RunSimulationCPU(bool SaveFields)
 		{
 			// Hx in normal space.
 			for (unsigned int j=1+PMLw; j<JHx-PMLw-1; j++)
-			{
-				//Hx(i,j,nf) = Bx(i,j,nf)/u0;
 				Hx(i,j,nf) = (ax(i,j,0)*Bx(i,j,nf)+ax(i,j,1)*Bx(i,j,n0)+ax(i,j,2)*Bx(i,j,np)+ax(i,j,3)*ByAve(i,j,nf)+ax(i,j,4)*ByAve(i,j,n0)+ax(i,j,5)*ByAve(i,j,np)-ax(i,j,6)*Hx(i,j,n0)-ax(i,j,7)*Hx(i,j,np))/ax(i,j,8);
-			}
+
 			// Hx in lower PML.
 			for (unsigned int j=1; j<PMLw+1; j++)
 				Hx(i,j,nf) = Bx(i,j,nf)/u0;
@@ -561,24 +559,15 @@ int CFDTD2DCloak::RunSimulationCPU(bool SaveFields)
 		{
 			// Hy in normal space.
 			for (unsigned int j=PMLw; j<JHy-PMLw; j++)
-			{
-				//Hy(i,j,nf) = By(i,j,nf)/u0;
 				Hy(i,j,nf) = (ay(i,j,0)*By(i,j,nf)+ay(i,j,1)*By(i,j,n0)+ay(i,j,2)*By(i,j,np)+ay(i,j,3)*BxAve(i,j,nf)+ay(i,j,4)*BxAve(i,j,n0)+ay(i,j,5)*BxAve(i,j,np)-ay(i,j,6)*Hy(i,j,n0)-ay(i,j,7)*Hy(i,j,np))/ay(i,j,8);
-			}
+
 			// Hy in Lower PML.
 			for (unsigned int j=0; j<PMLw; j++)
-			{
 				Hy(i,j,nf) = By(i,j,nf)/u0;
-				if (i==0)
-					Hy(IHy-1,j,nf) = By(IHy-1,j,nf)/u0; // PBC
-			}
+
 			// Hy in upper PML.
 			for (unsigned int j=JHy-PMLw; j<JHy; j++)
-			{
 				Hy(i,j,nf) = By(i,j,nf)/u0;
-				if (i==0)
-					Hy(IHy-1,j,nf) = By(IHy-1,j,nf)/u0; // PBC
-			}
 		}
 
 		// ========================== Dz and Ez ==========================
@@ -880,7 +869,6 @@ PRECISION CFDTD2DCloak::wpmsq(PRECISION i, PRECISION j) // Corrected.
 {
 	return (2.*sin(w*dt/2.)*(-2.*(ur(i,j)-1.)*sin(w*dt/2.)))/(pow(dt,2)*pow(cos(w*dt/2.),2));
 }
-
 // Timing.
 void CFDTD2DCloak::StartTimer()
 {
