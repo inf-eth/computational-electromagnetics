@@ -113,16 +113,22 @@ ByAve = zeros ( IHy, JHy, 3);
 
 % ############ Initialization #############
 fprintf ( 1, 'Initializing...' );
-fprintf ( 1, '\nInitializing parametric arrays...' );
+fprintf ( 1, '\nInitializing parametric arrays...\n' );
+tic
 
 % Initializing PML conductance arrays.
 dpml = PMLw;
 mpml = 250;          % Typical = 80;
 semax = 2.6e7;      % Typical = 3.7e6;
 
+linecount = 0;
 % Initializing parametric arrays.
 for i=1:IHy     % IHy is size+1 or maximum I size.
-    fprintf ( 1, '%g %% \n', ((i-1)*100)/IHy );
+    % Progress indicator.
+    fprintf(1, repmat('\b',1,linecount));
+    linecount = fprintf(1, '%g %%', ((i-1)*100)/IHy );
+    
+    %fprintf ( 1, '%g %% \r', ((i-1)*100)/IHy );
     for j=1:JHy-2*PMLw
         
         % Ez related parameters.
@@ -205,13 +211,18 @@ Scsy = (DT*sey)./(2*1);
 ScmsmxHy = (DT*smx)./(2*1);
 ScmsmyHx = (DT*smy)./(2*1);
 
-fprintf ( 1, 'Initialization done.\n' );
+fprintf ( 1, '\rInitialization done.\n' );
+toc
 % ############ Initialization Complete ##############
 % ########### 2. Now running the Simulation #############
 fprintf ( 1, 'Simulation started... \n' );
+tic
+linecount = 0;
 for n=0:NNMax-2
-    fprintf ( 1, '%g %% \n', (n*100)/NNMax );
-    
+    % Progress indicator.
+    fprintf(1, repmat('\b',1,linecount));
+    linecount = fprintf(1, '%g %%', (n*100)/NNMax );
+        
     % Copying n1 fields as past fields. Will be used in second order time derivatives.
     Bx ( :, :, 3 ) = Bx ( :, :, n1 );
     By ( :, :, 3 ) = By ( :, :, n1 );
@@ -302,8 +313,8 @@ for n=0:NNMax-2
     n0 = n1;
     n1 = temp;    
 end
-fprintf ( 1, '100 %% \n' );
-fprintf ( 1, 'Calculations completed! \n' );
+fprintf ( 1, '\rCalculations completed! \n' );
+toc
 
 % Electric field snapshots.
 for i=1:NNMax/TimeResolutionFactor-2
