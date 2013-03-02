@@ -61,9 +61,11 @@ Dz = zeros(IEz, JEz, 3); % z-component of D
 EzMask = zeros(IEz, JEz); % Ez mask for PEC.
 Hx = zeros(IHx, JHx, 3); % i-component of H-field
 Bx = zeros(IHx, JHx, 3); % i-component of B
+HxMask = zeros(IHx, JHx); % Hx mask for PMC.
 BxAve = zeros(IHy, JHy, 3); % Averaged i-component of B wrt to By.
 Hy = zeros(IHy, JHy, 3); % j-component of H-field
 By = zeros(IHy, JHy, 3); % j-component of B
+HyMask = zeros(IHy, JHy); % Hy mask for PMC.
 ByAve = zeros(IHx, JHx, 3); % Averaged j-component of B wrt Bx.
 
 % Incident and Transmitted Fields.
@@ -115,6 +117,7 @@ for i=1:IHx
         ax(i,j,7) = u0*uphi(i-1,j-1)*(-2/dt^2+wpmsquaredc(i-1,j-1,w)/2);
         ax(i,j,8) = u0*uphi(i-1,j-1)*(1/dt^2+wpmsquaredc(i-1,j-1,w)/4);
         ax(i,j,9) = ax(i,j,8);
+        HxMask(i,j) = mask(i-1,j-0.5);
         if j < JHx
             ay(i,j,1) = (cosphi(i-1.5,j-1.5)^2)*(1/dt^2+wpmsquaredc(i-1.5,j-1.5,w)/4)+uphi(i-1.5,j-1.5)*(sinphi(i-1.5,j-1.5)^2)*(1/dt^2);
             ay(i,j,2) = (cosphi(i-1.5,j-1.5)^2)*(-2/dt^2+wpmsquaredc(i-1.5,j-1.5,w)/2)-uphi(i-1.5,j-1.5)*(sinphi(i-1.5,j-1.5)^2)*(2/dt^2);
@@ -134,6 +137,7 @@ for i=1:IHx
             az(i,j,5) = (1/(2*dt))*e0*einf(i-1,j-1.5)*gammae(i-1,j-1.5,w)*az0;
             
             EzMask(i,j) = mask(i-1,j-1.5);
+            HyMask(i,j) = mask(i-1.5,j-1.5);
         end        
     end
 end
@@ -382,6 +386,8 @@ for n = 0:MaxTime
         j=JHx-PMLw:JHx-1;
         Hx(i,j,nf) = Bx(i,j,nf)./u0;
     end
+    Hx(:,:,nf) = Hx(:,:,nf).*HxMask;
+    Bx(:,:,nf) = Bx(:,:,nf).*HxMask;
     
     % ========================= Hy =============================
     % Hy in normal space.
@@ -399,6 +405,8 @@ for n = 0:MaxTime
         j=JHy-PMLw+1:JHy;
         Hy(i,j,nf) = By(i,j,nf)./u0;
     end
+    Hy(:,:,nf) = Hy(:,:,nf).*HyMask;
+    By(:,:,nf) = By(:,:,nf).*HyMask;
     
     % ========================= Dz and Ez =============================
     % Psi arrays.
@@ -448,8 +456,8 @@ for n = 0:MaxTime
         Ez(i,j,nf) = Ez(i,j,nf) + (1-2*(pi*fp*(n*dt-dr))^2)*exp(-1*(pi*fp*(n*dt-dr))^2) * Sc;
     end
     Dz(i,j,nf) = e0*Ez(i,j,nf);
-    Ez(:,:,nf) = Ez(:,:,nf).*EzMask;
-    Dz(:,:,nf) = Dz(:,:,nf).*EzMask;
+    %Ez(:,:,nf) = Ez(:,:,nf).*EzMask;
+    %Dz(:,:,nf) = Dz(:,:,nf).*EzMask;
     % Transmitted fields.
     Ezt(n+1) = Ez(IEz/2,round((2*PMLw+J)/3),nf);
     Eztt(n+1) = Ez(IEz/2,round((2*PMLw+J)/3)+10,nf);
