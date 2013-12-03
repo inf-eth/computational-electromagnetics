@@ -2,7 +2,7 @@ clc
 clear all
 
 % Simulation parameters.
-SIZE = 4*1024; % No. of spatial steps
+SIZE = 4*512; % No. of spatial steps
 SlabLeft = round(SIZE/3); % Location of left end of Slab.
 SlabRight = round(2*SIZE/3); % Location of right end of Slab
 MaxTime = 4*SIZE; % No. of time steps
@@ -14,7 +14,7 @@ SnapshotInterval = 32; % Amount of time delay between snaps.
 
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
-SourceChoice = 1;
+SourceChoice = 2;
 
 % Constants.
 c = 3e8;
@@ -205,21 +205,21 @@ fspan = 100;                  % Points to plot in frequency domain
 
 figure(1)
 subplot(211)
-plot(Fs*t, Exi, 'LineWidth', 2.0, 'Color', 'b')
+plot(Fs*t*dt, Exi, 'LineWidth', 2.0, 'Color', 'b')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Incident Field', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
 grid on
 figure(2)
 subplot(211)
-plot(Fs*t, Ext, 'LineWidth', 2.0, 'Color', 'b')
+plot(Fs*t*dt, Ext, 'LineWidth', 2.0, 'Color', 'b')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Transmitted Field', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
 grid on
 figure(3)
 subplot(211)
-plot(Fs*t, Extt, 'LineWidth', 2.0, 'Color', 'b')
+plot(Fs*t*dt, Extt, 'LineWidth', 2.0, 'Color', 'b')
 set(gca, 'FontSize', 10, 'FontWeight', 'b')
 title('Transmitted Field Beyond Slab', 'FontSize', 12, 'FontWeight', 'b')
 xlabel('time', 'FontSize', 11, 'FontWeight', 'b')
@@ -310,15 +310,28 @@ if SaveFields == 1
         figure (6)
         % Scatterer boundaries.
         hold off
-        plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
+        plot([dz*SlabLeft dz*SlabLeft], [-1 1], 'Color', 'r');
         hold on
-        plot([SlabRight SlabRight], [-1 1], 'Color', 'r');
-        plot(ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
+        plot([dz*SlabRight dz*SlabRight], [-1 1], 'Color', 'r');
+        plot(dz*(1:length(ExSnapshots(:,i))),ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
         set(gca, 'FontSize', 10, 'FontWeight', 'b')
-        axis([0 SIZE -1 1])
+        axis([0 dz*SIZE -1 1])
         title('Time Domain Simulation', 'FontSize', 12, 'FontWeight', 'b')
-        xlabel('Spatial step (k)', 'FontSize', 11, 'FontWeight', 'b')
+        xlabel('z-axis (meters)', 'FontSize', 11, 'FontWeight', 'b')
         ylabel('Electric field (Ex)', 'FontSize', 11, 'FontWeight', 'b')
         grid on
+        % figure (7)
+        % Scatterer boundaries.
+%         hold off
+%         plot([SlabLeft SlabLeft], [-1 1], 'Color', 'r');
+%         hold on
+%         plot([SlabRight SlabRight], [-1 1], 'Color', 'r');
+%         plot((1:length(ExSnapshots(:,i))),ExSnapshots(:,i), 'LineWidth', 2.0, 'Color', 'b');
+%         set(gca, 'FontSize', 10, 'FontWeight', 'b')
+%         axis([0 SIZE -1 1])
+%         title('Time Domain Simulation', 'FontSize', 12, 'FontWeight', 'b')
+%         xlabel('Spatial step (k)', 'FontSize', 11, 'FontWeight', 'b')
+%         ylabel('Electric field (Ex)', 'FontSize', 11, 'FontWeight', 'b')
+%         grid on
     end
 end
