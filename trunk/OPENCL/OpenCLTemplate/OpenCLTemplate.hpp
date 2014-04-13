@@ -60,6 +60,7 @@ public:
 	PRECISION GetElapsedTime();
 
 	std::string convertToString(const char * filename);
+	int DisplayArray(const unsigned int, PRECISION*);
 
 	int SafeCall(cl_int, const char []=NULL);
 

@@ -28,7 +28,7 @@ int COpenCLTemplate::AllocateMemoryCPU()
 int COpenCLTemplate::InitialiseCPU()
 {
 	for (unsigned int i=0; i<Width; i++)
-		input[i] = 0.;
+		input[i] = (PRECISION)(rand()%100);
 
 	return 0;
 }
@@ -305,6 +305,18 @@ int COpenCLTemplate::RunCLKernels()
 	cout << "Kernel execution time = " << kernelExecTimeNsT/1e6 << "sec (" << kernelExecTimeNsT/1e3 << "ms or " << kernelExecTimeNsT << "us)" << endl;
 	SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
 
+	// Copying output array data back to CPU.
+	SafeCall(status = clEnqueueReadBuffer(commandQueue, /*Source: GPU*/d_output, CL_TRUE, 0,  /*Size of data in bytes*/sizeof(PRECISION)*Width, /*Destination: CPU*/output, 0, NULL, &events[1]),"Error: clEnqueueReadBuffer Failed for output array.");
+	SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for output array to be copied back to CPU. (clWaitForEvents)");
+	SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
+
+	// Display results.
+	cout << "Multiplier is " << Multiplier << endl;
+	cout << "Input array is: " << endl;
+	SafeCall(DisplayArray(Width, input), "Error: Displaying input array.");
+	cout << "Output array is: " << endl;
+	SafeCall(DisplayArray(Width, output), "Error: Displaying output array.");
+
 	return 0;
 }
 int COpenCLTemplate::CompleteRun()
@@ -358,6 +370,17 @@ string COpenCLTemplate::convertToString(const char *filename)
 	}
 	return NULL;
 }
+
+// Display array.
+int COpenCLTemplate::DisplayArray(const unsigned int Size, PRECISION* Array)
+{
+	for (unsigned int i=0; i<Size; i++)
+		cout << Array[i] << " ";
+	cout << endl;
+
+	return 0;
+}
+
 // Timing.
 void COpenCLTemplate::StartTimer()
 {
