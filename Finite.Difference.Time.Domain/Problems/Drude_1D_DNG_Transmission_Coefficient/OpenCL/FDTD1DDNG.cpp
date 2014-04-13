@@ -837,6 +837,8 @@ int CFDTD1DDNG::DryRunGPU()
 		kernelExecTimeNs = (cl_ulong)(1e-3*(endTime-startTime));
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
+		SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
+
 		SafeCall(clSetKernelArg(DryRun_kernel_E, 17, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
 		SafeCall(clSetKernelArg(DryRun_kernel_E, 18, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
 		SafeCall(clSetKernelArg(DryRun_kernel_E, 19, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
@@ -867,13 +869,14 @@ int CFDTD1DDNG::DryRunGPU()
 		kernelExecTimeNs = (cl_ulong)(1e-3*(endTime-startTime));
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
+		SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
+
 		np = (np+1)%3;
 		n0 = (n0+1)%3;
 		nf = (nf+1)%3;
 	}
 	std::cout << "\r" << "Dry run complete!" << std::endl;
 	std::cout << "Dry Run kernel execution time = " << kernelExecTimeNsT/1e6 << "sec (" << kernelExecTimeNsT/1e3 << "ms or " << kernelExecTimeNsT << "us)" << std::endl;
-	SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
 
 	return 0;
 }
@@ -960,6 +963,8 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		kernelExecTimeNs = (cl_ulong)(1e-3*(endTime-startTime));
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
+		SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
+
 		SafeCall(clSetKernelArg(Simulation_kernel_E, 42, sizeof(unsigned int), (void *)&n), "Error: Setting kernel argument 'n'");
 		SafeCall(clSetKernelArg(Simulation_kernel_E, 43, sizeof(unsigned int), (void *)&np), "Error: Setting kernel argument 'np'");
 		SafeCall(clSetKernelArg(Simulation_kernel_E, 44, sizeof(unsigned int), (void *)&n0), "Error: Setting kernel argument 'n0'");
@@ -990,6 +995,8 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		kernelExecTimeNs = (cl_ulong)(1e-3*(endTime-startTime));
 		kernelExecTimeNsT = kernelExecTimeNsT + kernelExecTimeNs;
 
+		SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
+
 		// Saving electric field snapshot.
 		if (n%SnapshotInterval == 0 && SaveFields == true)
 		{
@@ -1003,6 +1010,8 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 			SafeCall(clEnqueueReadBuffer(commandQueue, d_Ex_, CL_TRUE, 0, sizeof(PRECISION)*Size*3, Ex_, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 			// Wait for the read buffer to finish execution
 			SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+			// Release event.
+			SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 
 			snapshot.write((char*)&(Ex(0,nf)), sizeof(PRECISION)*Size);
 			snapshot.close();
@@ -1014,7 +1023,6 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 	}
 	std::cout << "\r" << "Simulation complete!" << std::endl;
 	std::cout << "Simulation kernel execution time = " << kernelExecTimeNsT/1e6 << "sec (" << kernelExecTimeNsT/1e3 << "ms or " << kernelExecTimeNsT << "us)" << std::endl;
-	SafeCall(clReleaseEvent(events[0]), "Error: Release event object. (clReleaseEvent)\n");
 
 	// Saving electric field data arrays.
 	if (SaveFields == true)
@@ -1027,30 +1035,33 @@ int CFDTD1DDNG::RunSimulationGPU(bool SaveFields)
 		snapshot.open("FieldData/Exi.fdt", std::ios::out|std::ios::binary);
 		SafeCall(clEnqueueReadBuffer(commandQueue, d_Exi, CL_TRUE, 0, sizeof(PRECISION)*Size, Exi, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 		snapshot.write((char*)Exi, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Ext.fdt", std::ios::out|std::ios::binary);
 		SafeCall(clEnqueueReadBuffer(commandQueue, d_Ext, CL_TRUE, 0, sizeof(PRECISION)*Size, Ext, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 		snapshot.write((char*)Ext, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Extt.fdt", std::ios::out|std::ios::binary);
 		SafeCall(clEnqueueReadBuffer(commandQueue, d_Extt, CL_TRUE, 0, sizeof(PRECISION)*Size, Extt, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 		snapshot.write((char*)Extt, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Exz1.fdt", std::ios::out|std::ios::binary);
 		SafeCall(clEnqueueReadBuffer(commandQueue, d_Exz1, CL_TRUE, 0, sizeof(PRECISION)*Size, Exz1, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 		snapshot.write((char*)Exz1, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
 		snapshot.open("FieldData/Exz2.fdt", std::ios::out|std::ios::binary);
 		SafeCall(clEnqueueReadBuffer(commandQueue, d_Exz2, CL_TRUE, 0, sizeof(PRECISION)*Size, Exz2, 0, NULL, &events[1]), "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)");
 		SafeCall(clWaitForEvents(1, &events[1]), "Error: Waiting for read buffer call to finish. (clWaitForEvents)");
+		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 		snapshot.write((char*)Exz2, sizeof(PRECISION)*MaxTime);
 		snapshot.close();
-
-		SafeCall(clReleaseEvent(events[1]), "Error: Release event object. (clReleaseEvent)\n");
 	}
 
 	return 0;
