@@ -3,13 +3,14 @@ clc
 % Simulation parameters.
 Scalar = 1;
 PMLw = 0;
-SIZE = 32*Scalar+2*PMLw; % No. of spatial steps
+SIZE = 64*Scalar+2*PMLw; % No. of spatial steps
 MaxTime = SIZE*6*Scalar; % No. of time steps
-PulseWidth = round(SIZE/8); % Controls width of Gaussian Pulse
-td = PulseWidth; % Temporal delay in pulse.
+PulseWidth = round(SIZE*4); % Controls width of Gaussian Pulse
+td = PulseWidth/8; % Temporal delay in pulse.
 imp0 = 377.0; % Impedence of free space
 sourceX = ceil((SIZE+1)/2); % Location of sourceX
-sourceY = ceil((SIZE+1)/2); % Location of sourceX
+sourceY = ceil((SIZE+1)/2); % Location of sourceY
+sourceZ = ceil((SIZE+1)/2); % Location of sourceZ
 Ra = 150e-6;
 
 % Choice of source.
@@ -18,7 +19,7 @@ SourceChoice = 2;
 
 SaveFields = 1; % 0. No, 1. Yes.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
-SnapshotInterval = 6*Scalar; % Amount of time delay between snaps.
+SnapshotInterval = Scalar; % Amount of time delay between snaps.
 
 % Constants.
 pi = 3.141592654;
@@ -26,12 +27,13 @@ e0 = (1e-9)/(36*pi);
 u0 = (1e-7)*4*pi;
 c = 1/sqrt(e0*u0);
 
-dt = 0.15e-14;
-delta = 0.95e-6;
+dt = 0.025e-14;
+delta = 1.0e-6;
+CourantNumber = c*dt/delta
 Sc = c*dt/delta/(3^0.5)
-
+1/sqrt(3)
 l = PulseWidth*delta;
-f = 3.3e12%0.8727e13%c/(1*l)
+f = 2.0e13%0.8727e13%c/(1*l)
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
@@ -64,12 +66,12 @@ muHx = u0*ones(SIZE, SIZE-1, SIZE-1);
 muHy = u0*ones(SIZE-1, SIZE, SIZE-1);
 muHz = u0*ones(SIZE-1, SIZE-1, SIZE);
 
-sigx = e0*ones(SIZE-1, SIZE, SIZE);
-sigy = e0*ones(SIZE, SIZE-1, SIZE);
-sigz = e0*ones(SIZE, SIZE, SIZE-1);
-sigmx = u0*ones(SIZE, SIZE-1, SIZE-1);
-sigmy = u0*ones(SIZE-1, SIZE, SIZE-1);
-sigmz = u0*ones(SIZE-1, SIZE-1, SIZE);
+sigx = sig1*ones(SIZE-1, SIZE, SIZE);
+sigy = sig1*ones(SIZE, SIZE-1, SIZE);
+sigz = sig1*ones(SIZE, SIZE, SIZE-1);
+sigmx = sigm1*ones(SIZE, SIZE-1, SIZE-1);
+sigmy = sigm1*ones(SIZE-1, SIZE, SIZE-1);
+sigmz = sigm1*ones(SIZE-1, SIZE-1, SIZE);
 
 % for i=1:SIZE+1
 %     for j=1:SIZE+1
@@ -152,6 +154,22 @@ Hx = zeros(SIZE, SIZE-1, SIZE-1);
 Hy = zeros(SIZE-1, SIZE, SIZE-1);
 Hz = zeros(SIZE-1, SIZE-1, SIZE);
 
+CExe = (1-sigx*dt./(2*epsEx))./(1+sigx*dt./(2*epsEx)) .* ones(SIZE-1, SIZE, SIZE);
+CEye = (1-sigy*dt./(2*epsEy))./(1+sigy*dt./(2*epsEy)) .* ones(SIZE, SIZE-1, SIZE);
+CEze = (1-sigz*dt./(2*epsEz))./(1+sigz*dt./(2*epsEz)) .* ones(SIZE, SIZE, SIZE-1);
+
+CHxm = (1-sigmx*dt./(2*muHx))./(1+sigmx*dt./(2*muHx)) .* ones(SIZE, SIZE-1, SIZE-1);
+CHym = (1-sigmy*dt./(2*muHy))./(1+sigmy*dt./(2*muHy)) .* ones(SIZE-1, SIZE, SIZE-1);
+CHzm = (1-sigmz*dt./(2*muHz))./(1+sigmz*dt./(2*muHz)) .* ones(SIZE-1, SIZE-1, SIZE);
+
+CHxe = ((dt./(muHx*delta))./(1+sigmx*dt./(2*muHx))) .* ones(SIZE, SIZE-1, SIZE-1);
+CHye = ((dt./(muHy*delta))./(1+sigmy*dt./(2*muHy))) .* ones(SIZE-1, SIZE, SIZE-1);
+CHze = ((dt./(muHz*delta))./(1+sigmz*dt./(2*muHz))) .* ones(SIZE-1, SIZE-1, SIZE);
+
+CExm = ((dt./(epsEx*delta))./(1+sigx*dt./(2*epsEx))) .* ones(SIZE-1, SIZE, SIZE);
+CEym = ((dt./(epsEy*delta))./(1+sigy*dt./(2*epsEy))) .* ones(SIZE, SIZE-1, SIZE);
+CEzm = ((dt./(epsEz*delta))./(1+sigz*dt./(2*epsEz))) .* ones(SIZE, SIZE, SIZE-1);
+
 % Amplitude and phase calculations.
 % t1 = floor(MaxTime/Scalar)
 % t2 = floor(t1+1/f/4/dt)
@@ -168,23 +186,55 @@ Hz = zeros(SIZE-1, SIZE-1, SIZE);
 % 
 % EzSaved = zeros(SIZE, MaxTime);
 % 
-% if SaveFields == 1
-%     EzSnapshots = zeros(ceil(SIZE/SnapshotResolution), ceil(SIZE/SnapshotResolution), ceil(MaxTime/SnapshotInterval)); % Data for plotting.
-%     frame = 1;
-% end
+if SaveFields == 1
+    EzSnapshots = zeros(ceil(SIZE/SnapshotResolution), ceil(SIZE/SnapshotResolution), ceil(MaxTime/SnapshotInterval)); % Data for plotting.
+    frame = 1;
+    Slice = SIZE/2;
+end
 
 % Outer loop for time-stepping.
 tic
 for q = 2:MaxTime
     
-    Hx(i,j,k) = Chxh(i,j,k) * Hx(i,j,k) + Chxe(i,j,k) * ((Ey(i,j,k+1) - Ey(i,j,k)) - (Ez(i,j+1,k) - Ez(i,j,k)));
-    Hy(i,j,k) = Chyh(i,j,k) * Hy(i,j,k) + Chye(i,j,k) * ((Ez(i+1,j,k) - Ez(i,j,k)) - (Ex(i,j,k+1) - Ex(i,j,k)));
-    Hz(i,j,k) = Chzh(i,j,k) * Hz(i,j,k) +Chze(i,j,k) * ((Ex(i,j+1,k) - Ex(i,j,k)) - (Ey(i+1,j,k) - Ey(i,j,k)));
-    
-    Ex(i,j,k) = Cexe(i,j,k) * Ex(i,j,k) + Cexh(i,j,k) * ((Hz(i,j,k) - Hz(i,j-1,k)) - (Hy(i,j,k) - Hy(i, j, k - 1)));
-    Ey(i,j,k) = Ceye(i,j,k) * Ey(i,j,k) + Ceyh(i,j,k) * ((Hx(i,j,k) - Hx(i,j,k-1)) - (Hz(i,j,k) - Hz(i - 1, j, k)));
-    Ez(i,j,k) = Ceze(i,j,k) * Ez(i,j,k) + Cezh(i,j,k) * ((Hy(i,j,k) - Hy(i-1,j,k)) - (Hx(i,j,k) - Hx(i, j - 1, k)));
+%     Ex = zeros(SIZE-1, SIZE, SIZE);
+% Ey = zeros(SIZE, SIZE-1, SIZE);
+% Ez = zeros(SIZE, SIZE, SIZE-1);
+% 
+% Hx = zeros(SIZE, SIZE-1, SIZE-1);
+% Hy = zeros(SIZE-1, SIZE, SIZE-1);
+% Hz = zeros(SIZE-1, SIZE-1, SIZE);
 
+    % Magnetic field components.
+    i = 1:SIZE; j = 1:SIZE-1; k = 1:SIZE-1;
+    Hx(i,j,k) = CHxm(i,j,k) .* Hx(i,j,k) + CHxe(i,j,k) .* ((Ey(i,j,k+1) - Ey(i,j,k)) - (Ez(i,j+1,k) - Ez(i,j,k)));
+    
+    i = 1:SIZE-1; j = 1:SIZE; k = 1:SIZE-1;
+    Hy(i,j,k) = CHym(i,j,k) .* Hy(i,j,k) + CHye(i,j,k) .* ((Ez(i+1,j,k) - Ez(i,j,k)) - (Ex(i,j,k+1) - Ex(i,j,k)));
+    
+    i = 1:SIZE-1; j = 1:SIZE-1; k = 1:SIZE;
+    Hz(i,j,k) = CHzm(i,j,k) .* Hz(i,j,k) + CHze(i,j,k) .* ((Ex(i,j+1,k) - Ex(i,j,k)) - (Ey(i+1,j,k) - Ey(i,j,k)));
+    
+    % Electric field components.
+    i = 1:SIZE-1; j = 2:SIZE-1; k = 2:SIZE-1;
+    Ex(i,j,k) = CExe(i,j,k) .* Ex(i,j,k) + CExm(i,j,k) .* ((Hz(i,j,k) - Hz(i,j-1,k)) - (Hy(i,j,k) - Hy(i,j,k-1)));
+    
+    i = 2:SIZE-1; j = 1:SIZE-1; k = 2:SIZE-1;
+    Ey(i,j,k) = CEye(i,j,k) .* Ey(i,j,k) + CEym(i,j,k) .* ((Hx(i,j,k) - Hx(i,j,k-1)) - (Hz(i,j,k) - Hz(i-1,j,k)));
+    
+    i = 2:SIZE-1; j = 2:SIZE-1; k = 1:SIZE-1;
+    Ez(i,j,k) = CEze(i,j,k) .* Ez(i,j,k) + CEzm(i,j,k) .* ((Hy(i,j,k) - Hy(i-1,j,k)) - (Hx(i,j,k) - Hx(i,j-1,k)));
+
+
+    % Source.
+    if q < floor(MaxTime)
+        if SourceChoice == 1
+        Ez(sourceX,sourceY,sourceZ) = Ez(sourceX,sourceY,sourceZ) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc/sqrt(3);
+        elseif SourceChoice == 2
+        Ez(sourceX,sourceY,sourceZ) = Ez(sourceX,sourceY,sourceZ) + sin(2*pi*f*(q)*dt) * Sc/sqrt(3);
+        elseif SourceChoice == 3
+        Ez(sourceX,sourceY,sourceZ) = Ez(sourceX,sourceY,sourceZ) + (1-2*(pi*fp*(q*dt-dr))^2)*exp(-1*(pi*fp*(q*dt-dr))^2) * Sc/sqrt(3);
+        end
+    end
 
 %     i=2:SIZE;
 %     j=i;
@@ -220,9 +270,9 @@ for q = 2:MaxTime
 %         end
 %     end
 % 
-%     if (SaveFields == 1 && mod(q, SnapshotInterval) == 0)
-%         EzSnapshots(:,:,q/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(SIZE-1)), 1+(0:SnapshotResolution:(SIZE-1)));
-%     end
+    if (SaveFields == 1 && mod(q, SnapshotInterval) == 0)
+        EzSnapshots(:,:,q/SnapshotInterval+1) = Ez(1+(0:SnapshotResolution:(SIZE-1)), 1+(0:SnapshotResolution:(SIZE-1)), Slice);
+    end
     
 end
 toc
@@ -257,19 +307,20 @@ if SaveFields == 1
 
     end
 end
-Partition = round(Ra/delta);
-for i=1:Scalar:MaxTime
-    figure (2)
-    subplot(211)
-    hold off
-    plot([(sourceX+Partition)*delta/Ra (sourceX+Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
-    hold on
-    plot([(sourceX-Partition)*delta/Ra (sourceX-Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
-    plot((0:SIZE-1)*delta/Ra,EzSaved(:,i))
-    xlim([0 (SIZE-1)*delta/Ra])
-    ylim([-0.1 0.1])
-    xlabel('r/Ra')
-    ylabel('Electric field (Ez) at sourceY')
+
+% Partition = round(Ra/delta);
+% for i=1:Scalar:MaxTime
+%     figure (2)
+%     subplot(211)
+%     hold off
+%     plot([(sourceX+Partition)*delta/Ra (sourceX+Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
+%     hold on
+%     plot([(sourceX-Partition)*delta/Ra (sourceX-Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
+%     plot((0:SIZE-1)*delta/Ra,EzSaved(:,i))
+%     xlim([0 (SIZE-1)*delta/Ra])
+%     ylim([-0.1 0.1])
+%     xlabel('r/Ra')
+%     ylabel('Electric field (Ez) at sourceY')
     
 %     subplot(212)
 %     hold off
@@ -280,7 +331,7 @@ for i=1:Scalar:MaxTime
 %     ylim([-1.1/imp0 1.1/imp0])
 %     xlabel('r/Ra')
 %     ylabel('Magnetic field (Hy)')
-end
+%end
 % 
 % figure(3)
 % subplot(211)
