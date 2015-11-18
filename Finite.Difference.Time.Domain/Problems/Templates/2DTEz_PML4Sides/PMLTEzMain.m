@@ -106,6 +106,8 @@ for i=1:SIZE+1
     end
 end
 
+% Conductivity continuation correction.
+sigcorr=sig2;
 % Order of polynomial
 order=6;
 % Required reflection co-efficient
@@ -118,12 +120,12 @@ Left=((eps(PMLw,sourceY)/e0)*sigmamax)/((PMLw^order)*(order+1));
 Right=((eps(SIZE-PMLw,sourceY)/e0)*sigmamax)/((PMLw^order)*(order+1));
 x=0:1:PMLw;
 for i=1:1:SIZE
-    sigx(PMLw+1:-1:1,i)=Lower*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
-    sigx(SIZE-PMLw:1:SIZE,i)=Upper*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
+    sigx(PMLw+1:-1:1,i)=sigcorr+Lower*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
+    sigx(SIZE-PMLw:1:SIZE,i)=sigcorr+Upper*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
 end
 for i=1:1:SIZE
-    sigy(i,PMLw+1:-1:1)=Left*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
-    sigy(i,SIZE-PMLw:1:SIZE)=Right*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+    sigy(i,PMLw+1:-1:1)=sigcorr+Left*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+    sigy(i,SIZE-PMLw:1:SIZE)=sigcorr+Right*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
 end
 
 % Magnetic conductivity
