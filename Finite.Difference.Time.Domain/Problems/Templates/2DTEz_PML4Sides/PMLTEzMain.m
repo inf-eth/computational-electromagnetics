@@ -106,6 +106,9 @@ for i=1:SIZE+1
     end
 end
 
+% Reference:
+% http://www.mathworks.com/matlabcentral/fileexchange/35578-2d-fdtd-of-a-region-with-perfectly-matched-layer-boundary
+
 % Conductivity continuation correction.
 sigcorr=sig2;
 % Order of polynomial
