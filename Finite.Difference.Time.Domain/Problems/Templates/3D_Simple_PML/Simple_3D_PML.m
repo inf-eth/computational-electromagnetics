@@ -3,7 +3,7 @@ clc
 % Simulation parameters.
 Scalar = 1;
 PMLw = 10;
-SIZE = 35*Scalar+2*PMLw; % No. of spatial steps
+SIZE = 70*Scalar+2*PMLw; % No. of spatial steps
 MaxTime = SIZE*12*Scalar; % No. of time steps
 PulseWidth = round(SIZE*8); % Controls width of Gaussian Pulse
 td = PulseWidth/8; % Temporal delay in pulse.
@@ -15,7 +15,7 @@ Ra = 150e-6;
 
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
-SourceChoice = 1;
+SourceChoice = 2;
 
 SaveFields = 1; % 0. No, 1. Yes.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
@@ -27,13 +27,13 @@ e0 = (1e-9)/(36*pi);
 u0 = (1e-7)*4*pi;
 c = 1/sqrt(e0*u0);
 
-dt = 0.025e-14;
-delta = 1.0e-6;
+dt = 0.25e-14;
+delta = 5.0e-6;
 CourantNumber = c*dt/delta
 Sc = c*dt/delta/(3^0.5)
 1/sqrt(3)
 l = PulseWidth*delta;
-f = 1.0e13%0.8727e13%c/(1*l)
+f = 5.3839e12%703.6e9%1.0e13%0.8727e13%c/(1*l)
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
@@ -50,7 +50,7 @@ er2 = 1;
 ur1 = 1;
 ur2 = 1;
 sig1 = 0;
-sig2 = 0;
+sig2 = 100;
 sigm1 = 0;
 sigm2 = 0;
 
@@ -73,46 +73,50 @@ sigmx = sigm1*ones(SIZE, SIZE, SIZE);
 sigmy = sigm1*ones(SIZE, SIZE, SIZE);
 sigmz = sigm1*ones(SIZE, SIZE, SIZE);
 
-% for i=1:SIZE
-%     for j=1:SIZE
-%         x = (i-sourceX)*delta;
-%         y = (j-sourceY)*delta;
-%         xc = (i-sourceX)*delta;
-%         yc = (j-sourceY)*delta;
-%         r = sqrt(x^2 + y^2);
-%         rc1 = sqrt(xc^2 + y^2);
-%         rc2 = sqrt(x^2 + yc^2);
-%         if i<SIZE+1 && j<SIZE+1 
-%             if r<=Ra
-%                 eps(i,j) = eps(i,j)*er1;
-%                 sigx(i,j) = sig1;
-%                 sigy(i,j) = sig1;
-%             else
-%                 eps(i,j) = eps(i,j)*er2;
-%                 sigx(i,j) = sig2;
-%                 sigy(i,j) = sig2;
-%             end
-%         end
-%         if i<SIZE+1
-%             if rc2<=Ra
-%                 muHx(i,j) = muHx(i,j)*ur1;
-%                 sigmy(i,j) = sigm1;
-%             else
-%                 muHx(i,j) = muHx(i,j)*ur2;
-%                 sigmy(i,j) = sigm2;
-%             end
-%         end
-%         if j<SIZE+1
-%             if rc1<=Ra
-%                 muHy(i,j) = muHy(i,j)*ur1;
-%                 sigmx(i,j) = sigm1;
-%             else
-%                 muHy(i,j) = muHy(i,j)*ur2;
-%                 sigmx(i,j) = sigm2;
-%             end
-%         end
-%     end
-% end
+for i=1:SIZE
+    for j=1:SIZE
+        for k=1:SIZE
+            x = (i-sourceX)*delta;
+            y = (j-sourceY)*delta;
+            z = (k-sourceZ)*delta;
+            xc = (i-sourceX)*delta;
+            yc = (j-sourceY)*delta;
+            zc = (k-sourceZ)*delta;
+            r = sqrt(x^2 + y^2 + z^2);
+            rc1 = sqrt(xc^2 + y^2 + z^2);
+            rc2 = sqrt(x^2 + yc^2 + z^2);
+            if r<=Ra
+                epsEx(i,j,k) = epsEx(i,j,k)*er1;
+                epsEy(i,j,k) = epsEy(i,j,k)*er1;
+                epsEz(i,j,k) = epsEz(i,j,k)*er1;
+                sigx(i,j,k) = sig1;
+                sigy(i,j,k) = sig1;
+                sigz(i,j,k) = sig1;
+                
+                muHx(i,j,k) = muHx(i,j,k)*ur1;
+                muHy(i,j,k) = muHy(i,j,k)*ur1;
+                muHz(i,j,k) = muHz(i,j,k)*ur1;
+                sigmx(i,j,k) = sigm1;
+                sigmy(i,j,k) = sigm1;
+                sigmz(i,j,k) = sigm1;
+            else
+                epsEx(i,j,k) = epsEx(i,j,k)*er2;
+                epsEy(i,j,k) = epsEy(i,j,k)*er2;
+                epsEz(i,j,k) = epsEz(i,j,k)*er2;
+                sigx(i,j,k) = sig2;
+                sigy(i,j,k) = sig2;
+                sigz(i,j,k) = sig2;
+                
+                muHx(i,j,k) = muHx(i,j,k)*ur2;
+                muHy(i,j,k) = muHy(i,j,k)*ur2;
+                muHz(i,j,k) = muHz(i,j,k)*ur2;
+                sigmx(i,j,k) = sigm2;
+                sigmy(i,j,k) = sigm2;
+                sigmz(i,j,k) = sigm2;
+            end
+        end
+    end
+end
 
 % =====================================================================
 % Reference: http://www.mathworks.com/matlabcentral/fileexchange/35578-2d-fdtd-of-a-region-with-perfectly-matched-layer-boundary
@@ -128,32 +132,28 @@ gammap=1e-6;
 sigmamax=(-log10(gammap)*(order+1)*e0*c)/(2*PMLw*delta);
 Bound=((epscorr/e0)*sigmamax)/((PMLw^order)*(order+1));
 x=0:1:PMLw;
-for i=1:1:SIZE
-    sigx(PMLw+1:-1:1,i,1)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
-    sigx(SIZE-PMLw:1:SIZE,i,1)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
-    sigy(i,PMLw+1:-1:1,1)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
-    sigy(i,SIZE-PMLw:1:SIZE,1)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
-    sigz(1,i,PMLw+1:-1:1)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
-    sigz(1,i,SIZE-PMLw:1:SIZE)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+
+for m=1:SIZE
+    for i=1:1:SIZE
+        sigx(PMLw+1:-1:1,i,m)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
+        sigx(SIZE-PMLw:1:SIZE,i,m)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1));
+        sigy(i,PMLw+1:-1:1,m)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+        sigy(i,SIZE-PMLw:1:SIZE,m)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+        sigz(m,i,PMLw+1:-1:1)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+        sigz(m,i,SIZE-PMLw:1:SIZE)=sigcorr+Bound*((x+0.5*ones(1,PMLw+1)).^(order+1)-(x-0.5*[0 ones(1,PMLw)]).^(order+1))';
+    end
 end
-for i=2:SIZE
-    sigx(:,:,i) = sigx(:,:,1);
-    sigy(:,:,i) = sigy(:,:,1);
-    sigz(i,:,:) = sigz(1,:,:);
-end
+% for i=2:SIZE
+%     sigx(:,:,i) = sigx(:,:,1);
+%     sigy(:,:,i) = sigy(:,:,1);
+%     sigz(i,:,:) = sigz(1,:,:);
+% end
 
 % Magnetic conductivity
 sigmx=(sigx.*muHx)./epsEx;
 sigmy=(sigy.*muHy)./epsEy;
 sigmz=(sigz.*muHz)./epsEz;
 % ==================================================================
-
-% Initialization.
-% Ezx = zeros(SIZE, SIZE); % x-component of E-field
-% Ezy = zeros(SIZE, SIZE); % y-component of E-field
-% Ez = zeros(SIZE, SIZE); % Total E-field
-% Hx = zeros(SIZE, SIZE+1); % x-component of H-field
-% Hy = zeros(SIZE+1, SIZE); % y-component of H-field
 
 Ex = zeros(SIZE-1, SIZE, SIZE);
 Ey = zeros(SIZE, SIZE-1, SIZE);
@@ -214,6 +214,19 @@ if SaveFields == 1
     frame = 1;
     Slice = floor(sourceZ);
 end
+
+EAbs = zeros(SIZE-1,SIZE-1);
+HAbs = zeros(SIZE-1,SIZE-1);
+
+ExAbs = zeros(SIZE-1,SIZE-1);
+EyAbs = zeros(SIZE-1,SIZE-1);
+EzAbs = zeros(SIZE-1,SIZE-1);
+
+HxAbs = zeros(SIZE-1,SIZE-1);
+HyAbs = zeros(SIZE-1,SIZE-1);
+HzAbs = zeros(SIZE-1,SIZE-1);
+
+
 MaxTime
 % Outer loop for time-stepping.
 tic
@@ -281,6 +294,25 @@ for q = 2:MaxTime
     Ey = Eyx+Eyz;
     Ez = Ezx+Ezy;
     
+    % Recording absolute value
+    if q > floor(MaxTime/Scalar/2)
+        EAbs = max(EAbs, sqrt(Ex(1:SIZE-1,1:SIZE-1,sourceZ).^2+Ey(1:SIZE-1,1:SIZE-1,sourceZ).^2+Ez(1:SIZE-1,1:SIZE-1,sourceZ).^2));
+        HAbs = max(HAbs, sqrt(Hx(1:SIZE-1,1:SIZE-1,sourceZ).^2+Hy(1:SIZE-1,1:SIZE-1,sourceZ).^2+Hz(1:SIZE-1,1:SIZE-1,sourceZ).^2));
+        
+        ExAbs = max(ExAbs, abs(Ex(1:SIZE-1,1:SIZE-1,sourceZ)));
+        EyAbs = max(EyAbs, abs(Ey(1:SIZE-1,1:SIZE-1,sourceZ)));
+        EzAbs = max(EzAbs, abs(Ez(1:SIZE-1,1:SIZE-1,sourceZ)));
+        
+        HxAbs = max(HxAbs, abs(Hx(1:SIZE-1,1:SIZE-1,sourceZ)));
+        HyAbs = max(HyAbs, abs(Hy(1:SIZE-1,1:SIZE-1,sourceZ)));
+        HzAbs = max(HzAbs, abs(Hz(1:SIZE-1,1:SIZE-1,sourceZ)));
+        
+        %HthetaAbs(sourceX,:) = (HthetaAbs(sourceX+1,:) + HthetaAbs(sourceX-1,:))./2;
+        %EAbs(sourceX,:) = (EphiAbs(sourceX+1,:) + EphiAbs(sourceX-1,:))./2;
+        %HrAbs(sourceX,:) = (HrAbs(sourceX+1,:) + HrAbs(sourceX-1,:))./2;
+        %HphiAbs(sourceX,:) = (HphiAbs(sourceX+1,:) + HphiAbs(sourceX-1,:))./2;
+    end
+    
     % Source.
     if q < floor(MaxTime)
         if SourceChoice == 1
@@ -337,36 +369,35 @@ if SaveFields == 1
     % Electric field snapshots.
     sizeS=size(EzSnapshots);
     for i=1:(MaxTime/SnapshotInterval)-1
-        PlotData = EzSnapshots (:, :, i)/max(max(EzSnapshots(:,:,i)));
+        PlotData = EzSnapshots(:,:,i)/max(max(EzSnapshots(:,:,i)));
         %PlotData = PlotData/max(max(PlotData));
-        figure (6)
-        mesh ( EzSnapshots (:, :, i) );
-        view (4, 4)
+        figure (1)
+        mesh(EzSnapshots(:,:,i));
+        view(4, 4)
         xlim([0 sizeS(2)])
         ylim([0 sizeS(1)])
         zlim([-0.001 0.001])
-        %caxis([-0.1 0.6])
-        xlabel ('j-axis')
-        ylabel ('i-axis')
+        caxis([-0.0001 0.0001])
+        xlabel('j-axis')
+        ylabel('i-axis')        
         %colorbar
 
-        figure (7)
-        mesh ( EzSnapshots (:, :, i) );
-        view (0, 90)
+        figure (2)
+        mesh(EzSnapshots(:,:,i));
+        view(0, 90)
         xlim([0 sizeS(2)])
         ylim([0 sizeS(1)])
         zlim([-0.001 0.001])
-        %caxis([-0.1 0.6])
+        caxis([-0.0001 0.0001])
         xlabel ('j-axis')
         ylabel ('i-axis')
-        %colorbar
-
+        %colorbar        
     end
 end
 
-% Partition = round(Ra/delta);
+ Partition = round(Ra/delta);
 for i=1:(MaxTime/SnapshotInterval)-1
-    figure (2)
+    figure (3)
     %hold off
     %plot([(sourceX+Partition)*delta/Ra (sourceX+Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
     %hold on
@@ -409,15 +440,56 @@ end
 % xlabel('r/Ra')
 % ylabel('Magnetic field (Hy)')
 % 
-% figure(4)
-% hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZE-1)*dz/Ra,ExAbs./HyAbs)
-% xlim([0 (SIZE-1)*dz/Ra])
-% %ylim([-1.1/imp0 1.1/imp0])
-% xlabel('r/Ra')
-% ylabel('Magnitude of wave impedance')
+figure(4)
+hold off
+plot([(Partition)*delta/Ra (Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE/2-2)*delta/Ra,EAbs(SIZE/2:SIZE-2,sourceY)./HAbs(SIZE/2:SIZE-2,sourceY))
+xlim([0 (SIZE/2-2)*delta/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Magnitude of wave impedance')
+
+HxPhase = acos(Hx(1:SIZE-1,1:SIZE-1,sourceZ)./HxAbs);
+HyPhase = acos(Hy(1:SIZE-1,1:SIZE-1,sourceZ)./HyAbs);
+HzPhase = acos(Hz(1:SIZE-1,1:SIZE-1,sourceZ)./HzAbs);
+
+ExPhase = acos(Ex(1:SIZE-1,1:SIZE-1,sourceZ)./ExAbs);
+EyPhase = acos(Ey(1:SIZE-1,1:SIZE-1,sourceZ)./EyAbs);
+EzPhase = acos(Ez(1:SIZE-1,1:SIZE-1,sourceZ)./EzAbs);
+
+HxPhasor = HxAbs.*exp(1j.*HxPhase);
+HyPhasor = HyAbs.*exp(1j.*HyPhase);
+HzPhasor = HzAbs.*exp(1j.*HzPhase);
+
+ExPhasor = ExAbs.*exp(1j.*ExPhase);
+EyPhasor = EyAbs.*exp(1j.*EyPhase);
+EzPhasor = EzAbs.*exp(1j.*EzPhase);
+
+HPhasor = sqrt(HxPhasor.^2+HyPhasor.^2+HzPhasor.^2);
+EPhasor = sqrt(ExPhasor.^2+EyPhasor.^2+EzPhasor.^2);
+
+figure(5)
+subplot(211)
+hold off
+plot([(Partition)*delta/Ra (Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE/2-2)*delta/Ra,1*real(EPhasor(SIZE/2:SIZE-2,sourceY)./HPhasor(SIZE/2:SIZE-2,sourceY)))
+xlim([0 (SIZE/2-2)*delta/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Real part of wave impedance')
+
+subplot(212)
+hold off
+plot([(Partition)*delta/Ra (Partition)*delta/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE/2-2)*delta/Ra,imag(EPhasor(SIZE/2:SIZE-2,sourceY)./HPhasor(SIZE/2:SIZE-2,sourceY)))
+xlim([0 (SIZE/2-2)*delta/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Imag part of wave impedance')
+
 % 
 % % ================== Postprocessing =====================
 % % Reference: Chapter 5 section 5.6 from Understanding FDTD.
